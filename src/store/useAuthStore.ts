@@ -53,6 +53,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         name: user.name,
         email: user.email,
         role: user.role,
+        avatarUrl: user.avatarUrl || uAny?.avatarUrl,
         usn: sProf?.usn || uAny?.usn,
         branch: sProf?.branch?.code || sProf?.branchCode || uAny?.branchCode || uAny?.branch,
         scheme: sProf?.scheme?.schemeYear || sProf?.schemeYear || uAny?.schemeYear || uAny?.scheme,
@@ -71,6 +72,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         if (fullUser) {
           profile = {
             ...profile,
+            avatarUrl: fullUser.avatarUrl || profile.avatarUrl,
             usn: fullUser.usn || fullUser.studentProfile?.usn || profile.usn,
             branch: fullUser.branchCode || fullUser.studentProfile?.branchCode || fullUser.branch || profile.branch,
             scheme: fullUser.schemeYear || fullUser.studentProfile?.schemeYear || fullUser.scheme || profile.scheme,
@@ -120,6 +122,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         name: user.name,
         email: user.email,
         role: user.role || 'STUDENT',
+        avatarUrl: user.avatarUrl,
         usn: user.usn || payload.usn,
         branch: payload.branchCode || payload.branch,
         scheme: payload.schemeYear || payload.scheme,
@@ -165,6 +168,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         name: user.name,
         email: user.email,
         role: user.role || 'STUDENT',
+        avatarUrl: user.avatarUrl,
         usn: user.studentProfile?.usn || user.usn,
         branch: user.studentProfile?.branch?.code || user.branchCode,
         scheme: user.studentProfile?.scheme?.schemeYear || user.schemeYear,
@@ -224,10 +228,12 @@ export const useAuthStore = create<AuthState>((set) => ({
           name: user.name,
           email: user.email,
           role: user.role,
+          avatarUrl: user.avatarUrl || storedUser?.avatarUrl,
           usn: user.studentProfile?.usn || storedUser?.usn,
           branch: user.studentProfile?.branch?.code || storedUser?.branch,
           scheme: user.studentProfile?.scheme?.schemeYear || storedUser?.scheme,
           semester: user.studentProfile?.semester || storedUser?.semester,
+          college: user.studentProfile?.collegeCode || storedUser?.college,
         };
 
         await AsyncStorage.setItem('vtu_mobile_user', JSON.stringify(profile));

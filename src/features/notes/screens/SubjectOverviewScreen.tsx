@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -19,7 +18,7 @@ export const SubjectOverviewScreen: React.FC = () => {
   const subject = MOCK_SUBJECTS.find((s) => s.id === id) || MOCK_SUBJECTS[1];
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.rootContainer}>
       <Header title={subject.code} showBack />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Subject Header Card */}
@@ -98,12 +97,12 @@ export const SubjectOverviewScreen: React.FC = () => {
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
+  rootContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },

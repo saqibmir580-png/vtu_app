@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -41,9 +41,14 @@ export const AcademicCalendarHomeScreen: React.FC = () => {
     setActiveCategory,
     getFilteredEvents,
     getNextUpcomingEvent,
+    fetchAcademicEvents,
   } = useCalendarStore();
 
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
+
+  useEffect(() => {
+    fetchAcademicEvents();
+  }, []);
 
   const nextEvent = getNextUpcomingEvent();
   const filteredEvents = getFilteredEvents();

@@ -1,13 +1,97 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+
+interface QuickActionItem {
+  id: string;
+  label: string;
+  route: string;
+  icon: keyof typeof Feather.glyphMap;
+  color: string;
+  bgColor: string;
+}
+
+const QUICK_ACTIONS: QuickActionItem[] = [
+  {
+    id: 'notes',
+    label: 'Notes',
+    route: '/(tabs)/library',
+    icon: 'book-open',
+    color: '#2563EB',
+    bgColor: '#EFF6FF',
+  },
+  {
+    id: 'papers',
+    label: 'Papers',
+    route: '/papers',
+    icon: 'file-text',
+    color: '#9333EA',
+    bgColor: '#FAF5FF',
+  },
+  {
+    id: 'packages',
+    label: 'Passing',
+    route: '/passing-packages',
+    icon: 'zap',
+    color: '#DC2626',
+    bgColor: '#FEF2F2',
+  },
+  {
+    id: 'videos',
+    label: 'Videos',
+    route: '/videos',
+    icon: 'video',
+    color: '#E11D48',
+    bgColor: '#FFF1F2',
+  },
+  {
+    id: 'calculators',
+    label: 'Calculators',
+    route: '/(tabs)/tools',
+    icon: 'cpu',
+    color: '#059669',
+    bgColor: '#ECFDF5',
+  },
+  {
+    id: 'calendar',
+    label: 'Calendar',
+    route: '/calendar',
+    icon: 'calendar',
+    color: '#0745E8',
+    bgColor: '#EEF2FF',
+  },
+  {
+    id: 'saved',
+    label: 'Saved',
+    route: '/saved',
+    icon: 'bookmark',
+    color: '#D97706',
+    bgColor: '#FFFBEB',
+  },
+  {
+    id: 'attendance',
+    label: 'Attendance',
+    route: '/calculators/attendance',
+    icon: 'check-circle',
+    color: '#0891B2',
+    bgColor: '#ECFEFF',
+  },
+  {
+    id: 'cgpa',
+    label: 'CGPA',
+    route: '/calculators/cgpa',
+    icon: 'bar-chart-2',
+    color: '#7C3AED',
+    bgColor: '#F5F3FF',
+  },
+];
 
 export const QuickAccessGrid: React.FC = () => {
   const router = useRouter();
 
   return (
-    <View style={styles.container}>
+    <View style={styles.outerContainer}>
       <View style={styles.headerRow}>
         <Text style={styles.sectionTitle}>Quick Access</Text>
         <TouchableOpacity onPress={() => router.push('/(tabs)/library')}>
@@ -15,155 +99,88 @@ export const QuickAccessGrid: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.grid}>
-        {/* Notes Tile */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[styles.tile, { backgroundColor: '#EFF6FF' }]}
-          onPress={() => router.push('/(tabs)/library')}
+      {/* Horizontal Scrollable Container */}
+      <View style={styles.containerCard}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollList}
         >
-          <View style={[styles.tileIconBox, { backgroundColor: '#3B82F6' }]}>
-            <Feather name="book-open" size={20} color="#FFFFFF" />
-          </View>
-          <View style={styles.tileTextWrapper}>
-            <Text style={styles.tileTitle}>Notes</Text>
-            <Text style={styles.tileSub}>Module PDFs</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Previous Year Papers Tile */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[styles.tile, { backgroundColor: '#F3E8FF' }]}
-          onPress={() => router.push('/papers')}
-        >
-          <View style={[styles.tileIconBox, { backgroundColor: '#A855F7' }]}>
-            <Feather name="file-text" size={20} color="#FFFFFF" />
-          </View>
-          <View style={styles.tileTextWrapper}>
-            <Text style={styles.tileTitle}>Papers</Text>
-            <Text style={styles.tileSub}>VTU QPs</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Passing Packages Tile */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[styles.tile, { backgroundColor: '#FEF2F2' }]}
-          onPress={() => router.push('/passing-packages' as any)}
-        >
-          <View style={[styles.tileIconBox, { backgroundColor: '#DC2626' }]}>
-            <Feather name="zap" size={20} color="#FFFFFF" />
-          </View>
-          <View style={styles.tileTextWrapper}>
-            <Text style={styles.tileTitle}>Passing Packs</Text>
-            <Text style={styles.tileSub}>Exam Focus</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Calculators Tile */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[styles.tile, { backgroundColor: '#ECFDF5' }]}
-          onPress={() => router.push('/(tabs)/tools')}
-        >
-          <View style={[styles.tileIconBox, { backgroundColor: '#10B981' }]}>
-            <Feather name="cpu" size={20} color="#FFFFFF" />
-          </View>
-          <View style={styles.tileTextWrapper}>
-            <Text style={styles.tileTitle}>Calculators</Text>
-            <Text style={styles.tileSub}>SGPA & CGPA</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Academic Calendar Tile */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[styles.tile, { backgroundColor: '#EEF2FF' }]}
-          onPress={() => router.push('/calendar' as any)}
-        >
-          <View style={[styles.tileIconBox, { backgroundColor: '#0745E8' }]}>
-            <Feather name="calendar" size={20} color="#FFFFFF" />
-          </View>
-          <View style={styles.tileTextWrapper}>
-            <Text style={styles.tileTitle}>Calendar</Text>
-            <Text style={styles.tileSub}>Exams & Dates</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Saved & Offline Tile */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[styles.tile, { backgroundColor: '#FFF7ED' }]}
-          onPress={() => router.push('/saved' as any)}
-        >
-          <View style={[styles.tileIconBox, { backgroundColor: '#F97316' }]}>
-            <Feather name="bookmark" size={20} color="#FFFFFF" />
-          </View>
-          <View style={styles.tileTextWrapper}>
-            <Text style={styles.tileTitle}>Saved</Text>
-            <Text style={styles.tileSub}>Offline Hub</Text>
-          </View>
-        </TouchableOpacity>
+          {QUICK_ACTIONS.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              activeOpacity={0.75}
+              style={styles.actionItem}
+              onPress={() => router.push(item.route as any)}
+            >
+              <View style={[styles.iconBox, { backgroundColor: item.bgColor }]}>
+                <Feather name={item.icon} size={22} color={item.color} />
+              </View>
+              <Text style={styles.itemLabel} numberOfLines={1}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  outerContainer: {
     marginHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
   },
   viewAllText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#0745E8',
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  tile: {
-    width: '48%',
-    borderRadius: 18,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderColor: 'rgba(0, 0, 0, 0.03)',
+  containerCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingVertical: 14,
+    borderColor: '#E2E8F0',
     borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  tileIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+  scrollList: {
+    paddingHorizontal: 14,
+    gap: 16,
+    alignItems: 'center',
+  },
+  actionItem: {
+    alignItems: 'center',
+    width: 64,
+  },
+  iconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginBottom: 6,
   },
-  tileTextWrapper: {
-    flex: 1,
-  },
-  tileTitle: {
-    fontSize: 14,
+  itemLabel: {
+    fontSize: 12,
     fontWeight: '700',
-    color: '#0F172A',
-  },
-  tileSub: {
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 1,
+    color: '#1E293B',
+    textAlign: 'center',
   },
 });

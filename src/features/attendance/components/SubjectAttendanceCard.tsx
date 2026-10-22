@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { SubjectAttendance } from '../types/attendance.types';
 import { AttendanceProgress } from './AttendanceProgress';
 import { AttendanceStatusBadge } from './AttendanceStatusBadge';
-import { calculateStatus } from '../store/useAttendanceStore';
+import { calculateStatus, useAttendanceStore } from '../store/useAttendanceStore';
 
 interface SubjectAttendanceCardProps {
   subject: SubjectAttendance;
@@ -63,10 +63,36 @@ export const SubjectAttendanceCard: React.FC<SubjectAttendanceCardProps> = ({
         />
       </View>
 
-      <View style={styles.footerRow}>
-        <Text style={styles.targetInfo}>Target: {subject.targetAttendance}%</Text>
+      {/* Quick Action Steppers */}
+      <View style={styles.quickActionRow}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={styles.quickPresentBtn}
+          onPress={() =>
+            useAttendanceStore
+              .getState()
+              .updateAttendance(subject.id, subject.attendedClasses + 1, subject.conductedClasses + 1)
+          }
+        >
+          <Feather name="check" size={14} color="#16A34A" />
+          <Text style={styles.quickPresentText}>+1 Present</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={styles.quickMissedBtn}
+          onPress={() =>
+            useAttendanceStore
+              .getState()
+              .updateAttendance(subject.id, subject.attendedClasses, subject.conductedClasses + 1)
+          }
+        >
+          <Feather name="x" size={14} color="#DC2626" />
+          <Text style={styles.quickMissedText}>+1 Missed</Text>
+        </TouchableOpacity>
+
         <View style={styles.chevronWrapper}>
-          <Text style={styles.detailsText}>Details</Text>
+          <Text style={styles.detailsText}>Analytics</Text>
           <Feather name="chevron-right" size={16} color="#0745E8" />
         </View>
       </View>
@@ -150,6 +176,45 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  quickActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+    gap: 8,
+  },
+  quickPresentBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  quickPresentText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#16A34A',
+  },
+  quickMissedBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  quickMissedText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
   targetInfo: {
     fontSize: 11,
     color: '#64748B',
@@ -159,6 +224,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
+    marginLeft: 'auto',
   },
   detailsText: {
     fontSize: 12,

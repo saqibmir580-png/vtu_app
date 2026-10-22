@@ -36,6 +36,7 @@ export default function RootLayout() {
         <Stack.Screen name="passing-packages" options={{ headerShown: false }} />
         <Stack.Screen name="community" options={{ headerShown: false }} />
         <Stack.Screen name="calculators" options={{ headerShown: false }} />
+        <Stack.Screen name="videos" options={{ headerShown: false }} />
       </Stack>
     </AppProvider>
   );

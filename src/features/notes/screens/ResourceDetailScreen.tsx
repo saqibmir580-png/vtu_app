@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -14,10 +13,12 @@ import { Header } from '@/shared/components';
 import { MOCK_RESOURCES } from '../api/notesData';
 import { fetchNoteByIdFromApi } from '../api/notesApi';
 import { NoteResource } from '../types/notes.types';
+import { useAuthStore } from '@/store';
 
 export const ResourceDetailScreen: React.FC = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const user = useAuthStore((state) => state.user);
 
   const [resource, setResource] = useState<NoteResource>(
     () => MOCK_RESOURCES.find((r) => r.id === id) || MOCK_RESOURCES[0]
@@ -32,7 +33,7 @@ export const ResourceDetailScreen: React.FC = () => {
   useEffect(() => {
     let isMounted = true;
     if (id) {
-      fetchNoteByIdFromApi(id as string).then((res) => {
+      fetchNoteByIdFromApi(id as string, user?.id).then((res) => {
         if (isMounted && res) {
           setResource(res);
           setIsBookmarked(res.isBookmarked);
@@ -46,7 +47,7 @@ export const ResourceDetailScreen: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [id, user?.id]);
 
   const handleDownload = () => {
     if (isDownloaded) return;
@@ -64,7 +65,7 @@ export const ResourceDetailScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.rootContainer}>
       <Header title="Resource Details" showBack />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Resource Preview Header Card */}
@@ -173,12 +174,12 @@ export const ResourceDetailScreen: React.FC = () => {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
+  rootContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },

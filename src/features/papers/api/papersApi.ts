@@ -17,26 +17,30 @@ export interface QueryPapersParams {
 
 const extractPapersList = (response: any): any[] => {
   if (!response) return [];
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response.items)) return response.items;
-  if (Array.isArray(response.data)) return response.data;
-  if (response.data && Array.isArray(response.data.items)) return response.data.items;
-  if (response.data && Array.isArray(response.data.data)) return response.data.data;
+  let d = response.data !== undefined ? response.data : response;
+  if (Array.isArray(d)) return d;
+  if (d.items && Array.isArray(d.items)) return d.items;
+  if (d.data && Array.isArray(d.data)) return d.data;
+  if (d.data) {
+    if (d.data.data && Array.isArray(d.data.data)) return d.data.data;
+    if (d.data.items && Array.isArray(d.data.items)) return d.data.items;
+  }
   return [];
 };
 
 export const mapBackendToQuestionPaper = (item: any): QuestionPaper => {
   let modules: QuestionModule[] = [];
 
-  if (item.modulesData) {
-    if (typeof item.modulesData === 'string') {
+  const rawModules = item.modulesData !== undefined ? item.modulesData : item.modules_data;
+  if (rawModules) {
+    if (typeof rawModules === 'string') {
       try {
-        modules = JSON.parse(item.modulesData);
+        modules = JSON.parse(rawModules);
       } catch {
         modules = [];
       }
-    } else if (Array.isArray(item.modulesData)) {
-      modules = item.modulesData;
+    } else if (Array.isArray(rawModules)) {
+      modules = rawModules;
     }
   }
 
@@ -54,7 +58,7 @@ export const mapBackendToQuestionPaper = (item: any): QuestionPaper => {
     semester: item.semester || 5,
     paperType: item.paperType || 'SEE_THEORY',
     contentType: item.contentType || (modules.length > 0 ? 'DIGITAL_TYPED' : 'PDF_UPLOAD'),
-    hasSolutionKey: Boolean(item.hasSolutionKey) || Boolean(item.solutionPdfUrl),
+    hasSolutionKey: Boolean(item.hasSolutionKey) || Boolean(item.solutionPdfUrl) || Boolean(item.solution_pdf_url),
     year: String(item.year || '2025'),
     month: item.month || 'Jan/Feb',
     maxMarks: item.maxMarks || 100,
@@ -63,8 +67,8 @@ export const mapBackendToQuestionPaper = (item: any): QuestionPaper => {
     pageCount: item.pageCount || 4,
     viewsCount: item.viewsCount || item.views || 0,
     downloadsCount: item.downloads || item.downloadsCount || 0,
-    pdfUrl: item.pdfUrl || item.fileUrl,
-    solutionPdfUrl: item.solutionPdfUrl,
+    pdfUrl: item.pdfUrl || item.fileUrl || item.pdf_url || item.file_url,
+    solutionPdfUrl: item.solutionPdfUrl || item.solution_pdf_url,
     thumbnailBg: item.contentType === 'PDF_UPLOAD' ? '#FFF7ED' : '#F3E8FF',
     modules: modules.length > 0 ? modules : (MOCK_PAPERS[0]?.modules || []),
   };
@@ -87,7 +91,7 @@ export const fetchQuestionPapersApi = async (params?: QueryPapersParams): Promis
 export const fetchQuestionPaperByIdApi = async (id: string): Promise<QuestionPaper | null> => {
   try {
     const res: any = await apiClient.get(`/question-papers/${id}`);
-    const rawData = res.data?.data || res.data || res;
+    const rawData = res.data?.data?.data || res.data?.data || res.data || res;
     if (rawData && rawData.id) {
       return mapBackendToQuestionPaper(rawData);
     }

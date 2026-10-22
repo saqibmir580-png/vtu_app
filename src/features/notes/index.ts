@@ -8,3 +8,4 @@ export * from './screens/NoteReaderScreen';
 export * from './screens/DownloadsScreen';
 export * from './types/notes.types';
 export * from './api/notesData';
+export * from './components/PaymentCheckoutModal';

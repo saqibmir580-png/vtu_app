@@ -7,14 +7,18 @@ const getBaseUrl = () => {
   // 1. Check explicit environment variable first
   const envUrl = process.env.EXPO_PUBLIC_API_URL;
   if (envUrl && envUrl.trim() !== '') {
-    return envUrl;
+    // Strip any internal or accidental whitespace and trailing slashes
+    const sanitized = envUrl.replace(/\s+/g, '').replace(/\/+$/, '');
+    if (sanitized.startsWith('http://') || sanitized.startsWith('https://')) {
+      return sanitized;
+    }
   }
 
   // 2. Attempt dynamic resolution of developer machine IPv4 address from Expo Metro
   const hostUri = Constants.expoConfig?.hostUri || (Constants as any).manifest2?.extra?.expoGo?.developer;
   if (hostUri) {
     const rawHost = hostUri.split(':')[0];
-    // Check if rawHost is a valid IPv4 address (e.g. 192.168.31.11)
+    // Check if rawHost is a valid IPv4 address (e.g. 192.168.1.35)
     const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
     if (rawHost && ipv4Regex.test(rawHost)) {
       return `http://${rawHost}:5000/api/v1`;
@@ -22,7 +26,7 @@ const getBaseUrl = () => {
   }
 
   // 3. Default fallback LAN IP for local backend
-  return 'http://10.102.96.173:5000/api/v1';
+  return 'http://192.168.1.35:5000/api/v1';
 };
 
 export const apiClient = axios.create({
@@ -32,6 +36,8 @@ export const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+console.log(`[API Client] Initialized Base URL: ${apiClient.defaults.baseURL}`);
 
 // Request Interceptor: Attach Access Token
 apiClient.interceptors.request.use(

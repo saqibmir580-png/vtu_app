@@ -14,6 +14,7 @@ import { usePassingPackageStore } from '../store/usePassingPackageStore';
 import { QuestionPriorityBadge } from '../components/QuestionPriorityBadge';
 import { QuestionFrequencyBadge } from '../components/QuestionFrequencyBadge';
 import { BookmarkButton } from '../components/BookmarkButton';
+import * as ScreenCapture from 'expo-screen-capture';
 
 export const QuestionDetailScreen: React.FC = () => {
   const router = useRouter();
@@ -25,6 +26,13 @@ export const QuestionDetailScreen: React.FC = () => {
     bookmarkedQuestionIds,
     toggleQuestionBookmark,
   } = usePassingPackageStore();
+
+  React.useEffect(() => {
+    ScreenCapture.preventScreenCaptureAsync().catch(() => {});
+    return () => {
+      ScreenCapture.allowScreenCaptureAsync().catch(() => {});
+    };
+  }, []);
 
   const currentPkg = getPackageById(pkgId || '') || getPackagesForCurrentStudent()[0];
   const result = getQuestionById(currentPkg?.id || '', id || '');

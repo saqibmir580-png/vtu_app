@@ -10,13 +10,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '@/store';
+import { useAcademicRecordStore } from '@/features/calculators';
 import { AcademicInfoCard } from '../components/AcademicInfoCard';
 
 export const AcademicProfileDetailScreen: React.FC = () => {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const { currentCgpa, loadAcademicRecords } = useAcademicRecordStore();
+
+  React.useEffect(() => {
+    loadAcademicRecords();
+  }, []);
 
   if (!user) return null;
+
+  const effectiveCgpa = (user.currentCgpa && user.currentCgpa > 0) ? user.currentCgpa : (currentCgpa || 8.74);
 
   return (
     <View style={styles.root}>
@@ -86,7 +94,7 @@ export const AcademicProfileDetailScreen: React.FC = () => {
         {/* CGPA Card */}
         <AcademicInfoCard
           label="CUMULATIVE GRADE POINT AVERAGE"
-          value={(user.currentCgpa || 8.74).toFixed(2)}
+          value={effectiveCgpa.toFixed(2)}
           subText={`Target CGPA Goal: ${(user.targetCgpa || 9.20).toFixed(2)}`}
           iconName="trending-up"
           iconBg="#F3E8FF"

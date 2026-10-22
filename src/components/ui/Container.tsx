@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, ViewProps, SafeAreaView } from 'react-native';
+import { View, StyleSheet, ViewProps } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface ContainerProps extends ViewProps {
   safe?: boolean;

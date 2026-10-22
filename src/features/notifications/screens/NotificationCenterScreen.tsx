@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -38,16 +39,30 @@ export const NotificationCenterScreen: React.FC = () => {
     markAllAsRead,
     getUnreadCount,
     getFilteredNotifications,
+    fetchNotifications,
+    isLoading,
   } = useNotificationsStore();
 
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchNotifications();
+    setRefreshing(false);
+  }, [fetchNotifications]);
 
   const unreadCount = getUnreadCount();
   const filteredNotifs = getFilteredNotifications();
 
-  // Group notifications by Today vs Earlier
-  const todayNotifs = filteredNotifs.filter((n) => n.date === '2026-09-03');
-  const earlierNotifs = filteredNotifs.filter((n) => n.date !== '2026-09-03');
+  // Dynamic Today check
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayNotifs = filteredNotifs.filter((n) => n.date === todayStr);
+  const earlierNotifs = filteredNotifs.filter((n) => n.date !== todayStr);
 
   const handleNotificationPress = (notif: VTUNotification) => {
     markAsRead(notif.id);
@@ -88,7 +103,13 @@ export const NotificationCenterScreen: React.FC = () => {
         </View>
       </SafeAreaView>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0745E8']} />
+        }
+      >
         {/* Permission Callout Banner */}
         <NotificationPermissionCard />
 
@@ -125,7 +146,9 @@ export const NotificationCenterScreen: React.FC = () => {
             {/* Earlier Section */}
             {earlierNotifs.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionHeader}>Earlier</Text>
+                <Text style={styles.sectionHeader}>
+                  {todayNotifs.length > 0 ? 'Earlier' : 'Recent Announcements'}
+                </Text>
                 {earlierNotifs.map((n) => (
                   <NotificationCard
                     key={n.id}
@@ -202,29 +225,30 @@ const styles = StyleSheet.create({
   filterBtn: {
     width: 36,
     height: 36,
-    borderRadius: 12,
+    borderRadius: 18,
     backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
     paddingBottom: 40,
   },
   chipsRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     gap: 8,
-    marginBottom: 16,
   },
   section: {
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    marginTop: 8,
   },
   sectionHeader: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#64748B',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 10,
+    marginTop: 4,
   },
 });

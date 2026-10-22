@@ -29,7 +29,7 @@ export interface AcademicEvent {
 
 export interface NotificationItem {
   id: string;
-  category: 'VTU Circular' | 'Exam Schedule' | 'Assignment' | 'System';
+  category: 'VTU Circular' | 'Exam Schedule' | 'Assignment' | 'System' | 'Academic' | 'Exams' | 'Results' | 'Study' | 'App' | string;
   title: string;
   description: string;
   timestamp: string;

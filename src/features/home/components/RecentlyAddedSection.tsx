@@ -28,10 +28,20 @@ export const RecentlyAddedSection: React.FC<RecentlyAddedSectionProps> = ({ reso
             key={item.id}
             activeOpacity={0.8}
             style={styles.resourceCard}
-            onPress={() => router.push(`/notes/${item.id}`)}
+            onPress={() => {
+              if (item.type === 'Question Paper') {
+                router.push('/(tabs)/library');
+              } else {
+                router.push(`/notes/${item.id}` as any);
+              }
+            }}
           >
             <View style={styles.iconBox}>
-              <Feather name="file-text" size={20} color="#EF4444" />
+              <Feather
+                name={item.type === 'Question Paper' ? 'layers' : 'file-text'}
+                size={20}
+                color={item.type === 'Question Paper' ? '#7E22CE' : '#EF4444'}
+              />
             </View>
 
             <View style={styles.infoWrapper}>

@@ -14,6 +14,7 @@ import { usePassingPackageStore } from '../store/usePassingPackageStore';
 import { useSavedStore } from '@/features/saved/store/useSavedStore';
 import { DownloadButton } from '../components/DownloadButton';
 import { BookmarkButton } from '../components/BookmarkButton';
+import * as ScreenCapture from 'expo-screen-capture';
 
 export const PackagePdfViewerScreen: React.FC = () => {
   const router = useRouter();
@@ -32,6 +33,13 @@ export const PackagePdfViewerScreen: React.FC = () => {
   const pkg = resResult?.pkg || currentPkg;
 
   const [currentPage, setCurrentPage] = useState(1);
+
+  React.useEffect(() => {
+    ScreenCapture.preventScreenCaptureAsync().catch(() => {});
+    return () => {
+      ScreenCapture.allowScreenCaptureAsync().catch(() => {});
+    };
+  }, []);
 
   if (!resource || !pkg) {
     return (

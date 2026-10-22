@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -34,7 +33,7 @@ export const UnitResourcesScreen: React.FC = () => {
   });
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.rootContainer}>
       <Header title={`Unit ${unit.unitNumber}`} showBack />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Unit Info Header */}
@@ -43,6 +42,24 @@ export const UnitResourcesScreen: React.FC = () => {
           <Text style={styles.unitTitle}>{unit.title}</Text>
           <Text style={styles.resourceCountText}>{filteredResources.length} Resources available</Text>
         </View>
+
+        {/* Video Lectures Quick Link */}
+        <TouchableOpacity
+          style={styles.videoBanner}
+          activeOpacity={0.85}
+          onPress={() => router.push('/videos' as any)}
+        >
+          <View style={styles.videoBannerLeft}>
+            <View style={styles.videoBannerIcon}>
+              <Feather name="video" size={18} color="#E11D48" />
+            </View>
+            <View>
+              <Text style={styles.videoBannerTitle}>Module Video Lectures</Text>
+              <Text style={styles.videoBannerSub}>Watch YouTube lectures for this subject</Text>
+            </View>
+          </View>
+          <Feather name="chevron-right" size={18} color="#94A3B8" />
+        </TouchableOpacity>
 
         {/* Filter Chips Horizontal Scroll */}
         <ScrollView
@@ -82,10 +99,15 @@ export const UnitResourcesScreen: React.FC = () => {
                       <Text style={styles.typeBadgeText}>{res.type}</Text>
                     </View>
                     <Text style={styles.fileFormatText}>{res.fileFormat} • {res.fileSize}</Text>
-                    {res.isPaid ? (
+                    {res.isPaid && !res.isPurchased ? (
                       <View style={styles.listPaidBadge}>
                         <Feather name="lock" size={10} color="#D97706" />
                         <Text style={styles.listPaidBadgeText}>Paid • ₹{res.price || 19}</Text>
+                      </View>
+                    ) : res.isPurchased ? (
+                      <View style={styles.listFreeBadge}>
+                        <Feather name="check" size={10} color="#059669" />
+                        <Text style={styles.listFreeBadgeText}>Unlocked</Text>
                       </View>
                     ) : (
                       <View style={styles.listFreeBadge}>
@@ -124,12 +146,12 @@ export const UnitResourcesScreen: React.FC = () => {
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
+  rootContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
@@ -306,5 +328,40 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#0745E8',
+  },
+  videoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFF1F2',
+    borderWidth: 1,
+    borderColor: '#FFE4E6',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 16,
+  },
+  videoBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  videoBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFE4E6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#9F1239',
+  },
+  videoBannerSub: {
+    fontSize: 11,
+    color: '#E11D48',
+    marginTop: 1,
   },
 });

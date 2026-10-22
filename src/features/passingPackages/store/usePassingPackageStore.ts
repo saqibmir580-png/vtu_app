@@ -6,10 +6,11 @@ import {
   PackageFilterOptions,
 } from '../types/passingPackages.types';
 import { MOCK_PASSING_PACKAGES } from '../api/mockPassingPackages';
-import { useSavedStore } from '@/features/saved/store/useSavedStore';
+import { fetchPassingPackagesFromApi } from '../api/packagesApi';
 
 interface PassingPackageStoreState {
   packages: PassingPackage[];
+  isLoading: boolean;
   activeBranch: string;
   activeSemester: number;
   activeScheme: string;
@@ -17,6 +18,7 @@ interface PassingPackageStoreState {
   bookmarkedQuestionIds: string[];
 
   // Actions
+  loadPackagesFromBackend: () => Promise<void>;
   setActiveBranch: (branch: string) => void;
   setActiveSemester: (sem: number) => void;
   setActiveScheme: (scheme: string) => void;
@@ -33,6 +35,7 @@ interface PassingPackageStoreState {
 
 export const usePassingPackageStore = create<PassingPackageStoreState>((set, get) => ({
   packages: MOCK_PASSING_PACKAGES,
+  isLoading: false,
   activeBranch: 'CSE',
   activeSemester: 5,
   activeScheme: '2022',
@@ -44,9 +47,38 @@ export const usePassingPackageStore = create<PassingPackageStoreState>((set, get
   },
   bookmarkedQuestionIds: ['iq-cn-1', 'iq-cn-2', 'rq-cn-1'],
 
-  setActiveBranch: (branch) => set({ activeBranch: branch }),
-  setActiveSemester: (sem) => set({ activeSemester: sem }),
-  setActiveScheme: (scheme) => set({ activeScheme: scheme }),
+  loadPackagesFromBackend: async () => {
+    set({ isLoading: true });
+    try {
+      const { activeBranch, activeSemester, activeScheme } = get();
+      const livePackages = await fetchPassingPackagesFromApi({
+        branchCode: activeBranch,
+        semester: activeSemester,
+        schemeYear: activeScheme,
+      });
+
+      if (livePackages && livePackages.length > 0) {
+        set({ packages: livePackages, isLoading: false });
+      } else {
+        set({ isLoading: false });
+      }
+    } catch {
+      set({ isLoading: false });
+    }
+  },
+
+  setActiveBranch: (branch) => {
+    set({ activeBranch: branch });
+    get().loadPackagesFromBackend();
+  },
+  setActiveSemester: (sem) => {
+    set({ activeSemester: sem });
+    get().loadPackagesFromBackend();
+  },
+  setActiveScheme: (scheme) => {
+    set({ activeScheme: scheme });
+    get().loadPackagesFromBackend();
+  },
 
   setFilterOptions: (filters) =>
     set((state) => ({
@@ -75,16 +107,17 @@ export const usePassingPackageStore = create<PassingPackageStoreState>((set, get
 
   getPackagesForCurrentStudent: () => {
     const { packages, activeBranch, activeSemester } = get();
-    return packages.filter(
+    const filtered = packages.filter(
       (p) =>
         p.branch.toUpperCase() === activeBranch.toUpperCase() &&
         p.semester === activeSemester
     );
+    return filtered.length > 0 ? filtered : packages;
   },
 
   getPackageById: (id) => {
     const { packages } = get();
-    return packages.find((p) => p.id === id);
+    return packages.find((p) => p.id === id) || packages[0];
   },
 
   getQuestionById: (packageId, questionId) => {

@@ -62,6 +62,7 @@ export interface AuthResponseData {
     name: string;
     email: string;
     role?: string;
+    avatarUrl?: string;
     isOnboarded?: boolean;
     usn?: string;
     collegeCode?: string;

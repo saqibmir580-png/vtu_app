@@ -207,6 +207,9 @@ export const useGoalPlannerStore = create<GoalPlannerStoreState>((set, get) => (
     set((state) => ({
       savedGoals: [newGoal, ...state.savedGoals],
     }));
+
+    // Persist targetCgpa to user profile
+    useAuthStore.getState().updateProfile({ targetCgpa });
   },
 
   deleteGoal: (id) =>

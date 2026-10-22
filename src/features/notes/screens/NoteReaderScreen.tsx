@@ -4,78 +4,266 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Dimensions,
   Alert,
   ActivityIndicator,
-  Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import * as WebBrowser from 'expo-web-browser';
-import { fetchNoteByIdFromApi } from '../api/notesApi';
+import {
+  fetchNoteByIdFromApi,
+  checkNoteAccessFromApi,
+  purchaseNoteFromApi,
+  createRazorpayOrderFromApi,
+  verifyRazorpayPaymentFromApi,
+} from '../api/notesApi';
 import { NoteResource } from '../types/notes.types';
 import { MOCK_RESOURCES } from '../api/notesData';
+import { useStudyActivityStore } from '@/features/home';
+import { useAuthStore } from '@/store';
+import { PaymentCheckoutModal } from '../components/PaymentCheckoutModal';
 
-let ScreenCapture: any = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  ScreenCapture = require('expo-screen-capture');
-} catch (e) {
-  ScreenCapture = null;
-}
+import * as ScreenCapture from 'expo-screen-capture';
 
 const { width } = Dimensions.get('window');
+
+/**
+ * Access calculation decision helper (Single Source of Truth)
+ */
+export const canAccessPage = (
+  pageNumber: number,
+  totalPages: number,
+  isPaid: boolean,
+  isPurchased: boolean,
+  previewPageLimit: number
+): boolean => {
+  if (pageNumber < 1 || pageNumber > totalPages) return false;
+  if (!isPaid || isPurchased) return true;
+  const limit = Math.max(0, previewPageLimit ?? 0);
+  return pageNumber <= limit;
+};
+
+/**
+ * Single-Page HTML Canvas PDF Generator
+ * Renders ONLY the target page onto a single HTML5 canvas element.
+ * 100% non-scrollable, zero vertical scroll, zero multi-page DOM elements.
+ */
+const generateSinglePagePdfHtml = (pdfUrl: string, pageNum: number): string => {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden !important;
+      background-color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    canvas {
+      max-width: 98%;
+      max-height: 98%;
+      object-fit: contain;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      border-radius: 4px;
+    }
+    #loading {
+      position: absolute;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+</head>
+<body>
+  <div id="container">
+    <div id="loading">Loading Page ${pageNum}...</div>
+    <canvas id="pdf-canvas" style="display:none;"></canvas>
+  </div>
+  <script>
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    }
+
+    var pdfUrl = ${JSON.stringify(pdfUrl)};
+    var pageNum = ${pageNum};
+    var canvas = document.getElementById('pdf-canvas');
+    var ctx = canvas.getContext('2d');
+    var loadingEl = document.getElementById('loading');
+
+    function renderSinglePage() {
+      pdfjsLib.getDocument({ url: pdfUrl }).promise.then(function(pdf) {
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'DETECTED_PAGES',
+            totalPages: pdf.numPages
+          }));
+        }
+
+        var validPageNum = Math.min(Math.max(1, pageNum), pdf.numPages);
+
+        pdf.getPage(validPageNum).then(function(page) {
+          var containerWidth = window.innerWidth || 360;
+          var containerHeight = window.innerHeight || 600;
+          var unscaledViewport = page.getViewport({ scale: 1.0 });
+          
+          var scaleX = containerWidth / unscaledViewport.width;
+          var scaleY = containerHeight / unscaledViewport.height;
+          var scale = Math.min(scaleX, scaleY) * 1.5;
+
+          var viewport = page.getViewport({ scale: scale });
+
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          var renderContext = {
+            canvasContext: ctx,
+            viewport: viewport
+          };
+
+          page.render(renderContext).promise.then(function() {
+            loadingEl.style.display = 'none';
+            canvas.style.display = 'block';
+          });
+        });
+      }).catch(function(err) {
+        console.error('PDF.js Error:', err);
+        loadingEl.innerText = 'Preparing cloud document reader...';
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'PDF_RENDER_FALLBACK',
+            error: err && err.message ? err.message : 'PDF parse error'
+          }));
+        }
+      });
+    }
+
+    if (typeof pdfjsLib !== 'undefined') {
+      renderSinglePage();
+    } else {
+      loadingEl.innerText = 'Loading PDF Viewer...';
+      window.onload = renderSinglePage;
+    }
+  </script>
+</body>
+</html>
+  `;
+};
 
 export const NoteReaderScreen: React.FC = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const webViewRef = useRef<any>(null);
 
+  const user = useAuthStore((state) => state.user);
   const [resource, setResource] = useState<NoteResource>(
     () => MOCK_RESOURCES.find((r) => r.id === id) || MOCK_RESOURCES[0]
   );
   const [isLoadingDoc, setIsLoadingDoc] = useState(true);
   const [detectedPages, setDetectedPages] = useState<number | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
-    if (id) {
-      fetchNoteByIdFromApi(id as string).then((res) => {
-        if (isMounted && res) {
-          setResource(res);
-          setIsBookmarked(res.isBookmarked);
-          setIsPurchased(!res.isPaid);
-        }
-      });
-    }
-    return () => {
-      isMounted = false;
-    };
-  }, [id]);
-
-  const freePreviewLimit = resource.freePreviewPages || 2;
-  const isPaidNote = resource.isPaid || (resource.price && resource.price > 0);
-  const notePrice = resource.price || 19;
-
   const [currentPage, setCurrentPage] = useState(1);
   const [zoomLevel, setZoomLevel] = useState(100);
-  const [isBookmarked, setIsBookmarked] = useState(resource.isBookmarked);
-  const [isPurchased, setIsPurchased] = useState(!isPaidNote);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isPurchased, setIsPurchased] = useState(false);
+  const [isPurchasing, setIsPurchasing] = useState(false);
   const [isOfflineSaved, setIsOfflineSaved] = useState(false);
   const [isPageLocked, setIsPageLocked] = useState(false);
-  const [imageLoadError, setImageLoadError] = useState(false);
+  const [useCloudViewer, setUseCloudViewer] = useState(false);
+  const [paymentModalVisible, setPaymentModalVisible] = useState(false);
 
-  useEffect(() => {
-    setImageLoadError(false);
-  }, [currentPage, id]);
+  // Always resolve a valid HTTPS PDF URL
+  let rawUrl = resource.fileUrl || resource.secureUrl || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+  if (rawUrl.startsWith('http://')) {
+    rawUrl = rawUrl.replace('http://', 'https://');
+  }
+
+  // Note fields resolution
+  const isPaidNote = Boolean(resource.isPaid && (resource.price && resource.price > 0));
+  const notePrice = resource.price || 19;
+  const freePreviewLimit = resource.freePreviewPages ?? 4;
+  const maxPagesFromDoc = detectedPages || (resource.totalPages && resource.totalPages > 1 ? resource.totalPages : 15);
 
   const isPreviewMode = isPaidNote && !isPurchased;
-  const maxPagesFromDoc = detectedPages || (resource.totalPages && resource.totalPages > 1 ? resource.totalPages : 15);
-  const totalPages = isPreviewMode ? Math.min(freePreviewLimit, maxPagesFromDoc) : maxPagesFromDoc;
+  const accessibleMaxPage = isPreviewMode ? Math.min(freePreviewLimit, maxPagesFromDoc) : maxPagesFromDoc;
 
-  // Activate Screenshot & Recording Protection inside Reader
+  // Load Note Details & Check Entitlement from Backend API
+  const loadNoteAndAccess = async () => {
+    setIsLoadingDoc(true);
+    try {
+      if (id) {
+        const fetched = await fetchNoteByIdFromApi(id as string, user?.id);
+        if (fetched) {
+          setResource(fetched);
+          setIsBookmarked(fetched.isBookmarked);
+          const isPaid = Boolean(fetched.isPaid && (fetched.price && fetched.price > 0));
+          const hasPurchased = isPaid ? Boolean(fetched.isPurchased) : false;
+          setIsPurchased(hasPurchased);
+
+          // Additional backend order access check
+          if (isPaid && !hasPurchased) {
+            const accessInfo = await checkNoteAccessFromApi(id as string, user?.id);
+            if (accessInfo && accessInfo.hasAccess) {
+              setIsPurchased(true);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[NoteReaderScreen] Load Error:', err);
+    } finally {
+      setIsLoadingDoc(false);
+    }
+  };
+
+  useEffect(() => {
+    loadNoteAndAccess();
+  }, [id, user?.id]);
+
+  const recordActivity = useStudyActivityStore((state) => state.recordActivity);
+
+  // Capture recent study activity for Continue Studying dashboard card
+  useEffect(() => {
+    if (resource && resource.id) {
+      const totalP = maxPagesFromDoc > 0 ? maxPagesFromDoc : 15;
+      const progressPct = Math.min(100, Math.max(5, Math.round((currentPage / totalP) * 100)));
+      recordActivity({
+        resourceId: String(resource.id),
+        subject: resource.subjectName || 'VTU Engineering',
+        unit: resource.unitTitle || (resource.unitNumber ? `Unit ${resource.unitNumber}` : 'Module Notes'),
+        resourceTitle: resource.title || 'Subject Notes',
+        progress: progressPct,
+        lastOpenedTime: 'Just now',
+      });
+    }
+  }, [resource?.id, resource?.title, currentPage, maxPagesFromDoc]);
+
+  // DRM Screen Capture Protection
   useEffect(() => {
     async function enableDRMProtection() {
       try {
@@ -83,7 +271,7 @@ export const NoteReaderScreen: React.FC = () => {
           await ScreenCapture.preventScreenCaptureAsync();
         }
       } catch (err) {
-        console.log('ScreenCapture protection active');
+        // Protection active
       }
     }
     enableDRMProtection();
@@ -95,112 +283,65 @@ export const NoteReaderScreen: React.FC = () => {
             await ScreenCapture.allowScreenCaptureAsync();
           }
         } catch (err) {
-          // ignore
+          // Ignore
         }
       }
       disableDRMProtection();
     };
   }, []);
 
-  const getCloudinarySinglePagePdfUrl = (url: string, pageNum: number): string => {
-    if (!url) return '';
-    if (url.includes('cloudinary.com') && url.includes('/upload/')) {
-      const cleanUrl = url.replace(/\/pg_[^\/]+\//, '/');
-      return cleanUrl.replace('/upload/', `/upload/pg_${pageNum}/`);
-    }
-    return url;
-  };
-
-  const getCloudinaryPageImageUrl = (url: string, pageNum: number): string => {
-    if (!url) return '';
-    if (url.includes('cloudinary.com') && url.includes('/upload/')) {
-      let cleanUrl = url.replace(/\/pg_[^\/]+\//, '/');
-      cleanUrl = cleanUrl.replace(/\.pdf$/i, '.png');
-      return cleanUrl.replace('/upload/', `/upload/pg_${pageNum},f_auto,q_auto,w_1000/`);
-    }
-    return '';
-  };
-
-  const handleOpenCloudinaryDocument = async () => {
-    if (isPreviewMode) {
-      handleUnlockPurchase();
-      return;
-    }
-
-    if (resource.fileUrl) {
-      try {
-        await WebBrowser.openBrowserAsync(resource.fileUrl);
-      } catch (e) {
-        Alert.alert('Open Document', `File URL: ${resource.fileUrl}`);
-      }
-    } else {
-      Alert.alert('Document URL', 'No external document file URL available.');
-    }
-  };
-
-  const scrollToPageInWebView = (pageNumber: number) => {
-    const js = `
-      (function() {
-        var pages = document.querySelectorAll('.drive-viewer-page, [role="document"], img');
-        if (pages && pages[${pageNumber - 1}]) {
-          pages[${pageNumber - 1}].scrollIntoView({ behavior: 'smooth' });
-        } else {
-          var h = window.innerHeight || 800;
-          window.scrollTo({ top: (${pageNumber - 1}) * h, behavior: 'smooth' });
-        }
-        true;
-      })();
-    `;
-    webViewRef.current?.injectJavaScript(js);
-  };
-
   const handlePrevPage = () => {
     if (currentPage > 1) {
       const prev = currentPage - 1;
       setCurrentPage(prev);
-      scrollToPageInWebView(prev);
+      setIsPageLocked(false);
     }
   };
 
   const handleNextPage = () => {
-    if (isPreviewMode && currentPage >= freePreviewLimit) {
-      setIsPageLocked(true);
-      handleUnlockPurchase();
-      return;
-    }
-    if (currentPage < totalPages) {
-      const next = currentPage + 1;
-      setCurrentPage(next);
-      scrollToPageInWebView(next);
-    } else if (isPreviewMode) {
-      setIsPageLocked(true);
-      handleUnlockPurchase();
+    const nextPage = currentPage + 1;
+    // Single source of truth page access check
+    const allowed = canAccessPage(
+      nextPage,
+      maxPagesFromDoc,
+      isPaidNote,
+      isPurchased,
+      freePreviewLimit
+    );
+
+    if (allowed) {
+      setCurrentPage(nextPage);
+      setIsPageLocked(false);
     } else {
-      handleUnlockPurchase();
+      // Preview limit reached - Lock page and show paywall slide
+      setIsPageLocked(true);
     }
   };
 
+  // Open payment checkout sheet
   const handleUnlockPurchase = () => {
-    Alert.alert(
-      `Unlock Note Access`,
-      `Confirm purchase of '${resource.title}' for ₹${notePrice}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: `Pay ₹${notePrice}`,
-          style: 'default',
-          onPress: () => {
-            setIsPurchased(true);
-            setIsPageLocked(false);
-            setIsOfflineSaved(true);
-            Alert.alert(
-              'Purchase Successful!',
-              `You have unlocked all ${maxPagesFromDoc} pages. Note saved for in-app offline reading.`
-            );
-          },
-        },
-      ]
-    );
+    setPaymentModalVisible(true);
+  };
+
+  // Called when Razorpay checkout & signature verification succeed
+  const handlePaymentSuccess = (unlockedResource: NoteResource) => {
+    setIsPurchased(true);
+    setIsPageLocked(false);
+    setIsOfflineSaved(true);
+  };
+
+  const handleOpenExternalDocument = async () => {
+    if (isPreviewMode) {
+      handleUnlockPurchase();
+      return;
+    }
+    if (rawUrl) {
+      try {
+        await WebBrowser.openBrowserAsync(rawUrl);
+      } catch (e) {
+        Alert.alert('Open Document', `File URL: ${rawUrl}`);
+      }
+    }
   };
 
   const handleOfflineSave = () => {
@@ -215,22 +356,6 @@ export const NoteReaderScreen: React.FC = () => {
     }
   };
 
-  const rawUrl = resource.fileUrl || '';
-
-  const viewerUrl = rawUrl
-    ? rawUrl.toLowerCase().includes('.pdf') || rawUrl.toLowerCase().includes('cloudinary') || rawUrl.startsWith('http')
-      ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(rawUrl)}`
-      : rawUrl
-    : null;
-
-  useEffect(() => {
-    if (webViewRef.current && !isPageLocked) {
-      setTimeout(() => {
-        scrollToPageInWebView(currentPage);
-      }, 300);
-    }
-  }, [currentPage, isPageLocked]);
-
   const handleWebViewMessage = (event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
@@ -239,97 +364,21 @@ export const NoteReaderScreen: React.FC = () => {
         if (parsedTotal > 1 && parsedTotal !== detectedPages) {
           setDetectedPages(parsedTotal);
         }
-      }
-      if (data.type === 'REACHED_PREVIEW_LIMIT') {
-        if (isPreviewMode) {
-          setIsPageLocked(true);
-        }
+      } else if (data.type === 'PDF_RENDER_FALLBACK') {
+        setUseCloudViewer(true);
       }
     } catch (e) {
       // Ignore non-JSON messages
     }
   };
 
-  const injectedJs = `
-    (function() {
-      function applyPageLockCss() {
-        var existingStyle = document.getElementById('vtu-page-lock-style');
-        if (!existingStyle) {
-          existingStyle = document.createElement('style');
-          existingStyle.id = 'vtu-page-lock-style';
-          document.head.appendChild(existingStyle);
-        }
-        existingStyle.innerHTML = \`
-          html, body {
-            overflow: hidden !important;
-            height: 100vh !important;
-            width: 100vw !important;
-            position: fixed !important;
-            touch-action: none !important;
-          }
-          .drive-viewer-paginated-scrollable, [role="document"], div {
-            overflow: hidden !important;
-          }
-          .drive-viewer-page {
-            display: none !important;
-          }
-          .drive-viewer-page:nth-of-type(${currentPage}),
-          .drive-viewer-page:nth-child(${currentPage}) {
-            display: block !important;
-            margin: 0 auto !important;
-            position: absolute !important;
-            top: 0 !important;
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-          }
-        \`;
-
-        var pages = document.querySelectorAll('.drive-viewer-page');
-        if (pages && pages.length > 0) {
-          for (var i = 0; i < pages.length; i++) {
-            if (i === ${currentPage - 1}) {
-              pages[i].style.setProperty('display', 'block', 'important');
-            } else {
-              pages[i].style.setProperty('display', 'none', 'important');
-            }
-          }
-        }
-      }
-
-      applyPageLockCss();
-      setInterval(applyPageLockCss, 300);
-
-      function sendRN(type, data) {
-        if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-          window.ReactNativeWebView.postMessage(JSON.stringify(Object.assign({ type: type }, data || {})));
-        }
-      }
-
-      function checkPages() {
-        var text = document.body ? document.body.innerText : '';
-        var m = text.match(/Page\\s+(\\d+)\\s*\\/\\s*(\\d+)/i) || text.match(/(\\d+)\\s*\\/\\s*(\\d+)/);
-        var total = 0;
-        if (m && m[2]) {
-          total = parseInt(m[2], 10);
-        } else {
-          var els = document.querySelectorAll('.drive-viewer-page, [role="document"]');
-          if (els && els.length > 0) total = els.length;
-        }
-        if (total > 1) {
-          sendRN('DETECTED_PAGES', { totalPages: total });
-        }
-      }
-
-      setInterval(checkPages, 1000);
-      setTimeout(checkPages, 400);
-
-      true;
-    })();
-  `;
+  const isNextDisabled =
+    currentPage >= maxPagesFromDoc ||
+    (isPreviewMode && currentPage >= accessibleMaxPage && isPageLocked);
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Top Reader Control Header */}
+      {/* Top Header */}
       <View style={styles.readerHeader}>
         <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
           <Feather name="chevron-left" size={22} color="#0F172A" />
@@ -356,12 +405,23 @@ export const NoteReaderScreen: React.FC = () => {
           </View>
 
           <Text style={styles.headerSub}>
-            {resource.subjectCode} • Page {currentPage} of {totalPages} {isPreviewMode ? `(Free Preview: ${freePreviewLimit} Pgs)` : ''}
+            {resource.subjectCode} • Page {currentPage} of {maxPagesFromDoc} {isPreviewMode ? `(Free Preview: ${freePreviewLimit} Pgs)` : ''}
           </Text>
         </View>
 
         <View style={styles.headerRightActions}>
-          <TouchableOpacity style={styles.iconBtn} onPress={handleOpenCloudinaryDocument}>
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={() => setUseCloudViewer(!useCloudViewer)}
+            accessibilityLabel="Switch viewer mode"
+          >
+            <Feather
+              name={useCloudViewer ? 'layers' : 'globe'}
+              size={18}
+              color={useCloudViewer ? '#0745E8' : '#64748B'}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn} onPress={handleOpenExternalDocument}>
             <Feather name="external-link" size={18} color="#0745E8" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} onPress={() => setIsBookmarked(!isBookmarked)}>
@@ -381,20 +441,22 @@ export const NoteReaderScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Main Document Reader Canvas View */}
+      {/* Main Single-Page Canvas (Zero Scrolling, Render Single Canvas Element) */}
       <View style={styles.canvasContainer}>
         {isPageLocked ? (
-          /* Blank Screen & Locked Paywall Mask Card */
+          /* Locked Paywall Card Slide */
           <View style={styles.paywallCard}>
             <View style={styles.lockIconCircle}>
               <Feather name="lock" size={36} color="#D97706" />
             </View>
 
-            <Text style={styles.paywallTitle}>Free Preview Limit Reached</Text>
-            <Text style={styles.paywallPageSub}>Page {currentPage} of {maxPagesFromDoc}</Text>
+            <Text style={styles.paywallTitle}>Preview Limit Reached</Text>
+            <Text style={styles.paywallPageSub}>
+              You have viewed {currentPage} of {maxPagesFromDoc} available pages.
+            </Text>
 
             <Text style={styles.paywallBody}>
-              You have completed the free {freePreviewLimit}-page preview of '{resource.title}'. Purchase the complete note to unlock all {maxPagesFromDoc} pages and offline access.
+              You have reached the free {freePreviewLimit}-page preview limit for '{resource.title}'. Purchase this note to unlock all {maxPagesFromDoc} pages and offline access.
             </Text>
 
             <View style={styles.featuresList}>
@@ -412,84 +474,60 @@ export const NoteReaderScreen: React.FC = () => {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.unlockBtn} onPress={handleUnlockPurchase}>
-              <Feather name="zap" size={18} color="#FFFFFF" />
-              <Text style={styles.unlockBtnText}>Unlock Complete Note for ₹{notePrice}</Text>
+            <TouchableOpacity
+              style={styles.unlockBtn}
+              onPress={handleUnlockPurchase}
+              disabled={isPurchasing}
+            >
+              {isPurchasing ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Feather name="zap" size={18} color="#FFFFFF" />
+                  <Text style={styles.unlockBtnText}>Unlock Complete Note for ₹{notePrice}</Text>
+                </>
+              )}
             </TouchableOpacity>
 
             <Text style={styles.drmSubtext}>
               🔒 Secure access inside VTU App only • External export & sharing disabled
             </Text>
           </View>
-        ) : viewerUrl ? (
-          /* Render Uploaded PDF / Document via WebView */
-          <View style={styles.webViewContainer}>
-            <WebView
-              ref={webViewRef}
-              key={`pdf-page-${currentPage}-${viewerUrl}`}
-              source={{ uri: viewerUrl }}
-              style={styles.webView}
-              startInLoadingState={true}
-              scrollEnabled={true}
-              injectedJavaScript={injectedJs}
-              onMessage={handleWebViewMessage}
-              renderLoading={() => (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#0745E8" />
-                  <Text style={styles.loadingText}>Loading document (Page {currentPage} of {totalPages})...</Text>
-                </View>
-              )}
-              scalesPageToFit={true}
-              javaScriptEnabled={true}
-              domStorageEnabled={true}
-            />
-            {isPreviewMode && (
-              <View style={styles.previewFloatingBanner}>
-                <View style={styles.previewBannerLeft}>
-                  <Feather name="lock" size={16} color="#F59E0B" />
-                  <Text style={styles.previewBannerText}>
-                    Free Preview ({freePreviewLimit} of {maxPagesFromDoc} Pgs)
-                  </Text>
-                </View>
-                <TouchableOpacity style={styles.previewUnlockBtn} onPress={handleUnlockPurchase}>
-                  <Text style={styles.previewUnlockText}>Unlock for ₹{notePrice}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
         ) : (
-          /* Fallback Page Card */
-          <View style={styles.pageCard}>
-            <View style={styles.pageHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={styles.pageSubjectTag}>{resource.subjectName} ({resource.subjectCode})</Text>
-                <View style={{ backgroundColor: '#EEF2FF', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
-                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#0745E8' }}>{resource.fileFormat || 'PDF'}</Text>
-                </View>
-              </View>
-              <Text style={styles.pageNumberBadge}>PAGE {currentPage} / {totalPages}</Text>
-            </View>
-
-            <Text style={styles.pageTitleText}>
-              Unit {resource.unitNumber}: {resource.unitTitle}
-            </Text>
-            <Text style={styles.pageBodyText}>
-              {currentPage === 1 ? '1.1 Overview of Core Academic Syllabus Concepts & Fundamental Axioms:' : `1.${currentPage} Advanced Module Concepts, Diagrams & Examination Formulas:`}
-            </Text>
-            <Text style={styles.pageParagraph}>
-              {currentPage === 1
-                ? (resource.description || 'Comprehensive academic notes and reference material verified by VTU Faculty.')
-                : `Section 1.${currentPage}: Detailed mathematical derivation, architectural protocol breakdown, and university exam preparation guide for ${resource.subjectName} (${resource.subjectCode}).`}
-            </Text>
-
-            <View style={{ backgroundColor: '#F8FAFC', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', marginTop: 12 }}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#0F172A', marginBottom: 4 }}>Key Topic Summary (Page {currentPage}):</Text>
-              <Text style={{ fontSize: 12, color: '#475569', lineHeight: 18 }}>
-                {currentPage === 1
-                  ? '• Academic Syllabus Scope & System Architecture\n• Standard VTU Examination Weightage: 20 Marks\n• Prerequisites & Recommended Reference Handbooks'
-                  : `• Core Concept Breakdown & Solved Practice Numericals\n• University Exam Frequently Asked Questions (FAQ)\n• Quick Memory Tips & Formula Reference Sheet`}
-              </Text>
-            </View>
+          /* Single-Page PDF.js HTML Canvas Engine or Cloud Document Viewer */
+          <View style={styles.webViewContainer}>
+            {useCloudViewer ? (
+              <WebView
+                ref={webViewRef}
+                key={`cloud-viewer-${rawUrl}`}
+                source={{ uri: `https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}&embedded=true` }}
+                style={styles.webView}
+                originWhitelist={['*']}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                startInLoadingState={true}
+                renderLoading={() => (
+                  <View style={styles.centerLoading}>
+                    <ActivityIndicator size="small" color="#0745E8" />
+                    <Text style={styles.centerLoadingText}>Loading cloud document reader...</Text>
+                  </View>
+                )}
+              />
+            ) : (
+              <WebView
+                ref={webViewRef}
+                key={`pdf-single-canvas-${currentPage}-${rawUrl}`}
+                source={{ html: generateSinglePagePdfHtml(rawUrl, currentPage) }}
+                style={styles.webView}
+                scrollEnabled={false}
+                overScrollMode="never"
+                bounces={false}
+                onMessage={handleWebViewMessage}
+                originWhitelist={['*']}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+              />
+            )}
 
             {isPreviewMode && (
               <View style={styles.previewFloatingBanner}>
@@ -504,22 +542,18 @@ export const NoteReaderScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
             )}
-
-            <View style={styles.watermarkContainer}>
-              <Text style={styles.watermarkText}>VTU SUPER APP • VERIFIED ACADEMIC RESOURCE • DRM PROTECTED</Text>
-            </View>
           </View>
         )}
       </View>
 
-      {/* Bottom Reader Navigation Controls */}
+      {/* Bottom Reader Controls */}
       <View style={styles.readerFooter}>
         {/* Page Progress Track */}
         <View style={styles.progressTrack}>
           <View
             style={[
               styles.progressFill,
-              { width: `${(currentPage / totalPages) * 100}%` },
+              { width: `${(currentPage / maxPagesFromDoc) * 100}%` },
             ]}
           />
         </View>
@@ -553,23 +587,31 @@ export const NoteReaderScreen: React.FC = () => {
             </TouchableOpacity>
 
             <Text style={styles.pageIndicatorText}>
-              {currentPage} / {totalPages}
+              {currentPage} / {maxPagesFromDoc}
             </Text>
 
             <TouchableOpacity
-              disabled={currentPage >= totalPages && !isPreviewMode}
-              style={[styles.navBtn, currentPage >= totalPages && !isPreviewMode && styles.disabledNavBtn]}
+              disabled={isNextDisabled}
+              style={[styles.navBtn, isNextDisabled && styles.disabledNavBtn]}
               onPress={handleNextPage}
             >
               <Feather
                 name="chevron-right"
                 size={18}
-                color={currentPage >= totalPages && !isPreviewMode ? '#CBD5E1' : '#0745E8'}
+                color={isNextDisabled ? '#CBD5E1' : '#0745E8'}
               />
             </TouchableOpacity>
           </View>
         </View>
       </View>
+
+      {/* Dedicated Razorpay Payment Confirmation Sheet */}
+      <PaymentCheckoutModal
+        visible={paymentModalVisible}
+        resource={resource}
+        onClose={() => setPaymentModalVisible(false)}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
     </SafeAreaView>
   );
 };
@@ -660,27 +702,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-  },
-  singlePageContainer: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
     overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 4,
-    position: 'relative',
-    padding: 8,
-  },
-  singlePageImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 12,
   },
   webViewContainer: {
     width: '100%',
@@ -693,6 +715,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 4,
+    position: 'relative',
   },
   webView: {
     flex: 1,
@@ -739,35 +762,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     color: '#FFFFFF',
-  },
-  loadingContainer: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  pageCard: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 4,
-    justifyContent: 'space-between',
   },
   paywallCard: {
     width: '100%',
@@ -860,63 +854,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: 'center',
   },
-  pageHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    paddingBottom: 10,
-  },
-  pageSubjectTag: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#0745E8',
-  },
-  pageNumberBadge: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#64748B',
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  pageTitleText: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginTop: 10,
-  },
-  pageBodyText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginTop: 10,
-  },
-  pageParagraph: {
-    fontSize: 13,
-    color: '#475569',
-    lineHeight: 20,
-    marginTop: 6,
-  },
-  pageBullet: {
-    fontSize: 13,
-    color: '#334155',
-    marginTop: 6,
-  },
-  watermarkContainer: {
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    paddingTop: 10,
-  },
-  watermarkText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#94A3B8',
-    letterSpacing: 0.5,
-  },
   readerFooter: {
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
@@ -977,5 +914,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#0F172A',
+  },
+  centerLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+  },
+  centerLoadingText: {
+    marginTop: 10,
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '500',
   },
 });

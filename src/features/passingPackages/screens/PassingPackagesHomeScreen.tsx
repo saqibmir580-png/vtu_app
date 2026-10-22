@@ -26,18 +26,22 @@ export const PassingPackagesHomeScreen: React.FC = () => {
     activeSemester,
     activeScheme,
     getPackagesForCurrentStudent,
+    loadPackagesFromBackend,
   } = usePassingPackageStore();
 
   const [refreshing, setRefreshing] = useState(false);
 
+  React.useEffect(() => {
+    loadPackagesFromBackend();
+  }, [loadPackagesFromBackend]);
+
   const packages = getPackagesForCurrentStudent();
 
-  const onRefresh = React.useCallback(() => {
+  const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
-  }, []);
+    await loadPackagesFromBackend();
+    setRefreshing(false);
+  }, [loadPackagesFromBackend]);
 
   return (
     <View style={styles.root}>

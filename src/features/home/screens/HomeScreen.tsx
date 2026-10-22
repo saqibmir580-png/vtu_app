@@ -8,6 +8,7 @@ import {
   RefreshControl,
   StatusBar,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -27,49 +28,35 @@ import {
   ResourceItem,
 } from '../types/home.types';
 
+import { useAcademicRecordStore } from '@/features/calculators';
+import { useAttendanceStore } from '@/features/attendance';
+import { useStudyActivityStore } from '../store/useStudyActivityStore';
+import { apiClient } from '@/infrastructure/api/client';
+import { fetchNotesFromApi } from '@/features/notes/api/notesApi';
+import { fetchQuestionPapersApi } from '@/features/papers/api/papersApi';
+import { useNotificationsStore } from '@/features/notifications';
+
 export const HomeScreen: React.FC = () => {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+
+  const { currentCgpa, totalCreditsEarned, loadAcademicRecords } = useAcademicRecordStore();
+  const { getOverallStats, loadAttendance } = useAttendanceStore();
+  const { recentActivity, loadHistory } = useStudyActivityStore();
+  const { notifications: storeNotifs, getUnreadCount, fetchNotifications } = useNotificationsStore();
+  const unreadCount = getUnreadCount();
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
 
-  // Time-aware greeting
-  const getTimeAwareGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning 👋';
-    if (hour < 17) return 'Good Afternoon ☀️';
-    return 'Good Evening 🌙';
-  };
-
-  // Mock State Data
-  const [academicSummary] = useState<AcademicSummary>({
-    cgpa: 8.74,
-    cgpaTrend: '+0.25',
-    attendancePercentage: 88,
-    attendanceStatus: 'Eligible',
-    currentSemester: user?.semester || 5,
-    totalCreditsEarned: 112,
-  });
-
-  const [studyHistory] = useState<StudyHistory | null>({
-    id: '1',
-    subject: 'Data Structures & Algorithms',
-    unit: 'Unit 3',
-    resourceTitle: 'Stacks & Queues Notes',
-    progress: 68,
-    lastOpenedTime: '2 hours ago',
-    resourceId: '1',
-  });
-
-  const [events] = useState<AcademicEvent[]>([
+  const [events, setEvents] = useState<AcademicEvent[]>([
     {
       id: 'e1',
       type: 'Internal Test',
       subject: 'Computer Networks (21CS52)',
-      date: '15th Oct 2026',
+      date: '20th Oct 2026',
       time: '10:30 AM',
       venue: 'LH-302',
       targetRoute: '/calculators/calendar',
@@ -78,7 +65,7 @@ export const HomeScreen: React.FC = () => {
       id: 'e2',
       type: 'Lab Exam',
       subject: 'DBMS Laboratory (21CSL54)',
-      date: '18th Oct 2026',
+      date: '24th Oct 2026',
       time: '02:00 PM',
       venue: 'Lab-4',
       targetRoute: '/calculators/calendar',
@@ -106,7 +93,7 @@ export const HomeScreen: React.FC = () => {
     },
   ]);
 
-  const [recentResources] = useState<ResourceItem[]>([
+  const [recentResources, setRecentResources] = useState<ResourceItem[]>([
     {
       id: 'r1',
       title: 'Module 3: Paging & Memory Management',
@@ -133,11 +120,132 @@ export const HomeScreen: React.FC = () => {
     },
   ]);
 
+  const loadHomeData = async () => {
+    try {
+      // 0. Fetch live notifications
+      fetchNotifications().catch(() => {});
+
+      // 1. Dynamic Academic Events from API
+      apiClient
+        .get('/academic/events')
+        .then((res: any) => {
+          const d = res.data?.data || res.data || [];
+          const rawList = Array.isArray(d) ? d : d.items || d.data || [];
+          if (rawList && rawList.length > 0) {
+            const mapped: AcademicEvent[] = rawList.slice(0, 3).map((evt: any) => ({
+              id: evt.id,
+              type:
+                evt.category === 'INTERNAL_EXAM' || evt.category === 'Internals'
+                  ? 'Internal Test'
+                  : evt.category === 'LAB_EXAM' || evt.category === 'Lab Exams'
+                  ? 'Lab Exam'
+                  : 'VTU Exam',
+              subject: evt.title,
+              date: evt.startDate
+                ? new Date(evt.startDate).toLocaleDateString('en-GB', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })
+                : 'Upcoming',
+              time: evt.time || '10:00 AM',
+              venue: evt.venue || 'Exam Hall',
+              targetRoute: '/calculators/calendar',
+            }));
+            setEvents(mapped);
+          }
+        })
+        .catch(() => {});
+
+      // 2. Dynamic Recently Added Resources (Notes + Papers)
+      Promise.allSettled([
+        fetchNotesFromApi({ limit: 4 }),
+        fetchQuestionPapersApi({ limit: 4 }),
+      ]).then(([notesRes, papersRes]) => {
+        const combined: ResourceItem[] = [];
+
+        if (notesRes.status === 'fulfilled' && Array.isArray(notesRes.value)) {
+          notesRes.value.slice(0, 2).forEach((n) => {
+            combined.push({
+              id: n.id,
+              title: n.title,
+              subject: n.subjectName,
+              type: 'PDF Notes',
+              fileSize: n.fileSize || '2.4 MB',
+              uploadDate: 'Recently Added',
+              downloadsCount: n.downloadsCount || 0,
+              branch: user?.branch || 'CSE',
+              semester: user?.semester || 5,
+              scheme: user?.scheme || '2022',
+            });
+          });
+        }
+
+        if (papersRes.status === 'fulfilled' && Array.isArray(papersRes.value)) {
+          papersRes.value.slice(0, 2).forEach((p) => {
+            combined.push({
+              id: p.id,
+              title: p.title || `${p.subjectName} QP`,
+              subject: p.subjectName,
+              type: 'Question Paper',
+              fileSize: p.fileSize || '2.5 MB',
+              uploadDate: `${p.month} ${p.year}`,
+              downloadsCount: p.downloadsCount || 0,
+              branch: p.branch,
+              semester: p.semester,
+              scheme: p.scheme,
+            });
+          });
+        }
+
+        if (combined.length > 0) {
+          setRecentResources(combined);
+        }
+      });
+    } catch {
+      // Graceful offline fallback
+    }
+  };
+
+  useEffect(() => {
+    loadAcademicRecords();
+    loadAttendance();
+    loadHistory();
+    loadHomeData();
+  }, []);
+
+  // Time-aware greeting
+  const getTimeAwareGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning 👋';
+    if (hour < 17) return 'Good Afternoon ☀️';
+    return 'Good Evening 🌙';
+  };
+
+  const attendanceStats = getOverallStats();
+  const effectiveCgpa = user?.currentCgpa ?? currentCgpa ?? 8.74;
+  const effectiveAttendancePct = attendanceStats.overallPercentage > 0 ? attendanceStats.overallPercentage : 85;
+  const effectiveAttendanceStatus: 'Eligible' | 'Warning' | 'Critical' =
+    effectiveAttendancePct >= 75 ? 'Eligible' : effectiveAttendancePct >= 65 ? 'Warning' : 'Critical';
+
+  // Dynamic Academic Summary computed from active stores
+  const academicSummary: AcademicSummary = {
+    cgpa: effectiveCgpa,
+    cgpaTrend: '+0.25',
+    attendancePercentage: effectiveAttendancePct,
+    attendanceStatus: effectiveAttendanceStatus,
+    currentSemester: user?.semester || 5,
+    totalCreditsEarned: totalCreditsEarned || 112,
+  };
+
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => {
+    loadAcademicRecords();
+    loadAttendance();
+    loadHistory();
+    loadHomeData().finally(() => {
       setRefreshing(false);
-    }, 1200);
+    });
   }, []);
 
   return (
@@ -179,10 +287,10 @@ export const HomeScreen: React.FC = () => {
                 <TouchableOpacity
                   activeOpacity={0.8}
                   style={styles.iconCircle}
-                  onPress={() => router.push('/(tabs)/community')}
+                  onPress={() => router.push('/notifications' as any)}
                 >
                   <Feather name="bell" size={18} color="#FFFFFF" />
-                  <View style={styles.unreadBadge} />
+                  {unreadCount > 0 && <View style={styles.unreadBadge} />}
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -190,7 +298,14 @@ export const HomeScreen: React.FC = () => {
                   style={styles.avatarCircle}
                   onPress={() => router.push('/(tabs)/profile')}
                 >
-                  <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'F'}</Text>
+                  <Image
+                    source={{
+                      uri:
+                        user?.avatarUrl ||
+                        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
+                    }}
+                    style={styles.avatarImg}
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -220,7 +335,7 @@ export const HomeScreen: React.FC = () => {
             <AcademicOverviewCard summary={academicSummary} />
 
             {/* 3. Continue Studying */}
-            <ContinueStudyingCard history={studyHistory} />
+            <ContinueStudyingCard history={recentActivity} />
 
             {/* 4. Quick Access Grid */}
             <QuickAccessGrid />
@@ -229,7 +344,21 @@ export const HomeScreen: React.FC = () => {
             <UpcomingEventsSection events={events} />
 
             {/* 6. Latest Notifications */}
-            <LatestNotificationsSection notifications={notifications} />
+            <LatestNotificationsSection
+              notifications={
+                storeNotifs && storeNotifs.length > 0
+                  ? storeNotifs.slice(0, 3).map((n) => ({
+                      id: n.id,
+                      category: n.category === 'Academic' ? 'VTU Circular' : n.category,
+                      title: n.title,
+                      description: n.shortMessage,
+                      timestamp: n.timestamp,
+                      isRead: n.isRead,
+                      targetRoute: '/notifications',
+                    }))
+                  : notifications
+              }
+            />
 
             {/* 7. Recently Added Resources */}
             <RecentlyAddedSection resources={recentResources} />
@@ -336,11 +465,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
-  avatarText: {
-    color: '#0745E8',
-    fontSize: 18,
-    fontWeight: '800',
+  avatarImg: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 21,
   },
   bodyContent: {
     paddingTop: 16,

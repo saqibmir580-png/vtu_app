@@ -11,7 +11,6 @@ export default function ProfileLayout() {
     >
       <Stack.Screen name="academic" options={{ title: 'Academic Profile' }} />
       <Stack.Screen name="edit" options={{ title: 'Edit Academic Profile' }} />
-      <Stack.Screen name="preferences" options={{ title: 'Preferences' }} />
       <Stack.Screen name="about" options={{ title: 'About & Legal' }} />
     </Stack>
   );

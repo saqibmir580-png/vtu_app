@@ -51,5 +51,7 @@ export interface NoteResource {
   price?: number;
   freePreviewPages?: number;
   isPurchased?: boolean;
+  hasAccess?: boolean;
   fileUrl?: string;
+  secureUrl?: string;
 }

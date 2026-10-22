@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,15 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { WebView } from 'react-native-webview';
+import * as WebBrowser from 'expo-web-browser';
 import { QuestionPaper } from '../types/paper.types';
 import { usePaperStore } from '../store/usePaperStore';
+import * as ScreenCapture from 'expo-screen-capture';
 
 interface PaperPreviewModalProps {
   paper: QuestionPaper | null;
@@ -28,7 +32,19 @@ export const PaperPreviewModal: React.FC<PaperPreviewModalProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [zoomScale, setZoomScale] = useState(1);
   const [showSolutionKey, setShowSolutionKey] = useState(false);
+  const [viewMode, setViewMode] = useState<'TEMPLATE' | 'DOCUMENT'>('TEMPLATE');
   const { bookmarkedIds, downloadedIds, toggleBookmark } = usePaperStore();
+
+  useEffect(() => {
+    if (visible) {
+      ScreenCapture.preventScreenCaptureAsync().catch(() => {});
+    } else {
+      ScreenCapture.allowScreenCaptureAsync().catch(() => {});
+    }
+    return () => {
+      ScreenCapture.allowScreenCaptureAsync().catch(() => {});
+    };
+  }, [visible]);
 
   if (!paper) return null;
 
@@ -88,215 +104,313 @@ export const PaperPreviewModal: React.FC<PaperPreviewModalProps> = ({
           </View>
         </View>
 
-        {/* Toolbar with Zoom, Page & Solution Toggle */}
-        <View style={styles.zoomControlBar}>
-          <TouchableOpacity onPress={handleZoomOut} style={styles.zoomBtn}>
-            <Feather name="minus" size={16} color="#0F172A" />
-          </TouchableOpacity>
-          <Text style={styles.zoomText}>{Math.round(zoomScale * 100)}%</Text>
-          <TouchableOpacity onPress={handleZoomIn} style={styles.zoomBtn}>
-            <Feather name="plus" size={16} color="#0F172A" />
-          </TouchableOpacity>
-
-          <View style={styles.verticalDivider} />
-
-          <Text style={styles.pageIndicatorText}>
-            Page {currentPage} of {totalPages}
-          </Text>
-
-          {/* Solution Toggle Button */}
-          {paper.hasSolutionKey && (
-            <TouchableOpacity
-              onPress={() => setShowSolutionKey(!showSolutionKey)}
+        {/* View Mode Switcher */}
+        <View style={styles.tabSwitcherRow}>
+          <TouchableOpacity
+            style={[styles.tabButton, viewMode === 'TEMPLATE' && styles.tabButtonActive]}
+            onPress={() => setViewMode('TEMPLATE')}
+          >
+            <Feather
+              name="layout"
+              size={14}
+              color={viewMode === 'TEMPLATE' ? '#0745E8' : '#64748B'}
+            />
+            <Text
               style={[
-                styles.solutionToggleBtn,
-                showSolutionKey && styles.solutionToggleBtnActive,
+                styles.tabButtonText,
+                viewMode === 'TEMPLATE' && styles.tabButtonTextActive,
               ]}
             >
-              <Feather
-                name={showSolutionKey ? 'check-circle' : 'file-text'}
-                size={14}
-                color={showSolutionKey ? '#FFFFFF' : '#7E22CE'}
-              />
-              <Text
-                style={[
-                  styles.solutionToggleText,
-                  showSolutionKey && styles.solutionToggleTextActive,
-                ]}
-              >
-                {showSolutionKey ? 'Key Active' : 'Solutions'}
-              </Text>
-            </TouchableOpacity>
-          )}
+              VTU Question Template
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabButton, viewMode === 'DOCUMENT' && styles.tabButtonActive]}
+            onPress={() => setViewMode('DOCUMENT')}
+          >
+            <Feather
+              name="file-text"
+              size={14}
+              color={viewMode === 'DOCUMENT' ? '#0745E8' : '#64748B'}
+            />
+            <Text
+              style={[
+                styles.tabButtonText,
+                viewMode === 'DOCUMENT' && styles.tabButtonTextActive,
+              ]}
+            >
+              Uploaded Document
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Paper Canvas View */}
-        <ScrollView
-          style={styles.canvasScroll}
-          contentContainerStyle={styles.canvasContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={[styles.paperSheet, { transform: [{ scale: zoomScale }] }]}>
-            {/* VTU Header Stamp */}
-            <View style={styles.sheetHeader}>
-              <Text style={styles.vtuHeaderTitle}>VISVESVARAYA TECHNOLOGICAL UNIVERSITY</Text>
-              <Text style={styles.vtuHeaderSub}>BELAGAVI, KARNATAKA</Text>
+        {viewMode === 'TEMPLATE' ? (
+          <>
+            {/* Toolbar with Zoom, Page & Solution Toggle */}
+            <View style={styles.zoomControlBar}>
+              <TouchableOpacity onPress={handleZoomOut} style={styles.zoomBtn}>
+                <Feather name="minus" size={16} color="#0F172A" />
+              </TouchableOpacity>
+              <Text style={styles.zoomText}>{Math.round(zoomScale * 100)}%</Text>
+              <TouchableOpacity onPress={handleZoomIn} style={styles.zoomBtn}>
+                <Feather name="plus" size={16} color="#0F172A" />
+              </TouchableOpacity>
 
-              <View style={styles.examBannerRow}>
-                <Text style={styles.examBannerText}>
-                  Fifth Semester B.E. Degree Examination, {paper.month} {paper.year}
-                </Text>
-              </View>
+              <View style={styles.verticalDivider} />
 
-              {/* USN Table Header */}
-              <View style={styles.usnSection}>
-                <Text style={styles.usnTitle}>USN</Text>
-                <View style={styles.usnBoxesRow}>
-                  {Array.from({ length: 10 }).map((_, idx) => (
-                    <View key={idx} style={styles.usnBoxCell} />
-                  ))}
-                </View>
-              </View>
-
-              <Text style={styles.subjectNameHeader}>
-                {paper.subjectCode} - {paper.subjectName.toUpperCase()}
+              <Text style={styles.pageIndicatorText}>
+                Page {currentPage} of {totalPages}
               </Text>
 
-              <View style={styles.timeMarksRow}>
-                <Text style={styles.timeMarksText}>Time: {paper.durationHours || 3} hrs.</Text>
-                <Text style={styles.timeMarksText}>Max. Marks: {paper.maxMarks || 100}</Text>
-              </View>
-
-              <View style={styles.dividerLine} />
-
-              <Text style={styles.instructionsText}>
-                Note: 1. Answer any FIVE full questions, choosing ONE full question from each module.
-                {'\n'}2. Any missing data may be suitably assumed.
-              </Text>
+              {/* Solution Toggle Button */}
+              {paper.hasSolutionKey && (
+                <TouchableOpacity
+                  onPress={() => setShowSolutionKey(!showSolutionKey)}
+                  style={[
+                    styles.solutionToggleBtn,
+                    showSolutionKey && styles.solutionToggleBtnActive,
+                  ]}
+                >
+                  <Feather
+                    name={showSolutionKey ? 'check-circle' : 'file-text'}
+                    size={14}
+                    color={showSolutionKey ? '#FFFFFF' : '#7E22CE'}
+                  />
+                  <Text
+                    style={[
+                      styles.solutionToggleText,
+                      showSolutionKey && styles.solutionToggleTextActive,
+                    ]}
+                  >
+                    {showSolutionKey ? 'Key Active' : 'Solutions'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
 
-            {/* Questions List Page View */}
-            <View style={styles.modulesContainer}>
-              {paper.modules.map((mod) => (
-                <View key={mod.moduleNumber} style={styles.moduleBlock}>
-                  <View style={styles.moduleBadge}>
-                    <Text style={styles.moduleBadgeText}>MODULE {mod.moduleNumber}</Text>
-                    <Text style={styles.moduleTitleText}>{mod.title}</Text>
+            {/* Paper Canvas View */}
+            <ScrollView
+              style={styles.canvasScroll}
+              contentContainerStyle={styles.canvasContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={[styles.paperSheet, { transform: [{ scale: zoomScale }] }]}>
+                {/* VTU Header Stamp */}
+                <View style={styles.sheetHeader}>
+                  <Text style={styles.vtuHeaderTitle}>VISVESVARAYA TECHNOLOGICAL UNIVERSITY</Text>
+                  <Text style={styles.vtuHeaderSub}>BELAGAVI, KARNATAKA</Text>
+
+                  <View style={styles.examBannerRow}>
+                    <Text style={styles.examBannerText}>
+                      Fifth Semester B.E. Degree Examination, {paper.month} {paper.year}
+                    </Text>
                   </View>
 
-                  {/* Main Questions with Choices or Simple list */}
-                  {mod.mainQuestions && mod.mainQuestions.length > 0 ? (
-                    mod.mainQuestions.map((mq) => (
-                      <View key={mq.questionNumber} style={{ gap: 8 }}>
-                        {mq.choices.map((choice) => (
-                          <View key={choice.choiceId} style={{ gap: 6 }}>
-                            {choice.isOrOption && (
-                              <View style={styles.orDividerRow}>
-                                <View style={styles.orLine} />
-                                <Text style={styles.orText}>OR</Text>
-                                <View style={styles.orLine} />
-                              </View>
-                            )}
-                            {choice.subQuestions.map((sub) => (
-                              <View key={sub.subCode} style={styles.questionItem}>
-                                <View style={styles.qNumCol}>
-                                  <Text style={styles.qNumText}>
-                                    {choice.choiceId} ({sub.subCode})
-                                  </Text>
-                                </View>
-                                <View style={styles.qTextCol}>
-                                  <Text style={styles.qText}>{sub.text}</Text>
+                  {/* USN Table Header */}
+                  <View style={styles.usnSection}>
+                    <Text style={styles.usnTitle}>USN</Text>
+                    <View style={styles.usnBoxesRow}>
+                      {Array.from({ length: 10 }).map((_, idx) => (
+                        <View key={idx} style={styles.usnBoxCell} />
+                      ))}
+                    </View>
+                  </View>
 
-                                  {/* Inline Faculty Verified Solution */}
-                                  {showSolutionKey && sub.solution && (
-                                    <View style={styles.solutionBox}>
-                                      <Text style={styles.solutionHeader}>
-                                        ✓ Verified Solution Key:
-                                      </Text>
-                                      <Text style={styles.solutionText}>
-                                        {sub.solution}
+                  <Text style={styles.subjectNameHeader}>
+                    {paper.subjectCode} - {paper.subjectName.toUpperCase()}
+                  </Text>
+
+                  <View style={styles.timeMarksRow}>
+                    <Text style={styles.timeMarksText}>Time: {paper.durationHours || 3} hrs.</Text>
+                    <Text style={styles.timeMarksText}>Max. Marks: {paper.maxMarks || 100}</Text>
+                  </View>
+
+                  <View style={styles.dividerLine} />
+
+                  <Text style={styles.instructionsText}>
+                    Note: 1. Answer any FIVE full questions, choosing ONE full question from each module.
+                    {'\n'}2. Any missing data may be suitably assumed.
+                  </Text>
+                </View>
+
+                {/* Questions List Page View */}
+                <View style={styles.modulesContainer}>
+                  {paper.modules.map((mod) => (
+                    <View key={mod.moduleNumber} style={styles.moduleBlock}>
+                      <View style={styles.moduleBadge}>
+                        <Text style={styles.moduleBadgeText}>MODULE {mod.moduleNumber}</Text>
+                        <Text style={styles.moduleTitleText}>{mod.title}</Text>
+                      </View>
+
+                      {/* Main Questions with Choices or Simple list */}
+                      {mod.mainQuestions && mod.mainQuestions.length > 0 ? (
+                        mod.mainQuestions.map((mq) => (
+                          <View key={mq.questionNumber} style={{ gap: 8 }}>
+                            {mq.choices.map((choice) => (
+                              <View key={choice.choiceId} style={{ gap: 6 }}>
+                                {choice.isOrOption && (
+                                  <View style={styles.orDividerRow}>
+                                    <View style={styles.orLine} />
+                                    <Text style={styles.orText}>OR</Text>
+                                    <View style={styles.orLine} />
+                                  </View>
+                                )}
+                                {choice.subQuestions.map((sub) => (
+                                  <View key={sub.subCode} style={styles.questionItem}>
+                                    <View style={styles.qNumCol}>
+                                      <Text style={styles.qNumText}>
+                                        {choice.choiceId} ({sub.subCode})
                                       </Text>
                                     </View>
-                                  )}
-                                </View>
-                                <View style={styles.qMarksCol}>
-                                  <Text style={styles.qMarksText}>({sub.marks} Marks)</Text>
-                                  {sub.bloomLevel && (
-                                    <Text style={styles.qBloomText}>[{sub.bloomLevel}]</Text>
-                                  )}
-                                </View>
+                                    <View style={styles.qTextCol}>
+                                      <Text style={styles.qText}>{sub.text}</Text>
+
+                                      {/* Inline Faculty Verified Solution */}
+                                      {showSolutionKey && sub.solution && (
+                                        <View style={styles.solutionBox}>
+                                          <Text style={styles.solutionHeader}>
+                                            ✓ Verified Solution Key:
+                                          </Text>
+                                          <Text style={styles.solutionText}>
+                                            {sub.solution}
+                                          </Text>
+                                        </View>
+                                      )}
+                                    </View>
+                                    <View style={styles.qMarksCol}>
+                                      <Text style={styles.qMarksText}>({sub.marks} Marks)</Text>
+                                      {sub.bloomLevel && (
+                                        <Text style={styles.qBloomText}>[{sub.bloomLevel}]</Text>
+                                      )}
+                                    </View>
+                                  </View>
+                                ))}
                               </View>
                             ))}
                           </View>
-                        ))}
-                      </View>
-                    ))
-                  ) : (
-                    mod.questions?.map((q, idx) => (
-                      <View key={idx} style={styles.questionItem}>
-                        <View style={styles.qNumCol}>
-                          <Text style={styles.qNumText}>{q.questionNumber}</Text>
-                        </View>
-                        <View style={styles.qTextCol}>
-                          <Text style={styles.qText}>{q.questionText}</Text>
-                          {showSolutionKey && q.solution && (
-                            <View style={styles.solutionBox}>
-                              <Text style={styles.solutionHeader}>
-                                ✓ Verified Solution Key:
-                              </Text>
-                              <Text style={styles.solutionText}>{q.solution}</Text>
+                        ))
+                      ) : (
+                        mod.questions?.map((q, idx) => (
+                          <View key={idx} style={styles.questionItem}>
+                            <View style={styles.qNumCol}>
+                              <Text style={styles.qNumText}>{q.questionNumber}</Text>
                             </View>
-                          )}
-                        </View>
-                        <View style={styles.qMarksCol}>
-                          <Text style={styles.qMarksText}>({q.marks} Marks)</Text>
-                          {q.bloomLevel && (
-                            <Text style={styles.qBloomText}>[{q.bloomLevel}]</Text>
-                          )}
-                        </View>
-                      </View>
-                    ))
-                  )}
+                            <View style={styles.qTextCol}>
+                              <Text style={styles.qText}>{q.questionText}</Text>
+                              {showSolutionKey && q.solution && (
+                                <View style={styles.solutionBox}>
+                                  <Text style={styles.solutionHeader}>
+                                    ✓ Verified Solution Key:
+                                  </Text>
+                                  <Text style={styles.solutionText}>{q.solution}</Text>
+                                </View>
+                              )}
+                            </View>
+                            <View style={styles.qMarksCol}>
+                              <Text style={styles.qMarksText}>({q.marks} Marks)</Text>
+                              {q.bloomLevel && (
+                                <Text style={styles.qBloomText}>[{q.bloomLevel}]</Text>
+                              )}
+                            </View>
+                          </View>
+                        ))
+                      )}
+                    </View>
+                  ))}
                 </View>
-              ))}
-            </View>
-          </View>
-        </ScrollView>
+              </View>
+            </ScrollView>
 
-        {/* Page Stepper Navigation Bar */}
-        <View style={styles.pageNavBar}>
-          <TouchableOpacity
-            disabled={currentPage === 1}
-            style={[styles.pageStepBtn, currentPage === 1 && styles.pageStepBtnDisabled]}
-            onPress={() => setCurrentPage((p) => Math.max(1, p - 1))}
-          >
-            <Feather name="chevron-left" size={20} color={currentPage === 1 ? '#94A3B8' : '#0F172A'} />
-            <Text style={[styles.pageStepText, currentPage === 1 && styles.pageStepTextDisabled]}>
-              Previous
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.pagesDotsRow}>
-            {Array.from({ length: totalPages }).map((_, i) => (
+            {/* Page Stepper Navigation Bar */}
+            <View style={styles.pageNavBar}>
               <TouchableOpacity
-                key={i}
-                style={[styles.pageDot, currentPage === i + 1 && styles.pageDotActive]}
-                onPress={() => setCurrentPage(i + 1)}
-              />
-            ))}
-          </View>
+                disabled={currentPage === 1}
+                style={[styles.pageStepBtn, currentPage === 1 && styles.pageStepBtnDisabled]}
+                onPress={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              >
+                <Feather name="chevron-left" size={20} color={currentPage === 1 ? '#94A3B8' : '#0F172A'} />
+                <Text style={[styles.pageStepText, currentPage === 1 && styles.pageStepTextDisabled]}>
+                  Previous
+                </Text>
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            disabled={currentPage === totalPages}
-            style={[styles.pageStepBtn, currentPage === totalPages && styles.pageStepBtnDisabled]}
-            onPress={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-          >
-            <Text style={[styles.pageStepText, currentPage === totalPages && styles.pageStepTextDisabled]}>
-              Next
-            </Text>
-            <Feather name="chevron-right" size={20} color={currentPage === totalPages ? '#94A3B8' : '#0F172A'} />
-          </TouchableOpacity>
-        </View>
+              <View style={styles.pagesDotsRow}>
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={[styles.pageDot, currentPage === i + 1 && styles.pageDotActive]}
+                    onPress={() => setCurrentPage(i + 1)}
+                  />
+                ))}
+              </View>
+
+              <TouchableOpacity
+                disabled={currentPage === totalPages}
+                style={[styles.pageStepBtn, currentPage === totalPages && styles.pageStepBtnDisabled]}
+                onPress={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              >
+                <Text style={[styles.pageStepText, currentPage === totalPages && styles.pageStepTextDisabled]}>
+                  Next
+                </Text>
+                <Feather name="chevron-right" size={20} color={currentPage === totalPages ? '#94A3B8' : '#0F172A'} />
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          <View style={styles.documentViewerContainer}>
+            {paper.pdfUrl ? (
+              <>
+                <View style={styles.docHeaderBar}>
+                  <View style={styles.docInfoCol}>
+                    <Text style={styles.docNameText} numberOfLines={1}>
+                      {paper.pdfUrl.split('/').pop() || 'Question_Paper_Document'}
+                    </Text>
+                    <Text style={styles.docMetaText}>
+                      Size: {paper.fileSize || 'Standard'} • Format: {paper.pdfUrl.split('.').pop()?.toUpperCase() || 'DOCUMENT'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.openExternalBtn}
+                    onPress={() => WebBrowser.openBrowserAsync(paper.pdfUrl!)}
+                  >
+                    <Feather name="external-link" size={14} color="#0745E8" />
+                    <Text style={styles.openExternalText}>Open External</Text>
+                  </TouchableOpacity>
+                </View>
+                <WebView
+                  source={{
+                    uri: paper.pdfUrl.toLowerCase().endsWith('.pdf')
+                      ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(paper.pdfUrl)}`
+                      : paper.pdfUrl,
+                  }}
+                  style={{ flex: 1 }}
+                  startInLoadingState
+                  renderLoading={() => (
+                    <View style={styles.loadingContainer}>
+                      <ActivityIndicator size="large" color="#0745E8" />
+                      <Text style={styles.loadingText}>Rendering document preview...</Text>
+                    </View>
+                  )}
+                />
+              </>
+            ) : (
+              <View style={styles.noDocContainer}>
+                <Feather name="info" size={40} color="#94A3B8" />
+                <Text style={styles.noDocTitle}>Template-Created Paper</Text>
+                <Text style={styles.noDocText}>
+                  This paper was composed directly using the interactive VTU Question Paper Template in the Admin Panel. Switch to the "VTU Question Template" tab to view all modules, choices, marks, and verified solutions.
+                </Text>
+                <TouchableOpacity
+                  style={styles.switchTemplateBtn}
+                  onPress={() => setViewMode('TEMPLATE')}
+                >
+                  <Text style={styles.switchTemplateBtnText}>Switch to Template View</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
       </SafeAreaView>
     </Modal>
   );
@@ -647,5 +761,130 @@ const styles = StyleSheet.create({
   pageDotActive: {
     width: 16,
     backgroundColor: '#0745E8',
+  },
+  tabSwitcherRow: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    padding: 4,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 10,
+    gap: 4,
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  tabButtonActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  tabButtonTextActive: {
+    color: '#0745E8',
+    fontWeight: '700',
+  },
+  documentViewerContainer: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  docHeaderBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  docInfoCol: {
+    flex: 1,
+    marginRight: 12,
+  },
+  docNameText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  docMetaText: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  openExternalBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  openExternalText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0745E8',
+  },
+  loadingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 13,
+    color: '#64748B',
+  },
+  noDocContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  noDocTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginTop: 14,
+    marginBottom: 6,
+  },
+  noDocText: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: 20,
+  },
+  switchTemplateBtn: {
+    backgroundColor: '#0745E8',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  switchTemplateBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

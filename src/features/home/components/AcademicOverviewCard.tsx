@@ -10,15 +10,15 @@ interface AcademicOverviewCardProps {
 
 export const AcademicOverviewCard: React.FC<AcademicOverviewCardProps> = ({ summary }) => {
   const router = useRouter();
-
   const isEligible = summary.attendancePercentage >= 75;
 
   return (
     <View style={styles.container}>
+      {/* Compact Header */}
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>Academic Overview</Text>
         <View style={styles.semBadge}>
-          <Text style={styles.semBadgeText}>Semester {summary.currentSemester}</Text>
+          <Text style={styles.semBadgeText}>Sem {summary.currentSemester}</Text>
         </View>
       </View>
 
@@ -29,17 +29,20 @@ export const AcademicOverviewCard: React.FC<AcademicOverviewCardProps> = ({ summ
           style={styles.metricBox}
           onPress={() => router.push('/calculators/cgpa')}
         >
-          <View style={styles.metricHeader}>
+          <View style={styles.metricTopRow}>
             <View style={[styles.iconCircle, { backgroundColor: '#EEF2FF' }]}>
-              <Feather name="bar-chart-2" size={18} color="#0745E8" />
+              <Feather name="bar-chart-2" size={15} color="#0745E8" />
             </View>
             <View style={styles.trendBadge}>
-              <Feather name="trending-up" size={12} color="#16A34A" />
+              <Feather name="trending-up" size={10} color="#16A34A" />
               <Text style={styles.trendText}>{summary.cgpaTrend}</Text>
             </View>
           </View>
-          <Text style={styles.metricValue}>{summary.cgpa.toFixed(2)}</Text>
-          <Text style={styles.metricLabel}>Current CGPA</Text>
+
+          <View style={styles.metricBottomCol}>
+            <Text style={styles.metricValue}>{summary.cgpa.toFixed(2)}</Text>
+            <Text style={styles.metricLabel}>Current CGPA</Text>
+          </View>
         </TouchableOpacity>
 
         {/* Attendance Metric Box */}
@@ -48,7 +51,7 @@ export const AcademicOverviewCard: React.FC<AcademicOverviewCardProps> = ({ summ
           style={styles.metricBox}
           onPress={() => router.push('/calculators/attendance')}
         >
-          <View style={styles.metricHeader}>
+          <View style={styles.metricTopRow}>
             <View
               style={[
                 styles.iconCircle,
@@ -57,7 +60,7 @@ export const AcademicOverviewCard: React.FC<AcademicOverviewCardProps> = ({ summ
             >
               <Feather
                 name={isEligible ? 'check-circle' : 'alert-circle'}
-                size={18}
+                size={15}
                 color={isEligible ? '#16A34A' : '#EF4444'}
               />
             </View>
@@ -77,8 +80,11 @@ export const AcademicOverviewCard: React.FC<AcademicOverviewCardProps> = ({ summ
               </Text>
             </View>
           </View>
-          <Text style={styles.metricValue}>{summary.attendancePercentage}%</Text>
-          <Text style={styles.metricLabel}>Attendance Rate</Text>
+
+          <View style={styles.metricBottomCol}>
+            <Text style={styles.metricValue}>{summary.attendancePercentage}%</Text>
+            <Text style={styles.metricLabel}>Attendance</Text>
+          </View>
         </TouchableOpacity>
       </View>
     </View>
@@ -88,62 +94,64 @@ export const AcademicOverviewCard: React.FC<AcademicOverviewCardProps> = ({ summ
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 18,
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     marginHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: 16,
     borderColor: '#E2E8F0',
     borderWidth: 1,
     shadowColor: '#0745E8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
   },
   semBadge: {
     backgroundColor: '#EEF2FF',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
   semBadgeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: '#0745E8',
   },
   metricsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   metricBox: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     borderColor: '#F1F5F9',
     borderWidth: 1,
   },
-  metricHeader: {
+  metricTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 6,
   },
   iconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -152,33 +160,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#DCFCE7',
     paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 8,
-    gap: 3,
+    paddingVertical: 2,
+    borderRadius: 6,
+    gap: 2,
   },
   trendText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: '#16A34A',
   },
   statusBadge: {
     paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   statusText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
   },
+  metricBottomCol: {
+    marginTop: 2,
+  },
   metricValue: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 2,
+    lineHeight: 22,
   },
   metricLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
-    fontWeight: '500',
+    fontWeight: '600',
+    marginTop: 1,
   },
 });

@@ -96,7 +96,8 @@ export const MOCK_RESOURCES: NoteResource[] = [
     totalPages: 32,
     isPaid: true,
     price: 29,
-    freePreviewPages: 2,
+    freePreviewPages: 4,
+    fileUrl: 'https://res.cloudinary.com/demo/image/upload/sample.pdf',
     tableOfContents: [
       '1. Network Edge & Core Architecture',
       '2. HTTP/1.1 vs HTTP/2 Mechanisms',
@@ -121,6 +122,7 @@ export const MOCK_RESOURCES: NoteResource[] = [
     isDownloaded: false,
     description: 'Quick exam night revision notes with TCP 3-way handshake diagrams and congestion window formulas.',
     totalPages: 12,
+    fileUrl: 'https://res.cloudinary.com/demo/image/upload/sample.pdf',
     tableOfContents: [
       '1. TCP Header Structure & Flags',
       '2. 3-Way Handshake & Teardown',
@@ -145,6 +147,7 @@ export const MOCK_RESOURCES: NoteResource[] = [
     isDownloaded: false,
     description: '25 solved numerical problems on VLSM, CIDR notation, and IP address allocation for semester exams.',
     totalPages: 18,
+    fileUrl: 'https://res.cloudinary.com/demo/image/upload/sample.pdf',
   },
   {
     id: 'r4',
@@ -163,6 +166,7 @@ export const MOCK_RESOURCES: NoteResource[] = [
     isDownloaded: true,
     description: 'Step-by-step breakdown of 1NF, 2NF, 3NF, BCNF with VTU past exam solved examples.',
     totalPages: 24,
+    fileUrl: 'https://res.cloudinary.com/demo/image/upload/sample.pdf',
   },
   {
     id: 'r5',
@@ -181,6 +185,7 @@ export const MOCK_RESOURCES: NoteResource[] = [
     isDownloaded: true,
     description: 'Neatly written class notes with ER diagrams, SQL queries, relational algebra syntax, and solved IA test questions.',
     totalPages: 38,
+    fileUrl: 'https://res.cloudinary.com/demo/image/upload/sample.pdf',
   },
   {
     id: 'r6',
@@ -199,6 +204,7 @@ export const MOCK_RESOURCES: NoteResource[] = [
     isDownloaded: true,
     description: 'Hand-drawn DFA/NFA state transition diagrams, epsilon transitions, and minimization step-by-step guides.',
     totalPages: 44,
+    fileUrl: 'https://res.cloudinary.com/demo/image/upload/sample.pdf',
   },
   {
     id: 'r7',
@@ -217,5 +223,6 @@ export const MOCK_RESOURCES: NoteResource[] = [
     isDownloaded: false,
     description: 'Handwritten mind maps and bullet summaries for quick memory retention before VTU exams.',
     totalPages: 16,
+    fileUrl: 'https://res.cloudinary.com/demo/image/upload/sample.pdf',
   },
 ];

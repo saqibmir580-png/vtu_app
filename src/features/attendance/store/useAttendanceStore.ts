@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   SubjectAttendance,
   AttendanceHistoryLog,
@@ -6,6 +7,8 @@ import {
   CalculationResult,
   CalculatorMode,
 } from '../types/attendance.types';
+
+const ATTENDANCE_STORAGE_KEY = 'vtu_mobile_attendance_store_data';
 
 interface AttendanceStoreState {
   subjects: SubjectAttendance[];
@@ -19,6 +22,7 @@ interface AttendanceStoreState {
   addSubject: (subject: Omit<SubjectAttendance, 'id'>) => void;
   updateAttendance: (id: string, attended: number, conducted: number) => void;
   deleteSubject: (id: string) => void;
+  loadAttendance: () => Promise<void>;
   calculateAttendanceResult: (
     attended: number,
     conducted: number,
@@ -116,55 +120,83 @@ export const useAttendanceStore = create<AttendanceStoreState>((set, get) => ({
   addSubject: (newSub) => {
     const id = `att-${Date.now()}`;
     const item: SubjectAttendance = { ...newSub, id };
-    set((state) => ({
-      subjects: [...state.subjects, item],
-      historyLogs: [
-        {
-          id: `log-${Date.now()}`,
-          subjectId: id,
-          subjectName: item.subjectName,
-          subjectCode: item.subjectCode,
-          type: 'ADDED',
-          classesCount: item.conductedClasses,
-          timestamp: 'Just now',
-        },
-        ...state.historyLogs,
-      ],
-    }));
+    const newLogs: AttendanceHistoryLog[] = [
+      {
+        id: `log-${Date.now()}`,
+        subjectId: id,
+        subjectName: item.subjectName,
+        subjectCode: item.subjectCode,
+        type: 'ADDED',
+        classesCount: item.conductedClasses,
+        timestamp: 'Just now',
+      },
+      ...get().historyLogs,
+    ];
+    const newSubjects = [...get().subjects, item];
+    set({ subjects: newSubjects, historyLogs: newLogs });
+    AsyncStorage.setItem(
+      ATTENDANCE_STORAGE_KEY,
+      JSON.stringify({ subjects: newSubjects, historyLogs: newLogs, globalTarget: get().globalTarget })
+    ).catch(() => {});
   },
 
   updateAttendance: (id, attended, conducted) => {
-    set((state) => {
-      const sub = state.subjects.find((s) => s.id === id);
-      if (!sub) return state;
+    const sub = get().subjects.find((s) => s.id === id);
+    if (!sub) return;
 
-      const diffAttended = attended - sub.attendedClasses;
+    const diffAttended = attended - sub.attendedClasses;
+    const newSubjects = get().subjects.map((s) =>
+      s.id === id ? { ...s, attendedClasses: attended, conductedClasses: conducted } : s
+    );
+    const newLogs: AttendanceHistoryLog[] = [
+      {
+        id: `log-${Date.now()}`,
+        subjectId: id,
+        subjectName: sub.subjectName,
+        subjectCode: sub.subjectCode,
+        type: diffAttended > 0 ? 'ATTENDED' : 'EDITED',
+        classesCount: Math.abs(diffAttended) || 1,
+        timestamp: 'Just now',
+      },
+      ...get().historyLogs,
+    ];
 
-      return {
-        subjects: state.subjects.map((s) =>
-          s.id === id ? { ...s, attendedClasses: attended, conductedClasses: conducted } : s
-        ),
-        historyLogs: [
-          {
-            id: `log-${Date.now()}`,
-            subjectId: id,
-            subjectName: sub.subjectName,
-            subjectCode: sub.subjectCode,
-            type: diffAttended > 0 ? 'ATTENDED' : 'EDITED',
-            classesCount: Math.abs(diffAttended) || 1,
-            timestamp: 'Just now',
-          },
-          ...state.historyLogs,
-        ],
-      };
-    });
+    set({ subjects: newSubjects, historyLogs: newLogs });
+    AsyncStorage.setItem(
+      ATTENDANCE_STORAGE_KEY,
+      JSON.stringify({ subjects: newSubjects, historyLogs: newLogs, globalTarget: get().globalTarget })
+    ).catch(() => {});
   },
 
-  deleteSubject: (id) =>
-    set((state) => ({
-      subjects: state.subjects.filter((s) => s.id !== id),
-      selectedSubjectId: state.selectedSubjectId === id ? null : state.selectedSubjectId,
-    })),
+  deleteSubject: (id) => {
+    const newSubjects = get().subjects.filter((s) => s.id !== id);
+    set({
+      subjects: newSubjects,
+      selectedSubjectId: get().selectedSubjectId === id ? null : get().selectedSubjectId,
+    });
+    AsyncStorage.setItem(
+      ATTENDANCE_STORAGE_KEY,
+      JSON.stringify({ subjects: newSubjects, historyLogs: get().historyLogs, globalTarget: get().globalTarget })
+    ).catch(() => {});
+  },
+
+  loadAttendance: async () => {
+    try {
+      const stored = await AsyncStorage.getItem(ATTENDANCE_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && Array.isArray(parsed.subjects)) {
+          set({
+            subjects: parsed.subjects,
+            historyLogs: parsed.historyLogs || get().historyLogs,
+            globalTarget: parsed.globalTarget || 85,
+          });
+        }
+      }
+    } catch {
+      // Ignore read errors
+    }
+  },
 
   calculateAttendanceResult: (attended, conducted, target, mode) => {
     const currentPercentage = conducted > 0 ? (attended / conducted) * 100 : 0;

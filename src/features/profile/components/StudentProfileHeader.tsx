@@ -6,7 +6,7 @@ import { UserProfile } from '@/store';
 
 interface StudentProfileHeaderProps {
   user: UserProfile;
-  onSettingsPress: () => void;
+  onSettingsPress?: () => void;
   onEditPress?: () => void;
 }
 
@@ -17,16 +17,18 @@ export const StudentProfileHeader: React.FC<StudentProfileHeaderProps> = ({
 }) => {
   return (
     <View style={styles.container}>
-      {/* Top Gear Row */}
+      {/* Top Header Row */}
       <View style={styles.topRow}>
         <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={styles.settingsBtn}
-          onPress={onSettingsPress}
-        >
-          <Feather name="settings" size={20} color="#0F172A" />
-        </TouchableOpacity>
+        {(onEditPress || onSettingsPress) && (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.settingsBtn}
+            onPress={onEditPress || onSettingsPress}
+          >
+            <Feather name={onEditPress ? "edit-2" : "settings"} size={18} color="#0745E8" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Hero Content */}
