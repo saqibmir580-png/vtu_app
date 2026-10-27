@@ -12,7 +12,16 @@
     },
     "ios": {
       "bundleIdentifier": "com.vtu.studentapp",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.170442859744-jfj3r0uh28c0b8vbhf5rsn22ceokj2tr"
+            ]
+          }
+        ]
+      }
     },
     "android": {
       "package": "com.vtu.studentapp",
