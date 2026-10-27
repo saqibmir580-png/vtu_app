@@ -11,9 +11,11 @@
       "backgroundColor": "#0732B8"
     },
     "ios": {
+      "bundleIdentifier": "com.vtu.studentapp",
       "supportsTablet": true
     },
     "android": {
+      "package": "com.vtu.studentapp",
       "edgeToEdge": true
     },
     "web": {
