@@ -36,6 +36,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "99e04078-960e-43f8-a14e-229aaff1fc7d"
+      }
+    },
+    "owner": "vtustudents-team"
   }
 }
