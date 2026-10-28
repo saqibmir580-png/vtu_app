@@ -25,6 +25,11 @@ export const getBaseUrl = (): string => {
     );
   }
 
+  // Test environment fallback to offset port 5001 if unset
+  if (appEnv === 'test') {
+    return 'http://localhost:5001/api/v1';
+  }
+
   // Development only: Attempt dynamic resolution from Expo Metro bundler host
   const hostUri = Constants.expoConfig?.hostUri || (Constants as any).manifest2?.extra?.expoGo?.developer;
   if (hostUri) {

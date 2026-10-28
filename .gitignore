@@ -19,6 +19,8 @@ web-build/
 
 # Environment variables
 .env
+.env.*
+!.env.example
 .env*.local
 
 # TypeScript generated

@@ -90,6 +90,8 @@ if (appEnv === 'production' || appEnv === 'preview') {
     fail(`In '${appEnv}' environment, EXPO_PUBLIC_API_URL must be a valid HTTPS URL. Got: '${apiUrl}'`);
   }
   pass(`Production/Preview API URL verified (${appEnv}): ${apiUrl}`);
+} else if (appEnv === 'test') {
+  pass(`Test environment active (${appEnv}). API URL: ${apiUrl || 'http://localhost:5001/api/v1'}`);
 } else {
   pass(`Development environment active. API URL: ${apiUrl || 'Local / Metro bundler default'}`);
 }
