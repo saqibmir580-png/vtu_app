@@ -8,7 +8,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "tsc": "tsc --noEmit",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test": "node scripts/validate-ci.js"
   },
   "dependencies": {
     "@expo/ui": "~57.0.15",
@@ -58,6 +59,8 @@
     "@types/react": "~19.2.2",
     "babel-plugin-module-resolver": "^5.0.3",
     "babel-preset-expo": "~57.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~57.0.2",
     "typescript": "~6.0.3"
   },
   "private": true

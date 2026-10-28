@@ -1,0 +1,31 @@
+name: Production Android Release Build
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'
+
+jobs:
+  quality_gates:
+    name: Production Pre-Build Quality Gates
+    steps:
+      - name: Checkout Code
+        uses: eas/checkout
+
+      - name: Install Dependencies
+        uses: eas/install_node_modules
+
+      - name: Run Production CI Validation Gate
+        run: npm test
+
+      - name: TypeScript Compilation Gate (Strict 0-Error Check)
+        run: npm run tsc
+
+  build_production_aab:
+    name: Build Signed Android App Bundle (AAB)
+    needs: [quality_gates]
+    type: build
+    params:
+      platform: android
+      profile: production

@@ -1,0 +1,109 @@
+name: Mobile App CI & EAS Build
+
+on:
+  push:
+    branches:
+      - develop
+      - staging
+      - main
+      - 'release/**'
+  pull_request:
+    branches:
+      - develop
+      - staging
+      - main
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'EAS Build Profile to execute'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - development
+          - preview
+          - production
+
+concurrency:
+  group: mobile-build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  quality-gate:
+    name: Code Quality & Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run CI Validation & Configuration Test
+        run: npm test
+
+      - name: TypeScript Static Compilation Check
+        run: npm run tsc
+
+  eas-build:
+    name: EAS Android Build
+    needs: quality-gate
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Determine EAS Profile
+        id: select-profile
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "profile=${{ inputs.profile }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" = "refs/heads/develop" ]; then
+            echo "profile=development" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" = "refs/heads/staging" ]; then
+            echo "profile=preview" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" = "refs/heads/main" ] || [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            echo "profile=production" >> $GITHUB_OUTPUT
+          else
+            echo "profile=preview" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Verify EXPO_TOKEN Secret
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "::error::EXPO_TOKEN secret is not set in GitHub Repository Secrets. Please configure EXPO_TOKEN to enable automated EAS builds."
+            exit 1
+          fi
+
+      - name: Trigger EAS Build
+        run: |
+          eas build \
+            --platform android \
+            --profile ${{ steps.select-profile.outputs.profile }} \
+            --non-interactive

@@ -2,31 +2,41 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
-// Determine default API base URL dynamically
-const getBaseUrl = () => {
-  // 1. Check explicit environment variable first
+// Determine default API base URL dynamically with strict environment isolation
+export const getBaseUrl = (): string => {
   const envUrl = process.env.EXPO_PUBLIC_API_URL;
+  const appEnv =
+    process.env.EXPO_PUBLIC_APP_ENV ||
+    (process.env.NODE_ENV === 'production' ? 'production' : 'development');
+
   if (envUrl && envUrl.trim() !== '') {
-    // Strip any internal or accidental whitespace and trailing slashes
+    // Strip whitespace and trailing slashes
     const sanitized = envUrl.replace(/\s+/g, '').replace(/\/+$/, '');
     if (sanitized.startsWith('http://') || sanitized.startsWith('https://')) {
       return sanitized;
     }
   }
 
-  // 2. Attempt dynamic resolution of developer machine IPv4 address from Expo Metro
+  // Enforce strict configuration in Production and Preview/Staging environments
+  if (appEnv === 'production' || appEnv === 'preview') {
+    throw new Error(
+      `[FATAL CONFIG ERROR] EXPO_PUBLIC_API_URL is missing or invalid for '${appEnv}' environment. ` +
+      `A valid HTTPS endpoint must be configured in EAS/Environment variables. Fallback logic is disabled in production.`
+    );
+  }
+
+  // Development only: Attempt dynamic resolution from Expo Metro bundler host
   const hostUri = Constants.expoConfig?.hostUri || (Constants as any).manifest2?.extra?.expoGo?.developer;
   if (hostUri) {
     const rawHost = hostUri.split(':')[0];
-    // Check if rawHost is a valid IPv4 address (e.g. 192.168.1.35)
     const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
     if (rawHost && ipv4Regex.test(rawHost)) {
       return `http://${rawHost}:5000/api/v1`;
     }
   }
 
-  // 3. Default fallback LAN IP for local backend
-  return 'http://192.168.1.35:5000/api/v1';
+  // Development fallback
+  return 'http://localhost:5000/api/v1';
 };
 
 export const apiClient = axios.create({
@@ -39,7 +49,7 @@ export const apiClient = axios.create({
 
 console.log(`[API Client] Initialized Base URL: ${apiClient.defaults.baseURL}`);
 
-// Request Interceptor: Attach Access Token
+// Request Interceptor: Attach Access Token (Never logs token)
 apiClient.interceptors.request.use(
   async (config) => {
     try {
@@ -141,7 +151,7 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Format Network & API Error Messages
+    // Format Network & API Error Messages (Sanitized, no tokens)
     let errorMessage = 'Network error. Please check your connection and try again.';
 
     if (error.response?.data) {
@@ -156,10 +166,9 @@ apiClient.interceptors.response.use(
     } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
       errorMessage = 'Connection timeout. The server took too long to respond.';
     } else if (error.message === 'Network Error' || !error.response) {
-      errorMessage = `Cannot connect to server at ${apiClient.defaults.baseURL}. Please ensure the backend is running and your device is on the same network.`;
+      errorMessage = `Cannot connect to server at ${apiClient.defaults.baseURL}. Please ensure the backend is running and reachable.`;
     }
 
     return Promise.reject(new Error(errorMessage));
   }
 );
-
