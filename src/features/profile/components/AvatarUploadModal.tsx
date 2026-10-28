@@ -101,7 +101,7 @@ export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({
 
     try {
       if (isLocalFile) {
-        // Upload to backend using Multer & Cloudinary middleware
+        // Upload to backend via multipart/form-data StorageService (Backblaze B2/S3)
         const formData = new FormData();
         const filename = selectedUri.split('/').pop() || 'avatar.jpg';
         const match = /\.(\w+)$/.exec(filename);

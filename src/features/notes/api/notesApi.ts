@@ -120,7 +120,7 @@ export const fetchNotesFromApi = async (params: QueryNotesParams = {}): Promise<
         freePreviewPages: note.freePreviewPages || 2,
         isPurchased,
         hasAccess,
-        fileUrl: note.secureUrl || note.fileUrl || 'https://res.cloudinary.com/demo/image/upload/sample.pdf',
+        fileUrl: note.fileUrl || note.secureUrl || '',
       };
     });
   } catch (error: any) {
@@ -175,7 +175,7 @@ export const fetchNoteByIdFromApi = async (id: string, userId?: string): Promise
       freePreviewPages: note.freePreviewPages !== undefined ? Number(note.freePreviewPages) : 2,
       isPurchased,
       hasAccess,
-      fileUrl: note.secureUrl || note.fileUrl || 'https://res.cloudinary.com/demo/image/upload/sample.pdf',
+      fileUrl: note.fileUrl || note.secureUrl || '',
     };
   } catch (error: any) {
     const allNotes = await fetchNotesFromApi({ userId });
