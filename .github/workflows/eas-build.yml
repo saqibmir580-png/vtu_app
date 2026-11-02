@@ -54,7 +54,7 @@ jobs:
         run: npm test
 
       - name: TypeScript Static Compilation Check
-        run: npm run tsc
+        run: npm run typecheck
 
   eas-build:
     name: EAS Android Build

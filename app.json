@@ -24,15 +24,18 @@
       }
     },
     "android": {
-      "package": "com.vtu.studentapp",
-      "edgeToEdge": true
+      "package": "com.vtu.studentapp"
     },
     "web": {
       "bundler": "metro",
       "output": "static"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-image",
+      "expo-secure-store",
+      "expo-splash-screen",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

@@ -6,6 +6,15 @@ node_modules/
 dist/
 web-build/
 
+# Native directories (Managed Workflow)
+android/
+ios/
+
+# Archives & Temporary files
+*.zip
+*.tar.gz
+*.tgz
+
 # Native build / credentials
 *.orig.*
 *.jks
