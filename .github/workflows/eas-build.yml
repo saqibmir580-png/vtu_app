@@ -44,7 +44,7 @@ jobs:
       - name: Setup Node.js LTS
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Dependencies
@@ -70,8 +70,11 @@ jobs:
       - name: Setup Node.js LTS
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci --legacy-peer-deps
 
       - name: Verify EXPO_TOKEN Secret
         run: |
@@ -103,6 +106,8 @@ jobs:
           fi
 
       - name: Trigger EAS Build
+        env:
+          EAS_BUILD_NO_EXPO_GO_WARNING: "true"
         run: |
           eas build \
             --platform android \

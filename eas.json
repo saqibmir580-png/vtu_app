@@ -13,7 +13,8 @@
       },
       "env": {
         "EXPO_PUBLIC_APP_ENV": "development",
-        "EXPO_PUBLIC_API_URL": "https://vtu-backend-dev.voroa.app/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://vtu-backend-dev.voroa.app/api/v1",
+        "EAS_BUILD_NO_EXPO_GO_WARNING": "true"
       }
     },
     "preview": {
@@ -24,7 +25,8 @@
       },
       "env": {
         "EXPO_PUBLIC_APP_ENV": "preview",
-        "EXPO_PUBLIC_API_URL": "https://vtu-backend-staging.voroa.app/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://vtu-backend-staging.voroa.app/api/v1",
+        "EAS_BUILD_NO_EXPO_GO_WARNING": "true"
       }
     },
     "production": {
@@ -35,7 +37,8 @@
       },
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production",
-        "EXPO_PUBLIC_API_URL": "https://api.vtuapp.in/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://api.vtuapp.in/api/v1",
+        "EAS_BUILD_NO_EXPO_GO_WARNING": "true"
       }
     }
   },

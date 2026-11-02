@@ -1,6 +1,6 @@
 /**
  * Automated CI/CD Validation Script — VTU Student Super App
- * Validates project configuration, environment variables, security boundaries, and app integrity.
+ * Validates project configuration, environment variables, security boundaries, and runs unit tests.
  */
 
 const fs = require('fs');
@@ -94,6 +94,16 @@ if (appEnv === 'production' || appEnv === 'preview') {
   pass(`Test environment active (${appEnv}). API URL: ${apiUrl || 'http://localhost:5001/api/v1'}`);
 } else {
   pass(`Development environment active. API URL: ${apiUrl || 'Local / Metro bundler default'}`);
+}
+
+// 5. Execute Academic Calculator & Auth Unit Tests
+console.log('\n--- Running Automated Unit Test Suites ---');
+try {
+  require('../test/calculators.test.js');
+  require('../test/auth-validation.test.js');
+  pass('All academic calculators and auth validation unit tests executed successfully');
+} catch (err) {
+  fail(`Unit tests failed: ${err.message}`);
 }
 
 console.log('--- All Quality Gate Validation Checks Passed Successfully ---');
