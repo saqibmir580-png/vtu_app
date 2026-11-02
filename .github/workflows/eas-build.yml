@@ -20,10 +20,9 @@ on:
         default: 'preview'
         type: choice
         options:
-          - preview
-          - production-apk
-          - production
           - development
+          - preview
+          - production
 
 concurrency:
   group: mobile-build-${{ github.workflow }}-${{ github.ref }}
