@@ -29,6 +29,18 @@
         "EAS_BUILD_NO_EXPO_GO_WARNING": "true"
       }
     },
+    "production-apk": {
+      "distribution": "internal",
+      "channel": "production",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://api.vtuapp.in/api/v1",
+        "EAS_BUILD_NO_EXPO_GO_WARNING": "true"
+      }
+    },
     "production": {
       "channel": "production",
       "autoIncrement": true,
