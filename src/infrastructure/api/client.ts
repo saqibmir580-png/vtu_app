@@ -41,7 +41,7 @@ export const getBaseUrl = (): string => {
   }
 
   // Development fallback
-  return 'http://localhost:5000/api/v1';
+  return 'http://192.168.1.58:5000/api/v1';
 };
 
 export const apiClient = axios.create({
@@ -177,3 +177,4 @@ apiClient.interceptors.response.use(
     return Promise.reject(new Error(errorMessage));
   }
 );
+
