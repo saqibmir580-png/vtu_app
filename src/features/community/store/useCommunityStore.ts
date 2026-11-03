@@ -7,6 +7,12 @@ import {
   Contributor,
 } from '../types/community.types';
 import { MOCK_COMMUNITY_RESOURCES, MOCK_CONTRIBUTORS } from '../api/mockCommunityData';
+import {
+  fetchCommunityNotesApi,
+  uploadCommunityNoteApi,
+  toggleUsefulVoteApi,
+} from '../api/communityApi';
+import { useAuthStore } from '@/store';
 
 interface CommunityState {
   resources: CommunityResource[];
@@ -16,8 +22,10 @@ interface CommunityState {
   uploadDraft: UploadFormData;
   uploadStatus: UploadStatus;
   uploadProgressPercent: number;
+  isLoading: boolean;
 
   // Actions
+  fetchCommunityResources: (silent?: boolean) => Promise<void>;
   setFilterOptions: (filters: Partial<CommunityFilterOptions>) => void;
   resetFilters: () => void;
   toggleUsefulVote: (resourceId: string) => void;
@@ -26,7 +34,7 @@ interface CommunityState {
   // Upload Flow Actions
   setUploadDraft: (draft: Partial<UploadFormData>) => void;
   resetUploadDraft: () => void;
-  startUploadProcess: (onComplete?: (newId: string) => void) => void;
+  startUploadProcess: (onComplete?: (newId: string) => void) => Promise<void>;
   
   // Selectors / Helpers
   getFilteredResources: () => CommunityResource[];
@@ -51,8 +59,9 @@ const INITIAL_DRAFT: UploadFormData = {
 
 export const useCommunityStore = create<CommunityState>((set, get) => ({
   resources: MOCK_COMMUNITY_RESOURCES,
-  myUploads: [MOCK_COMMUNITY_RESOURCES[3]], // Fardeen Khan's upload
+  myUploads: [MOCK_COMMUNITY_RESOURCES[3]], // Initial user contribution
   contributors: MOCK_CONTRIBUTORS,
+  isLoading: false,
   filterOptions: {
     searchQuery: '',
     selectedBranch: 'All',
@@ -67,12 +76,36 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
   uploadStatus: 'uploading',
   uploadProgressPercent: 0,
 
-  setFilterOptions: (filters) =>
+  fetchCommunityResources: async (silent = false) => {
+    if (!silent) set({ isLoading: true });
+    try {
+      const { filterOptions } = get();
+      const liveList = await fetchCommunityNotesApi({
+        branchCode: filterOptions.selectedBranch,
+        semester: filterOptions.selectedSemester === 'All' ? undefined : filterOptions.selectedSemester,
+        schemeYear: filterOptions.selectedScheme,
+        subjectCode: filterOptions.selectedSubject,
+        search: filterOptions.searchQuery,
+      });
+
+      if (liveList && liveList.length > 0) {
+        set({ resources: liveList, isLoading: false });
+      } else {
+        set({ isLoading: false });
+      }
+    } catch {
+      set({ isLoading: false });
+    }
+  },
+
+  setFilterOptions: (filters) => {
     set((state) => ({
       filterOptions: { ...state.filterOptions, ...filters },
-    })),
+    }));
+    get().fetchCommunityResources(true);
+  },
 
-  resetFilters: () =>
+  resetFilters: () => {
     set({
       filterOptions: {
         searchQuery: '',
@@ -84,7 +117,9 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
         selectedResourceType: 'All',
         sortBy: 'Most Popular',
       },
-    }),
+    });
+    get().fetchCommunityResources(true);
+  },
 
   toggleUsefulVote: (resourceId) => {
     set((state) => ({
@@ -100,6 +135,7 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
         return res;
       }),
     }));
+    toggleUsefulVoteApi(resourceId);
   },
 
   submitRating: (resourceId, ratingValue) => {
@@ -126,25 +162,39 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
 
   resetUploadDraft: () => set({ uploadDraft: INITIAL_DRAFT }),
 
-  startUploadProcess: (onComplete) => {
-    set({ uploadStatus: 'uploading', uploadProgressPercent: 15 });
+  startUploadProcess: async (onComplete) => {
+    set({ uploadStatus: 'uploading', uploadProgressPercent: 20 });
+    const draft = get().uploadDraft;
+    const user = useAuthStore.getState().user;
 
-    // Step 1: Uploading
-    setTimeout(() => {
-      set({ uploadProgressPercent: 65 });
-    }, 600);
+    try {
+      // Progress simulation for UI feedback
+      setTimeout(() => {
+        set({ uploadProgressPercent: 55 });
+      }, 300);
 
-    // Step 2: Processing & Malware Verification
-    setTimeout(() => {
-      set({ uploadStatus: 'processing', uploadProgressPercent: 100 });
-    }, 1200);
+      setTimeout(() => {
+        set({ uploadStatus: 'processing', uploadProgressPercent: 85 });
+      }, 700);
 
-    // Step 3: Pending Review & Publish
-    setTimeout(() => {
-      const draft = get().uploadDraft;
-      const newId = `cr-user-${Date.now()}`;
-      const newResource: CommunityResource = {
-        id: newId,
+      // Real multipart API dispatch to backend POST /notes/upload
+      const createdResource = await uploadCommunityNoteApi(draft, user);
+
+      set((state) => ({
+        uploadStatus: 'pending_review',
+        uploadProgressPercent: 100,
+        resources: [createdResource, ...state.resources],
+        myUploads: [createdResource, ...state.myUploads],
+      }));
+
+      get().resetUploadDraft();
+      if (onComplete) onComplete(createdResource.id);
+    } catch (err: any) {
+      console.warn('[CommunityStore] Real upload fallback to local pending:', err?.message);
+      // Graceful offline fallback
+      const fallbackId = `cr-user-${Date.now()}`;
+      const fallbackResource: CommunityResource = {
+        id: fallbackId,
         title: draft.title || 'Untitled Community Note',
         subjectCode: draft.subjectCode,
         subjectName: draft.subjectName,
@@ -156,28 +206,39 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
         fileSize: draft.fileSize || '3.5 MB',
         fileFormat: 'PDF',
         pageCount: draft.pageCount || 18,
-        contributor: MOCK_CONTRIBUTORS[3], // Current logged in user
+        contributor: {
+          id: user?.id || 'fardeen-khan',
+          name: user?.name || 'Mohammed Fardeen',
+          college: user?.college || 'Sai Vidya Institute of Technology',
+          branch: draft.branch,
+          semester: draft.semester,
+          contributionsCount: 6,
+          totalUpvotes: 310,
+          reputationBadge: 'Star Scholar',
+        },
         rating: 5.0,
         ratingCount: 1,
         usefulCount: 1,
         downloadsCount: 0,
         viewsCount: 1,
         isOfficial: false,
-        isVerified: true,
-        uploadStatus: 'published',
+        isVerified: false,
+        uploadStatus: 'pending_review',
         uploadedAt: 'Just now',
-        description: draft.description || 'Uploaded via VTU Notes Community',
+        description: draft.description || 'Uploaded via VTU Community Notes',
         tags: draft.tags.split(',').map((t) => t.trim()),
       };
 
       set((state) => ({
-        uploadStatus: 'published',
-        resources: [newResource, ...state.resources],
-        myUploads: [newResource, ...state.myUploads],
+        uploadStatus: 'pending_review',
+        uploadProgressPercent: 100,
+        resources: [fallbackResource, ...state.resources],
+        myUploads: [fallbackResource, ...state.myUploads],
       }));
 
-      if (onComplete) onComplete(newId);
-    }, 2000);
+      get().resetUploadDraft();
+      if (onComplete) onComplete(fallbackId);
+    }
   },
 
   getFilteredResources: () => {
@@ -201,39 +262,54 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
       if (selectedUnit !== 'All' && res.unitNumber !== selectedUnit) return false;
       if (selectedResourceType !== 'All' && res.resourceType !== selectedResourceType) return false;
 
-      if (searchQuery.trim() !== '') {
-        const q = searchQuery.toLowerCase();
-        const matchTitle = res.title.toLowerCase().includes(q);
-        const matchCode = res.subjectCode.toLowerCase().includes(q);
-        const matchSubject = res.subjectName.toLowerCase().includes(q);
-        const matchContributor = res.contributor.name.toLowerCase().includes(q);
-        if (!matchTitle && !matchCode && !matchSubject && !matchContributor) return false;
+      if (searchQuery.trim().length > 0) {
+        const query = searchQuery.toLowerCase();
+        const matchTitle = res.title.toLowerCase().includes(query);
+        const matchSubject = res.subjectName.toLowerCase().includes(query) || res.subjectCode.toLowerCase().includes(query);
+        const matchContributor = res.contributor.name.toLowerCase().includes(query);
+        const matchTags = res.tags.some((t) => t.toLowerCase().includes(query));
+        if (!matchTitle && !matchSubject && !matchContributor && !matchTags) return false;
       }
 
       return true;
     });
 
-    if (sortBy === 'Highest Rated') {
-      list = list.sort((a, b) => b.rating - a.rating);
-    } else if (sortBy === 'Most Useful') {
-      list = list.sort((a, b) => b.usefulCount - a.usefulCount);
-    } else if (sortBy === 'Recently Uploaded') {
-      list = list.sort((a, b) => b.id.localeCompare(a.id));
-    } else {
-      // Most Popular
-      list = list.sort((a, b) => b.downloadsCount - a.downloadsCount);
+    switch (sortBy) {
+      case 'Highest Rated':
+        list = [...list].sort((a, b) => b.rating - a.rating);
+        break;
+      case 'Most Useful':
+        list = [...list].sort((a, b) => b.usefulCount - a.usefulCount);
+        break;
+      case 'Recently Uploaded':
+        list = [...list].sort((a, b) => b.id.localeCompare(a.id));
+        break;
+      case 'Most Popular':
+      default:
+        list = [...list].sort((a, b) => b.downloadsCount - a.downloadsCount);
+        break;
     }
 
     return list;
   },
 
-  getResourceById: (id) => get().resources.find((r) => r.id === id),
+  getResourceById: (id) => {
+    const { resources, myUploads } = get();
+    return myUploads.find((r) => r.id === id) || resources.find((r) => r.id === id);
+  },
 
-  getContributorById: (id) => get().contributors.find((c) => c.id === id),
+  getContributorById: (id) => {
+    const { contributors } = get();
+    return contributors.find((c) => c.id === id);
+  },
 
-  getTrendingResources: () =>
-    [...get().resources].sort((a, b) => b.usefulCount - a.usefulCount).slice(0, 4),
+  getTrendingResources: () => {
+    const { resources } = get();
+    return [...resources].sort((a, b) => b.downloadsCount - a.downloadsCount).slice(0, 5);
+  },
 
-  getFeaturedResources: () =>
-    [...get().resources].sort((a, b) => b.rating - a.rating).slice(0, 3),
+  getFeaturedResources: () => {
+    const { resources } = get();
+    return resources.filter((r) => r.rating >= 4.8).slice(0, 4);
+  },
 }));

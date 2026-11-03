@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -33,6 +33,8 @@ export const CommunityHomeScreen: React.FC = () => {
     getFeaturedResources,
     getTrendingResources,
     toggleUsefulVote,
+    fetchCommunityResources,
+    isLoading,
   } = useCommunityStore();
 
   const { items, toggleBookmark } = useSavedStore();
@@ -40,16 +42,19 @@ export const CommunityHomeScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
 
+  useEffect(() => {
+    fetchCommunityResources();
+  }, [fetchCommunityResources]);
+
   const filteredResources = getFilteredResources();
   const featuredResources = getFeaturedResources();
   const trendingResources = getTrendingResources();
 
-  const onRefresh = React.useCallback(() => {
+  const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
-  }, []);
+    await fetchCommunityResources(true);
+    setRefreshing(false);
+  }, [fetchCommunityResources]);
 
   return (
     <View style={styles.root}>
