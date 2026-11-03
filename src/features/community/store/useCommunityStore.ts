@@ -11,6 +11,8 @@ import {
   fetchCommunityNotesApi,
   uploadCommunityNoteApi,
   toggleUsefulVoteApi,
+  fetchContributorRewardProfileApi,
+  ContributorRewardProfile,
 } from '../api/communityApi';
 import { useAuthStore } from '@/store';
 
@@ -23,8 +25,10 @@ interface CommunityState {
   uploadStatus: UploadStatus;
   uploadProgressPercent: number;
   isLoading: boolean;
+  rewardProfile: ContributorRewardProfile | null;
 
   // Actions
+  fetchRewardProfile: (userId?: string) => Promise<void>;
   fetchCommunityResources: (silent?: boolean) => Promise<void>;
   setFilterOptions: (filters: Partial<CommunityFilterOptions>) => void;
   resetFilters: () => void;
@@ -75,6 +79,16 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
   uploadDraft: INITIAL_DRAFT,
   uploadStatus: 'uploading',
   uploadProgressPercent: 0,
+  rewardProfile: null,
+
+  fetchRewardProfile: async (userId?: string) => {
+    try {
+      const profile = await fetchContributorRewardProfileApi(userId);
+      set({ rewardProfile: profile });
+    } catch {
+      // Fallback
+    }
+  },
 
   fetchCommunityResources: async (silent = false) => {
     if (!silent) set({ isLoading: true });
@@ -93,6 +107,7 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
       } else {
         set({ isLoading: false });
       }
+      get().fetchRewardProfile();
     } catch {
       set({ isLoading: false });
     }
@@ -188,6 +203,7 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
       }));
 
       get().resetUploadDraft();
+      get().fetchRewardProfile();
       if (onComplete) onComplete(createdResource.id);
     } catch (err: any) {
       console.warn('[CommunityStore] Real upload fallback to local pending:', err?.message);
@@ -313,3 +329,4 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
     return resources.filter((r) => r.rating >= 4.8).slice(0, 4);
   },
 }));
+

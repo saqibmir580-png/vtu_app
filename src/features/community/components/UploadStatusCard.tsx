@@ -40,6 +40,23 @@ export const UploadStatusCard: React.FC<UploadStatusCardProps> = ({
           : 'Your uploaded document is currently undergoing automated malware scan & syllabus verification.'}
       </Text>
 
+      {/* Contributor Reward Badge Card */}
+      <View style={styles.rewardNoticeBox}>
+        <View style={styles.rewardIconBadge}>
+          <Feather name="award" size={20} color="#B45309" />
+        </View>
+        <View style={styles.rewardNoticeTextCol}>
+          <Text style={styles.rewardNoticeTitle}>
+            {isSuccess ? 'Rewards Credited' : 'Pending Contributor Reward'}
+          </Text>
+          <Text style={styles.rewardNoticeDesc}>
+            {isSuccess
+              ? '🎉 +50 VTU Coins & +100 XP have been credited to your profile!'
+              : '🌟 Earn +50 VTU Coins & +100 XP once verified and published by academic reviewers.'}
+          </Text>
+        </View>
+      </View>
+
       <View style={styles.btnColumn}>
         <TouchableOpacity activeOpacity={0.85} style={styles.primaryBtn} onPress={onPressView}>
           <Feather name="book-open" size={16} color="#FFFFFF" />
@@ -98,39 +115,72 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 19,
-    marginBottom: 24,
-    paddingHorizontal: 10,
+    marginBottom: 16,
+  },
+  rewardNoticeBox: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 20,
+    gap: 12,
+  },
+  rewardIconBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rewardNoticeTextCol: {
+    flex: 1,
+  },
+  rewardNoticeTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#92400E',
+    marginBottom: 2,
+  },
+  rewardNoticeDesc: {
+    fontSize: 12,
+    color: '#B45309',
+    lineHeight: 16,
   },
   btnColumn: {
     width: '100%',
-    gap: 10,
+    gap: 12,
   },
   primaryBtn: {
-    backgroundColor: '#0745E8',
-    borderRadius: 14,
-    paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#0745E8',
+    paddingVertical: 14,
+    borderRadius: 14,
     gap: 8,
   },
   primaryBtnText: {
     color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '700',
+    fontSize: 14,
   },
   secondaryBtn: {
-    backgroundColor: '#EEF2FF',
-    borderRadius: 14,
-    paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 14,
+    borderRadius: 14,
     gap: 8,
   },
   secondaryBtnText: {
     color: '#0745E8',
-    fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });
