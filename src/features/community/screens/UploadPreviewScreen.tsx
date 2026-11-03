@@ -16,11 +16,18 @@ import { UploadPreviewCard } from '../components/UploadPreviewCard';
 export const UploadPreviewScreen: React.FC = () => {
   const router = useRouter();
   const { uploadDraft, startUploadProcess } = useCommunityStore();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const handleSubmit = () => {
-    startUploadProcess((newId) => {
-      router.replace(`/community/upload/status/${newId}` as any);
-    });
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await startUploadProcess((newId) => {
+        router.replace(`/community/upload/status/${newId}` as any);
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
