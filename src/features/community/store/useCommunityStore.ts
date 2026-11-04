@@ -9,6 +9,8 @@ import {
 import { MOCK_COMMUNITY_RESOURCES, MOCK_CONTRIBUTORS } from '../api/mockCommunityData';
 import {
   fetchCommunityNotesApi,
+  fetchMyContributionsApi,
+  submitRatingApi,
   uploadCommunityNoteApi,
   toggleUsefulVoteApi,
   fetchContributorRewardProfileApi,
@@ -107,6 +109,22 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
       } else {
         set({ isLoading: false });
       }
+      
+      // Sync personal uploads
+      try {
+        const user = useAuthStore.getState().user;
+        const myNotes = await fetchMyContributionsApi(user?.id);
+        if (myNotes && myNotes.length > 0) {
+          set((state) => {
+            const existingIds = new Set(myNotes.map((n) => n.id));
+            const pendingUploads = state.myUploads.filter((n) => !existingIds.has(n.id) && n.uploadStatus === 'pending_review');
+            return { myUploads: [...pendingUploads, ...myNotes] };
+          });
+        }
+      } catch {
+        // Retain local uploads
+      }
+
       get().fetchRewardProfile();
     } catch {
       set({ isLoading: false });
@@ -154,6 +172,7 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
   },
 
   submitRating: (resourceId, ratingValue) => {
+    submitRatingApi(resourceId, ratingValue);
     set((state) => ({
       resources: state.resources.map((res) => {
         if (res.id === resourceId) {

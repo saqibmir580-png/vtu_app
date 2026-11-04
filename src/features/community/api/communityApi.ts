@@ -98,6 +98,7 @@ export const fetchCommunityNotesApi = async (
   try {
     const queryParams: any = {
       limit: params.limit || 50,
+      status: 'PUBLISHED',
     };
     if (params.branchCode && params.branchCode !== 'All') queryParams.branchCode = params.branchCode;
     if (params.schemeYear && params.schemeYear !== 'All') queryParams.schemeYear = params.schemeYear;
@@ -115,6 +116,27 @@ export const fetchCommunityNotesApi = async (
   } catch (err: any) {
     console.warn('[communityApi] fetchCommunityNotesApi fallback to mock:', err?.message);
     return MOCK_COMMUNITY_RESOURCES;
+  }
+};
+
+export const fetchMyContributionsApi = async (
+  authorId?: string
+): Promise<CommunityResource[]> => {
+  try {
+    const res: any = await apiClient.get('/notes', {
+      params: {
+        limit: 50,
+        ...(authorId ? { authorId } : {}),
+      },
+    });
+    const rawList = extractNotesList(res);
+    if (rawList.length > 0) {
+      return rawList.map(mapBackendNoteToCommunityResource);
+    }
+    return [];
+  } catch (err: any) {
+    console.warn('[communityApi] fetchMyContributionsApi fallback:', err?.message);
+    return [];
   }
 };
 
@@ -165,7 +187,19 @@ export const uploadCommunityNoteApi = async (
 
 export const toggleUsefulVoteApi = async (noteId: string): Promise<void> => {
   try {
-    await apiClient.post(`/notes/${noteId}/download`);
+    await apiClient.post(`/notes/${noteId}/upvote`);
+  } catch {
+    try {
+      await apiClient.post(`/notes/${noteId}/download`);
+    } catch {
+      // Graceful offline fallback
+    }
+  }
+};
+
+export const submitRatingApi = async (noteId: string, rating: number): Promise<void> => {
+  try {
+    await apiClient.post(`/notes/${noteId}/rate`, { rating });
   } catch {
     // Graceful offline fallback
   }
