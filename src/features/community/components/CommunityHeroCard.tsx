@@ -24,9 +24,9 @@ export const CommunityHeroCard: React.FC<CommunityHeroCardProps> = ({
         <Text style={styles.topBadgeText}>VTU STUDENT COMMUNITY</Text>
       </View>
 
-      <Text style={styles.title}>Learn from students.{'\n'}Share what you know.</Text>
+      <Text style={styles.title}>Learn together.{'\n'}Share your notes.</Text>
       <Text style={styles.subtitle}>
-        Access 1,000+ handwritten notes, module summaries & formula sheets contributed by top VTU engineering peers.
+        Access verified handwritten notes, module summaries, and solved papers contributed by VTU engineering peers.
       </Text>
 
       <View style={styles.btnRow}>

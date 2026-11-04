@@ -6,9 +6,12 @@ export default function CommunityLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#FFFFFF' },
+        animation: 'slide_from_right',
+        animationDuration: 250,
+        contentStyle: { backgroundColor: '#F8FAFC' },
       }}
     >
+      <Stack.Screen name="index" options={{ title: 'VTU Community' }} />
       <Stack.Screen name="search" options={{ title: 'Search Notes' }} />
       <Stack.Screen name="filters" options={{ title: 'Filters' }} />
       <Stack.Screen name="feed" options={{ title: 'Community Feed' }} />
@@ -29,3 +32,4 @@ export default function CommunityLayout() {
     </Stack>
   );
 }
+

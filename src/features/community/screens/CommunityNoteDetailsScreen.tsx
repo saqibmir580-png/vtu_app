@@ -121,7 +121,12 @@ export const CommunityNoteDetailsScreen: React.FC = () => {
         isBookmarked={isBookmarked}
         onToggleDownload={() => toggleDownload(resource.id)}
         onToggleBookmark={() => toggleBookmark(resource.id)}
-        onPressReadNotes={() => {}}
+        onPressReadNotes={() => {
+          router.push({
+            pathname: '/notes/[id]',
+            params: { id: resource.id, view: 'reader', title: resource.title },
+          } as any);
+        }}
         onPressReport={() => setReportSheetVisible(true)}
       />
 
