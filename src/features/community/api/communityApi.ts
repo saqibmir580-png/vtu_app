@@ -112,10 +112,10 @@ export const fetchCommunityNotesApi = async (
     if (rawList.length > 0) {
       return rawList.map(mapBackendNoteToCommunityResource);
     }
-    return MOCK_COMMUNITY_RESOURCES;
+    return [];
   } catch (err: any) {
-    console.warn('[communityApi] fetchCommunityNotesApi fallback to mock:', err?.message);
-    return MOCK_COMMUNITY_RESOURCES;
+    console.warn('[communityApi] fetchCommunityNotesApi error:', err?.message);
+    return [];
   }
 };
 
@@ -261,4 +261,39 @@ export const fetchContributorRewardProfileApi = async (
     usefulVotes: 64,
     reputationScore: 92,
   };
+};
+
+export const mapBackendContributorToContributor = (p: any): Contributor => {
+  let reputationBadge: Contributor['reputationBadge'] = 'Active Student';
+  const score = p.reputationScore ?? 0;
+  const uploads = p.publishedCount ?? p.uploadCount ?? 0;
+  if (score >= 95 || uploads >= 10) reputationBadge = 'VTU Top Contributor';
+  else if (score >= 85 || uploads >= 5) reputationBadge = 'Star Scholar';
+  else if (score >= 70 || uploads >= 2) reputationBadge = 'Verified Peer';
+
+  return {
+    id: p.id || 'usr-default',
+    name: p.name || 'Student Contributor',
+    college: p.college || 'VTU Affiliated College',
+    branch: p.branch || 'CSE',
+    semester: p.semester || 5,
+    avatarUrl: p.avatarUrl,
+    contributionsCount: uploads,
+    totalUpvotes: p.usefulVotes ?? 0,
+    reputationBadge,
+  };
+};
+
+export const fetchContributorsApi = async (): Promise<Contributor[]> => {
+  try {
+    const res: any = await apiClient.get('/rewards/contributors');
+    const data = res.data?.data || res.data || [];
+    if (Array.isArray(data)) {
+      return data.map(mapBackendContributorToContributor);
+    }
+    return [];
+  } catch (err: any) {
+    console.warn('[communityApi] fetchContributorsApi error:', err?.message);
+    return [];
+  }
 };

@@ -40,6 +40,7 @@ export const CommunityHomeScreen: React.FC = () => {
     fetchCommunityResources,
     rewardProfile,
     fetchRewardProfile,
+    fetchContributors,
     isLoading,
   } = useCommunityStore();
 
@@ -52,7 +53,8 @@ export const CommunityHomeScreen: React.FC = () => {
   useEffect(() => {
     fetchCommunityResources();
     fetchRewardProfile();
-  }, [fetchCommunityResources, fetchRewardProfile]);
+    fetchContributors();
+  }, [fetchCommunityResources, fetchRewardProfile, fetchContributors]);
 
   const filteredResources = getFilteredResources();
   const trendingResources = getTrendingResources();
@@ -62,6 +64,7 @@ export const CommunityHomeScreen: React.FC = () => {
     await Promise.all([
       fetchCommunityResources(true),
       fetchRewardProfile(),
+      fetchContributors(),
     ]);
     setRefreshing(false);
   }, [fetchCommunityResources, fetchRewardProfile]);

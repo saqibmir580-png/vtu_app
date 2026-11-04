@@ -10,6 +10,7 @@ import { MOCK_COMMUNITY_RESOURCES, MOCK_CONTRIBUTORS } from '../api/mockCommunit
 import {
   fetchCommunityNotesApi,
   fetchMyContributionsApi,
+  fetchContributorsApi,
   submitRatingApi,
   uploadCommunityNoteApi,
   toggleUsefulVoteApi,
@@ -31,6 +32,7 @@ interface CommunityState {
 
   // Actions
   fetchRewardProfile: (userId?: string) => Promise<void>;
+  fetchContributors: () => Promise<void>;
   fetchCommunityResources: (silent?: boolean) => Promise<void>;
   setFilterOptions: (filters: Partial<CommunityFilterOptions>) => void;
   resetFilters: () => void;
@@ -92,6 +94,17 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
     }
   },
 
+  fetchContributors: async () => {
+    try {
+      const list = await fetchContributorsApi();
+      if (Array.isArray(list)) {
+        set({ contributors: list });
+      }
+    } catch {
+      // Fallback
+    }
+  },
+
   fetchCommunityResources: async (silent = false) => {
     if (!silent) set({ isLoading: true });
     try {
@@ -104,11 +117,7 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
         search: filterOptions.searchQuery,
       });
 
-      if (liveList && liveList.length > 0) {
-        set({ resources: liveList, isLoading: false });
-      } else {
-        set({ isLoading: false });
-      }
+      set({ resources: liveList || [], isLoading: false });
       
       // Sync personal uploads
       try {
