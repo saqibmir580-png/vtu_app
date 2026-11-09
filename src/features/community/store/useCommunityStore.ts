@@ -67,7 +67,7 @@ const INITIAL_DRAFT: UploadFormData = {
 
 export const useCommunityStore = create<CommunityState>((set, get) => ({
   resources: MOCK_COMMUNITY_RESOURCES,
-  myUploads: [MOCK_COMMUNITY_RESOURCES[3]], // Initial user contribution
+  myUploads: [],
   contributors: MOCK_CONTRIBUTORS,
   isLoading: false,
   filterOptions: {
@@ -123,13 +123,17 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
       try {
         const user = useAuthStore.getState().user;
         const myNotes = await fetchMyContributionsApi(user?.id);
-        if (myNotes && myNotes.length > 0) {
-          set((state) => {
+        set((state) => {
+          const validUploads = (state.myUploads || []).filter(Boolean);
+          if (myNotes && myNotes.length > 0) {
             const existingIds = new Set(myNotes.map((n) => n.id));
-            const pendingUploads = state.myUploads.filter((n) => !existingIds.has(n.id) && n.uploadStatus === 'pending_review');
+            const pendingUploads = validUploads.filter(
+              (n) => n && !existingIds.has(n.id) && n.uploadStatus === 'pending_review'
+            );
             return { myUploads: [...pendingUploads, ...myNotes] };
-          });
-        }
+          }
+          return { myUploads: validUploads };
+        });
       } catch {
         // Retain local uploads
       }
@@ -226,8 +230,8 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
       set((state) => ({
         uploadStatus: 'pending_review',
         uploadProgressPercent: 100,
-        resources: [createdResource, ...state.resources],
-        myUploads: [createdResource, ...state.myUploads],
+        resources: [createdResource, ...(state.resources || []).filter(Boolean)],
+        myUploads: [createdResource, ...(state.myUploads || []).filter(Boolean)],
       }));
 
       get().resetUploadDraft();
@@ -276,8 +280,8 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
       set((state) => ({
         uploadStatus: 'pending_review',
         uploadProgressPercent: 100,
-        resources: [fallbackResource, ...state.resources],
-        myUploads: [fallbackResource, ...state.myUploads],
+        resources: [fallbackResource, ...(state.resources || []).filter(Boolean)],
+        myUploads: [fallbackResource, ...(state.myUploads || []).filter(Boolean)],
       }));
 
       get().resetUploadDraft();

@@ -383,79 +383,87 @@ export const CommunityHomeScreen: React.FC = () => {
             </View>
 
             {/* My Uploads List */}
-            <View style={styles.myUploadsHeaderRow}>
-              <Text style={styles.sectionHeaderTitle}>My Uploaded Notes ({myUploads.length})</Text>
-              <TouchableOpacity onPress={() => router.push('/community/my-contributions' as any)}>
-                <Text style={styles.viewDetailsLink}>Manage All</Text>
-              </TouchableOpacity>
-            </View>
-
-            {myUploads.length === 0 ? (
-              <View style={styles.emptyUploadsCard}>
-                <Feather name="file-text" size={32} color="#94A3B8" />
-                <Text style={styles.emptyUploadsTitle}>No Uploads Yet</Text>
-                <Text style={styles.emptyUploadsSub}>
-                  Share handwritten notes from your class to help peers and unlock contributor rewards.
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.resourcesList}>
-                {myUploads.map((res) => {
-                  const statusColor =
-                    res.uploadStatus === 'published'
-                      ? '#059669'
-                      : res.uploadStatus === 'rejected'
-                      ? '#DC2626'
-                      : '#D97706';
-
-                  const statusBg =
-                    res.uploadStatus === 'published'
-                      ? '#ECFDF5'
-                      : res.uploadStatus === 'rejected'
-                      ? '#FEF2F2'
-                      : '#FEF3C7';
-
-                  const statusLabel =
-                    res.uploadStatus === 'published'
-                      ? 'Published'
-                      : res.uploadStatus === 'rejected'
-                      ? 'Rejected'
-                      : 'Under Review';
-
-                  return (
-                    <TouchableOpacity
-                      key={res.id}
-                      activeOpacity={0.85}
-                      style={styles.myNoteCard}
-                      onPress={() => router.push(`/community/resource/${res.id}` as any)}
-                    >
-                      <View style={styles.myNoteTopRow}>
-                        <View style={styles.myNoteSubjectBadge}>
-                          <Text style={styles.myNoteSubjectCode}>{res.subjectCode}</Text>
-                        </View>
-                        <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
-                          <Text style={[styles.statusText, { color: statusColor }]}>
-                            {statusLabel}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <Text style={styles.myNoteTitle} numberOfLines={2}>{res.title}</Text>
-
-                      <View style={styles.myNoteFooter}>
-                        <Text style={styles.myNoteMeta}>
-                          {res.resourceType} • {res.fileSize}
-                        </Text>
-                        <View style={styles.myNoteVotes}>
-                          <Feather name="thumbs-up" size={12} color="#059669" />
-                          <Text style={styles.myNoteVotesText}>{res.usefulCount} votes</Text>
-                        </View>
-                      </View>
+            {(() => {
+              const validMyUploads = (myUploads || []).filter(Boolean);
+              return (
+                <>
+                  <View style={styles.myUploadsHeaderRow}>
+                    <Text style={styles.sectionHeaderTitle}>My Uploaded Notes ({validMyUploads.length})</Text>
+                    <TouchableOpacity onPress={() => router.push('/community/my-contributions' as any)}>
+                      <Text style={styles.viewDetailsLink}>Manage All</Text>
                     </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
+                  </View>
+
+                  {validMyUploads.length === 0 ? (
+                    <View style={styles.emptyUploadsCard}>
+                      <Feather name="file-text" size={32} color="#94A3B8" />
+                      <Text style={styles.emptyUploadsTitle}>No Uploads Yet</Text>
+                      <Text style={styles.emptyUploadsSub}>
+                        Share handwritten notes from your class to help peers and unlock contributor rewards.
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.resourcesList}>
+                      {validMyUploads.map((res) => {
+                        const status = res.uploadStatus || 'pending_review';
+                        const statusColor =
+                          status === 'published'
+                            ? '#059669'
+                            : status === 'rejected'
+                            ? '#DC2626'
+                            : '#D97706';
+
+                        const statusBg =
+                          status === 'published'
+                            ? '#ECFDF5'
+                            : status === 'rejected'
+                            ? '#FEF2F2'
+                            : '#FEF3C7';
+
+                        const statusLabel =
+                          status === 'published'
+                            ? 'Published'
+                            : status === 'rejected'
+                            ? 'Rejected'
+                            : 'Under Review';
+
+                        return (
+                          <TouchableOpacity
+                            key={res.id}
+                            activeOpacity={0.85}
+                            style={styles.myNoteCard}
+                            onPress={() => router.push(`/community/resource/${res.id}` as any)}
+                          >
+                            <View style={styles.myNoteTopRow}>
+                              <View style={styles.myNoteSubjectBadge}>
+                                <Text style={styles.myNoteSubjectCode}>{res.subjectCode || 'VTU'}</Text>
+                              </View>
+                              <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
+                                <Text style={[styles.statusText, { color: statusColor }]}>
+                                  {statusLabel}
+                                </Text>
+                              </View>
+                            </View>
+
+                            <Text style={styles.myNoteTitle} numberOfLines={2}>{res.title}</Text>
+
+                            <View style={styles.myNoteFooter}>
+                              <Text style={styles.myNoteMeta}>
+                                {res.resourceType || 'PDF Notes'} • {res.fileSize || '2.5 MB'}
+                              </Text>
+                              <View style={styles.myNoteVotes}>
+                                <Feather name="thumbs-up" size={12} color="#059669" />
+                                <Text style={styles.myNoteVotesText}>{res.usefulCount || 0} votes</Text>
+                              </View>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+                </>
+              );
+            })()}
           </View>
         )}
       </ScrollView>

@@ -24,7 +24,8 @@ export const MyContributionsScreen: React.FC = () => {
     fetchRewardProfile();
   }, []);
 
-  const totalUpvotes = myUploads.reduce((acc, curr) => acc + curr.usefulCount, 0);
+  const validUploads = (myUploads || []).filter(Boolean);
+  const totalUpvotes = validUploads.reduce((acc, curr) => acc + (curr?.usefulCount || 0), 0);
 
   const coins = rewardProfile?.coinsBalance ?? 350;
   const xp = rewardProfile?.totalXp ?? 750;
@@ -45,7 +46,7 @@ export const MyContributionsScreen: React.FC = () => {
           </TouchableOpacity>
           <View style={styles.headerTitleBox}>
             <Text style={styles.headerTitle}>My Contributions</Text>
-            <Text style={styles.headerSub}>{myUploads.length} Shared Documents</Text>
+            <Text style={styles.headerSub}>{validUploads.length} Shared Documents</Text>
           </View>
           <TouchableOpacity
             style={styles.uploadBtn}
@@ -95,7 +96,7 @@ export const MyContributionsScreen: React.FC = () => {
         {/* Upload & Telemetry Statistics */}
         <View style={styles.statsCard}>
           <View style={styles.statTile}>
-            <Text style={styles.statNum}>{rewardProfile?.uploadCount ?? myUploads.length}</Text>
+            <Text style={styles.statNum}>{rewardProfile?.uploadCount ?? validUploads.length}</Text>
             <Text style={styles.statLabel}>Uploaded Notes</Text>
           </View>
           <View style={styles.divider} />
@@ -121,14 +122,14 @@ export const MyContributionsScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {myUploads.length === 0 ? (
+        {validUploads.length === 0 ? (
           <CommunityEmptyState
             title="No Contributions Yet"
             description="Start sharing your class notes to earn contributor badges and VTU Coins!"
             onPressUpload={() => router.push('/community/upload' as any)}
           />
         ) : (
-          myUploads.map((res) => {
+          validUploads.map((res) => {
             const savedItem = items.find((i) => i.id === res.id);
             const isBookmarked = savedItem ? savedItem.isBookmarked : false;
 
