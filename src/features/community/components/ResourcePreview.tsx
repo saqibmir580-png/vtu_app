@@ -38,7 +38,7 @@ export const ResourcePreview: React.FC<ResourcePreviewProps> = ({
           </Text>
 
           <View style={styles.sampleBox}>
-            <Feather name="edit-3" size={20} color="#7C3AED" />
+            <Feather name="edit-3" size={20} color="#0745E8" />
             <Text style={styles.sampleText}>Verified handwritten class notes from VTU toppers</Text>
           </View>
         </ScrollView>
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#7C3AED',
+    color: '#0745E8',
   },
   pageMeta: {
     fontSize: 11,
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   },
   sampleText: {
     fontSize: 11,
-    color: '#6D28D9',
+    color: '#1D4ED8',
     fontWeight: '600',
   },
   pageControls: {

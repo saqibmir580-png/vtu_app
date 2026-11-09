@@ -121,12 +121,12 @@ const styles = StyleSheet.create({
   descTitle: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#7C3AED',
+    color: '#0745E8',
     marginBottom: 2,
   },
   descBody: {
     fontSize: 12,
-    color: '#4C1D95',
+    color: '#0A2540',
     lineHeight: 17,
   },
 });

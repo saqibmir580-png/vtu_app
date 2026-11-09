@@ -39,7 +39,7 @@ export const SubjectSelector: React.FC<SubjectSelectorProps> = ({
       <Text style={styles.label}>Select VTU Subject</Text>
       {isLoading && subjects.length === 0 ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#7C3AED" />
+          <ActivityIndicator size="small" color="#0745E8" />
         </View>
       ) : (
         <View style={styles.grid}>
@@ -98,8 +98,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tileSelected: {
-    borderColor: '#7C3AED',
-    backgroundColor: '#F5F3FF',
+    borderColor: '#0745E8',
+    backgroundColor: '#F8FAFC',
   },
   code: {
     fontSize: 13,
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   codeSelected: {
-    color: '#7C3AED',
+    color: '#0745E8',
   },
   name: {
     fontSize: 11,

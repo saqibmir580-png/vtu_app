@@ -35,7 +35,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
       ) : (
         <View style={styles.dropContent}>
           <View style={styles.uploadCircle}>
-            <Feather name="upload-cloud" size={32} color="#7C3AED" />
+            <Feather name="upload-cloud" size={32} color="#0745E8" />
           </View>
 
           <Text style={styles.title}>Tap to Select PDF Document</Text>
@@ -56,7 +56,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
 const styles = StyleSheet.create({
   zone: {
     backgroundColor: '#FAF5FF',
-    borderColor: '#C4B5FD',
+    borderColor: '#BFDBFE',
     borderWidth: 2,
     borderStyle: 'dashed',
     borderRadius: 20,
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   browseBtn: {
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#0745E8',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,

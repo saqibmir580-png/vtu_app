@@ -14,7 +14,7 @@ export const UploadNotesCard: React.FC<UploadNotesCardProps> = ({ onPressUpload 
       onPress={onPressUpload}
     >
       <View style={styles.iconCircle}>
-        <Feather name="upload-cloud" size={24} color="#7C3AED" />
+        <Feather name="upload-cloud" size={24} color="#0745E8" />
       </View>
 
       <View style={styles.textWrapper}>
@@ -63,12 +63,12 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 11,
-    color: '#6D28D9',
+    color: '#1D4ED8',
     marginTop: 2,
     lineHeight: 15,
   },
   uploadBtn: {
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#0745E8',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,

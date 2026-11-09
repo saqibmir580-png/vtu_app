@@ -52,7 +52,7 @@ export const MyContributionsScreen: React.FC = () => {
             style={styles.uploadBtn}
             onPress={() => router.push('/community/upload' as any)}
           >
-            <Feather name="plus" size={18} color="#7C3AED" />
+            <Feather name="plus" size={18} color="#0745E8" />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -117,7 +117,7 @@ export const MyContributionsScreen: React.FC = () => {
             style={styles.sectionAction}
             onPress={() => router.push('/community/upload' as any)}
           >
-            <Feather name="upload-cloud" size={14} color="#7C3AED" />
+            <Feather name="upload-cloud" size={14} color="#0745E8" />
             <Text style={styles.sectionActionText}>Upload Note</Text>
           </TouchableOpacity>
         </View>
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -318,6 +318,6 @@ const styles = StyleSheet.create({
   sectionActionText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#7C3AED',
+    color: '#0745E8',
   },
 });

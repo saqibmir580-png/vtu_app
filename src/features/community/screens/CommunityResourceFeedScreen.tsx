@@ -57,7 +57,7 @@ export const CommunityResourceFeedScreen: React.FC = () => {
             style={styles.filterBtn}
             onPress={() => setFilterSheetVisible(true)}
           >
-            <Feather name="sliders" size={18} color="#7C3AED" />
+            <Feather name="sliders" size={18} color="#0745E8" />
           </TouchableOpacity>
         </View>
 
@@ -71,7 +71,7 @@ export const CommunityResourceFeedScreen: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#7C3AED']} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0745E8']} />
         }
       >
         <Text style={styles.countText}>{resources.length} Student Notes Available</Text>

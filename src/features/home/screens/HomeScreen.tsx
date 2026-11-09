@@ -260,6 +260,51 @@ export const HomeScreen: React.FC = () => {
         </View>
       )}
 
+      {/* 1. FIXED Header Section (Blue Container - Stays fixed on scroll) */}
+      <View style={styles.headerBackground}>
+        <SafeAreaView edges={['top']}>
+          <View style={styles.headerTopRow}>
+            {/* Left Aligned Greeting & Academic Details Pill */}
+            <View style={styles.greetingWrapper}>
+              <Text style={styles.greetingSub}>{getTimeAwareGreeting()}</Text>
+              <Text style={styles.userName}>{user?.name || 'Fardeen'}</Text>
+              <View style={styles.branchPill}>
+                <Text style={styles.branchPillText}>
+                  {user?.branch || 'CSE'} • Sem {user?.semester || 5} • {user?.scheme || '2022'} Scheme
+                </Text>
+              </View>
+            </View>
+
+            {/* Right Aligned Bell & Avatar */}
+            <View style={styles.rightIcons}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.iconCircle}
+                onPress={() => router.push('/notifications' as any)}
+              >
+                <Feather name="bell" size={18} color="#FFFFFF" />
+                {unreadCount > 0 && <View style={styles.unreadBadge} />}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.avatarCircle}
+                onPress={() => router.push('/(tabs)/profile')}
+              >
+                <Image
+                  source={{
+                    uri:
+                      user?.avatarUrl ||
+                      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
+                  }}
+                  style={styles.avatarImg}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -267,50 +312,6 @@ export const HomeScreen: React.FC = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0745E8']} />
         }
       >
-        {/* 1. Header Section */}
-        <View style={styles.headerBackground}>
-          <SafeAreaView edges={['top']}>
-            <View style={styles.headerTopRow}>
-              {/* Left Aligned Greeting & Academic Details Pill */}
-              <View style={styles.greetingWrapper}>
-                <Text style={styles.greetingSub}>{getTimeAwareGreeting()}</Text>
-                <Text style={styles.userName}>{user?.name || 'Fardeen'}</Text>
-                <View style={styles.branchPill}>
-                  <Text style={styles.branchPillText}>
-                    {user?.branch || 'CSE'} • Sem {user?.semester || 5} • {user?.scheme || '2022'} Scheme
-                  </Text>
-                </View>
-              </View>
-
-              {/* Right Aligned Bell & Avatar */}
-              <View style={styles.rightIcons}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  style={styles.iconCircle}
-                  onPress={() => router.push('/notifications' as any)}
-                >
-                  <Feather name="bell" size={18} color="#FFFFFF" />
-                  {unreadCount > 0 && <View style={styles.unreadBadge} />}
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  style={styles.avatarCircle}
-                  onPress={() => router.push('/(tabs)/profile')}
-                >
-                  <Image
-                    source={{
-                      uri:
-                        user?.avatarUrl ||
-                        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
-                    }}
-                    style={styles.avatarImg}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </SafeAreaView>
-        </View>
 
         {/* Error State Banner */}
         {error && (
@@ -390,6 +391,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     backgroundColor: '#FFFFFF',
+    paddingTop: 12,
+    paddingBottom: 36,
   },
   headerBackground: {
     backgroundColor: '#0745E8',

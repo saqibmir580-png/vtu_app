@@ -27,8 +27,8 @@ export const CommunityStats: React.FC<CommunityStatsProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.tile}>
-        <View style={[styles.iconBox, { backgroundColor: '#EDE9FE' }]}>
-          <Feather name="file-text" size={16} color="#7C3AED" />
+        <View style={[styles.iconBox, { backgroundColor: '#EEF2FF' }]}>
+          <Feather name="file-text" size={16} color="#0745E8" />
         </View>
         <Text style={styles.number}>{totalNotes}</Text>
         <Text style={styles.label}>Notes Shared</Text>

@@ -14,7 +14,7 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
 }) => {
   let title = 'Uploading Document...';
   let subtitle = 'Encrypted upload to VTU Community Storage';
-  let color = '#7C3AED';
+  let color = '#0745E8';
 
   if (status === 'processing') {
     title = 'Processing & Verifying File...';

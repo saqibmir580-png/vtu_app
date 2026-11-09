@@ -18,7 +18,7 @@ export const CommunityEmptyState: React.FC<CommunityEmptyStateProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.iconCircle}>
-        <Feather name="users" size={32} color="#7C3AED" />
+        <Feather name="users" size={32} color="#0745E8" />
       </View>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   primaryBtn: {
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#0745E8',
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 20,

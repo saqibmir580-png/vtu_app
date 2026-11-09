@@ -92,7 +92,7 @@ export const CommunityHomeScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#7C3AED" />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
 
       {/* Top Header */}
       <View style={styles.header}>
@@ -112,7 +112,7 @@ export const CommunityHomeScreen: React.FC = () => {
               style={styles.uploadHeaderBtn}
               onPress={() => router.push('/community/upload' as any)}
             >
-              <Feather name="plus" size={16} color="#7C3AED" />
+              <Feather name="plus" size={16} color="#0745E8" />
               <Text style={styles.uploadHeaderBtnText}>Upload Note</Text>
             </TouchableOpacity>
           </View>
@@ -127,7 +127,7 @@ export const CommunityHomeScreen: React.FC = () => {
               <Feather
                 name="book-open"
                 size={14}
-                color={activeTab === 'browse' ? '#7C3AED' : 'rgba(255, 255, 255, 0.75)'}
+                color={activeTab === 'browse' ? '#0745E8' : 'rgba(255, 255, 255, 0.75)'}
               />
               <Text style={[styles.tabText, activeTab === 'browse' && styles.tabTextActive]}>
                 Browse Notes
@@ -142,7 +142,7 @@ export const CommunityHomeScreen: React.FC = () => {
               <Feather
                 name="award"
                 size={14}
-                color={activeTab === 'leaderboard' ? '#7C3AED' : 'rgba(255, 255, 255, 0.75)'}
+                color={activeTab === 'leaderboard' ? '#0745E8' : 'rgba(255, 255, 255, 0.75)'}
               />
               <Text style={[styles.tabText, activeTab === 'leaderboard' && styles.tabTextActive]}>
                 Leaderboard
@@ -157,7 +157,7 @@ export const CommunityHomeScreen: React.FC = () => {
               <Feather
                 name="user"
                 size={14}
-                color={activeTab === 'standing' ? '#7C3AED' : 'rgba(255, 255, 255, 0.75)'}
+                color={activeTab === 'standing' ? '#0745E8' : 'rgba(255, 255, 255, 0.75)'}
               />
               <Text style={[styles.tabText, activeTab === 'standing' && styles.tabTextActive]}>
                 My Standing
@@ -171,7 +171,7 @@ export const CommunityHomeScreen: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#7C3AED']} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0745E8']} />
         }
       >
         {/* ==================== TAB 1: BROWSE NOTES ==================== */}
@@ -191,7 +191,7 @@ export const CommunityHomeScreen: React.FC = () => {
             {hasActiveFilters && (
               <View style={styles.activeFilterBar}>
                 <View style={styles.activeFilterPill}>
-                  <Feather name="filter" size={12} color="#7C3AED" />
+                  <Feather name="filter" size={12} color="#0745E8" />
                   <Text style={styles.activeFilterText}>
                     Filters: {[
                       filterOptions.selectedBranch !== 'All' ? filterOptions.selectedBranch : null,
@@ -295,7 +295,7 @@ export const CommunityHomeScreen: React.FC = () => {
                       </Text>
                       <View style={styles.contributorBadgeRow}>
                         <View style={styles.badgePillSmall}>
-                          <Feather name="award" size={10} color="#7C3AED" />
+                          <Feather name="award" size={10} color="#0745E8" />
                           <Text style={styles.badgePillSmallText}>{c.reputationBadge}</Text>
                         </View>
                       </View>
@@ -496,12 +496,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   header: {
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#0745E8',
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    shadowColor: '#7C3AED',
+    shadowColor: '#0745E8',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 10,
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
   uploadHeaderBtnText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#7C3AED',
+    color: '#0745E8',
   },
   tabBar: {
     flexDirection: 'row',
@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.85)',
   },
   tabTextActive: {
-    color: '#7C3AED',
+    color: '#0745E8',
     fontWeight: '800',
   },
   scrollContent: {
@@ -612,7 +612,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginHorizontal: 16,
     marginBottom: 10,
-    backgroundColor: '#EDE9FE',
+    backgroundColor: '#EEF2FF',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
   activeFilterText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#6D28D9',
+    color: '#1D4ED8',
   },
   clearFilterBtn: {
     marginLeft: 8,
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
   clearFilterText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#7C3AED',
+    color: '#0745E8',
   },
   feedHeaderRow: {
     flexDirection: 'row',
@@ -755,7 +755,7 @@ const styles = StyleSheet.create({
   badgePillSmallText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#7C3AED',
+    color: '#0745E8',
   },
   upvotesBox: {
     alignItems: 'center',
@@ -832,7 +832,7 @@ const styles = StyleSheet.create({
   xpText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#7C3AED',
+    color: '#0745E8',
   },
   xpTargetText: {
     fontSize: 12,
@@ -847,7 +847,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#0745E8',
     borderRadius: 4,
   },
   badgesWrapper: {
@@ -872,7 +872,7 @@ const styles = StyleSheet.create({
     color: '#0369A1',
   },
   ctaUploadBox: {
-    backgroundColor: '#EDE9FE',
+    backgroundColor: '#EEF2FF',
     borderRadius: 18,
     padding: 16,
     flexDirection: 'row',
@@ -890,7 +890,7 @@ const styles = StyleSheet.create({
   },
   ctaSub: {
     fontSize: 11,
-    color: '#6D28D9',
+    color: '#1D4ED8',
     marginTop: 2,
     lineHeight: 15,
   },
@@ -898,7 +898,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#0745E8',
     paddingHorizontal: 12,
     paddingVertical: 9,
     borderRadius: 14,
@@ -917,7 +917,7 @@ const styles = StyleSheet.create({
   viewDetailsLink: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#7C3AED',
+    color: '#0745E8',
   },
   emptyUploadsCard: {
     backgroundColor: '#FFFFFF',
@@ -1008,14 +1008,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 24,
     right: 20,
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#0745E8',
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 24,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    shadowColor: '#7C3AED',
+    shadowColor: '#0745E8',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,
