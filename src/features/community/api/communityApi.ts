@@ -32,7 +32,13 @@ export const mapBackendNoteToCommunityResource = (n: any): CommunityResource => 
     college: n.authorCollege || 'VTU Affiliated College',
     branch: n.branchCode || 'CSE',
     semester: n.semester || 5,
-    avatarUrl: n.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+    avatarUrl:
+      n.authorAvatar ||
+      n.authorProfilePic ||
+      n.user?.avatarUrl ||
+      n.user?.profilePic ||
+      n.contributor?.avatarUrl ||
+      undefined,
     contributionsCount: n.contributionsCount || 5,
     totalUpvotes: n.bookmarks ? n.bookmarks * 3 : 150,
     reputationBadge:
@@ -277,7 +283,13 @@ export const mapBackendContributorToContributor = (p: any): Contributor => {
     college: p.college || 'VTU Affiliated College',
     branch: p.branch || 'CSE',
     semester: p.semester || 5,
-    avatarUrl: p.avatarUrl,
+    avatarUrl:
+      p.avatarUrl ||
+      p.profilePic ||
+      p.avatar ||
+      p.user?.avatarUrl ||
+      p.user?.profilePic ||
+      undefined,
     contributionsCount: uploads,
     totalUpvotes: p.usefulVotes ?? 0,
     reputationBadge,

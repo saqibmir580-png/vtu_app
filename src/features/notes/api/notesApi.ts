@@ -227,10 +227,17 @@ export const purchaseNoteFromApi = async (noteId: string, amount?: number): Prom
   }
 };
 
-export const createRazorpayOrderFromApi = async (noteId: string, userId?: string) => {
+export const createRazorpayOrderFromApi = async (
+  noteId: string,
+  userId?: string,
+  category: 'NOTES' | 'PAPERS' | 'PASSING_PACKAGES' = 'NOTES'
+) => {
   try {
     const response: any = await apiClient.post('/orders/razorpay/create-order', {
       noteId,
+      resourceId: noteId,
+      packageId: category === 'PASSING_PACKAGES' ? noteId : undefined,
+      category,
       userId,
     });
     const body = response.data || response;
@@ -256,11 +263,21 @@ export const verifyRazorpayPaymentFromApi = async (data: {
   razorpayOrderId: string;
   razorpayPaymentId: string;
   razorpaySignature?: string;
-  noteId: string;
+  noteId?: string;
+  packageId?: string;
+  resourceId?: string;
+  category?: 'NOTES' | 'PAPERS' | 'PASSING_PACKAGES';
   userId?: string;
 }) => {
   try {
-    const response: any = await apiClient.post('/orders/razorpay/verify', data);
+    const targetId = data.noteId || data.resourceId || data.packageId || '';
+    const payload = {
+      ...data,
+      noteId: targetId,
+      resourceId: targetId,
+      packageId: data.packageId || (data.category === 'PASSING_PACKAGES' ? targetId : undefined),
+    };
+    const response: any = await apiClient.post('/orders/razorpay/verify', payload);
     const body = response.data || response;
     const verifyData = body.data || body;
     return {

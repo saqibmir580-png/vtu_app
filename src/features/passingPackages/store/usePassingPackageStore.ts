@@ -16,6 +16,7 @@ interface PassingPackageStoreState {
   activeScheme: string;
   filterOptions: PackageFilterOptions;
   bookmarkedQuestionIds: string[];
+  unlockedPackageIds: string[];
 
   // Actions
   loadPackagesFromBackend: () => Promise<void>;
@@ -25,6 +26,8 @@ interface PassingPackageStoreState {
   setFilterOptions: (filters: Partial<PackageFilterOptions>) => void;
   resetFilters: () => void;
   toggleQuestionBookmark: (questionId: string) => void;
+  unlockPackage: (packageId: string) => void;
+  isPackageUnlocked: (packageId: string) => boolean;
   
   // Selectors / Helpers
   getPackagesForCurrentStudent: () => PassingPackage[];
@@ -46,6 +49,7 @@ export const usePassingPackageStore = create<PassingPackageStoreState>((set, get
     searchQuery: '',
   },
   bookmarkedQuestionIds: ['iq-cn-1', 'iq-cn-2', 'rq-cn-1'],
+  unlockedPackageIds: [],
 
   loadPackagesFromBackend: async () => {
     set({ isLoading: true });
@@ -103,6 +107,24 @@ export const usePassingPackageStore = create<PassingPackageStoreState>((set, get
         : [...state.bookmarkedQuestionIds, questionId];
       return { bookmarkedQuestionIds: updated };
     });
+  },
+
+  unlockPackage: (packageId) => {
+    set((state) => ({
+      unlockedPackageIds: Array.from(new Set([...state.unlockedPackageIds, packageId])),
+      packages: state.packages.map((p) =>
+        p.id === packageId ? { ...p, isPurchased: true } : p
+      ),
+    }));
+  },
+
+  isPackageUnlocked: (packageId) => {
+    const { unlockedPackageIds, packages } = get();
+    if (unlockedPackageIds.includes(packageId)) return true;
+    const pkg = packages.find((p) => p.id === packageId);
+    if (!pkg) return false;
+    if (!pkg.isPaid || (pkg.price !== undefined && pkg.price <= 0)) return true;
+    return Boolean(pkg.isPurchased);
   },
 
   getPackagesForCurrentStudent: () => {

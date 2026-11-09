@@ -435,8 +435,22 @@ export const CommunityHomeScreen: React.FC = () => {
                             onPress={() => router.push(`/community/resource/${res.id}` as any)}
                           >
                             <View style={styles.myNoteTopRow}>
-                              <View style={styles.myNoteSubjectBadge}>
-                                <Text style={styles.myNoteSubjectCode}>{res.subjectCode || 'VTU'}</Text>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                {res.contributor?.avatarUrl || user?.avatarUrl ? (
+                                  <Image
+                                    source={{ uri: res.contributor?.avatarUrl || user?.avatarUrl }}
+                                    style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: '#E2E8F0' }}
+                                  />
+                                ) : (
+                                  <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: '#0745E8', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '800' }}>
+                                      {((res.contributor?.name || user?.name || 'U').slice(0, 2)).toUpperCase()}
+                                    </Text>
+                                  </View>
+                                )}
+                                <View style={styles.myNoteSubjectBadge}>
+                                  <Text style={styles.myNoteSubjectCode}>{res.subjectCode || 'VTU'}</Text>
+                                </View>
                               </View>
                               <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
                                 <Text style={[styles.statusText, { color: statusColor }]}>
