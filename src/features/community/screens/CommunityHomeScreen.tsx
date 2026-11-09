@@ -22,6 +22,7 @@ import { TrendingResourceCard } from '../components/TrendingResourceCard';
 import { CommunityFilterSheet } from '../components/CommunityFilterSheet';
 import { CommunityEmptyState } from '../components/CommunityEmptyState';
 import { ContributorAvatar } from '../components/ContributorAvatar';
+import { AdBannerCard } from '@/shared/components/AdBannerCard';
 
 type CommunityTab = 'browse' | 'leaderboard' | 'standing';
 
@@ -309,6 +310,11 @@ export const CommunityHomeScreen: React.FC = () => {
                   </TouchableOpacity>
                 );
               })}
+            </View>
+
+            {/* Sponsored Feed Banner */}
+            <View style={{ paddingHorizontal: 16, marginVertical: 6 }}>
+              <AdBannerCard placement="COMMUNITY_FEED" />
             </View>
 
             {/* Trending Notes Section */}

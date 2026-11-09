@@ -18,6 +18,7 @@ import { AcademicOverviewCard } from '../components/AcademicOverviewCard';
 import { ContinueStudyingCard } from '../components/ContinueStudyingCard';
 import { QuickAccessGrid } from '../components/QuickAccessGrid';
 import { UpcomingEventsSection } from '../components/UpcomingEventsSection';
+import { AdBannerCard } from '@/shared/components/AdBannerCard';
 import { LatestNotificationsSection } from '../components/LatestNotificationsSection';
 import { RecentlyAddedSection } from '../components/RecentlyAddedSection';
 import {
@@ -340,6 +341,11 @@ export const HomeScreen: React.FC = () => {
 
             {/* 4. Quick Access Grid */}
             <QuickAccessGrid />
+
+            {/* Sponsored Native Banner Slot */}
+            <View style={{ paddingHorizontal: 16 }}>
+              <AdBannerCard placement="HOME_BANNER" />
+            </View>
 
             {/* 5. Upcoming Academic Events */}
             <UpcomingEventsSection events={events} />

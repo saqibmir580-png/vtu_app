@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
 // Explicit active Wi-Fi LAN IP (verified via ipconfig)
-export const ACTIVE_LAN_IP = '192.168.1.58';
+export const ACTIVE_LAN_IP = '10.195.194.172';
 export const DEFAULT_API_URL = `http://${ACTIVE_LAN_IP}:5000/api/v1`;
 
 // Determine default API base URL dynamically with strict environment isolation

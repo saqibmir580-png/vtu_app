@@ -76,7 +76,14 @@ export const useCalendarStore = create<CalendarStoreState>((set, get) => ({
   fetchAcademicEvents: async () => {
     set({ isLoading: true });
     try {
-      const res: any = await apiClient.get('/academic/events');
+      const user = useAuthStore.getState().user;
+      const params = new URLSearchParams();
+      if (user?.branch && user.branch !== 'ALL') params.append('branchId', user.branch);
+      if (user?.semester && String(user.semester) !== 'ALL') params.append('semester', String(user.semester));
+      if (user?.scheme && user.scheme !== 'ALL') params.append('schemeId', user.scheme);
+      const queryString = params.toString() ? `?${params.toString()}` : '';
+
+      const res: any = await apiClient.get(`/academic/events${queryString}`);
       let rawList: any[] = [];
       const d = res.data !== undefined ? res.data : res;
       if (Array.isArray(d)) {

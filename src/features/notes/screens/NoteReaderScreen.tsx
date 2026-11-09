@@ -25,6 +25,7 @@ import { MOCK_RESOURCES } from '../api/notesData';
 import { useStudyActivityStore } from '@/features/home';
 import { useAuthStore } from '@/store';
 import { PaymentCheckoutModal } from '../components/PaymentCheckoutModal';
+import { AdBannerCard } from '@/shared/components/AdBannerCard';
 
 import * as ScreenCapture from 'expo-screen-capture';
 
@@ -545,6 +546,15 @@ export const NoteReaderScreen: React.FC = () => {
           </View>
         )}
       </View>
+
+      {/* Sponsored Sticky Bottom Banner (Auto-hidden if user purchased note) */}
+      {!isPurchased && (
+        <AdBannerCard
+          placement="NOTES_READER_BOTTOM"
+          compact
+          visible={!isPurchased}
+        />
+      )}
 
       {/* Bottom Reader Controls */}
       <View style={styles.readerFooter}>

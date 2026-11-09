@@ -16,6 +16,7 @@ import { PackageStats } from '../components/PackageStats';
 import { PackageSectionCard } from '../components/PackageSectionCard';
 import { SubjectSelector } from '../components/SubjectSelector';
 import { PaymentCheckoutModal } from '@/features/notes/components/PaymentCheckoutModal';
+import { AdBannerCard } from '@/shared/components/AdBannerCard';
 
 export const PackageOverviewScreen: React.FC = () => {
   const router = useRouter();
@@ -284,6 +285,11 @@ export const PackageOverviewScreen: React.FC = () => {
               }
             }}
           />
+        </View>
+
+        {/* Sponsored Banner Slot */}
+        <View style={{ paddingHorizontal: 16 }}>
+          <AdBannerCard placement="PASSING_PACKAGE_BOTTOM" />
         </View>
 
         {/* Disclaimer Bar */}
