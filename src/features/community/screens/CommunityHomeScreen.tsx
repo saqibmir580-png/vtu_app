@@ -8,6 +8,7 @@ import {
   RefreshControl,
   StatusBar,
   Animated,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -23,11 +24,13 @@ import { CommunityFilterSheet } from '../components/CommunityFilterSheet';
 import { CommunityEmptyState } from '../components/CommunityEmptyState';
 import { ContributorAvatar } from '../components/ContributorAvatar';
 import { AdBannerCard } from '@/shared/components/AdBannerCard';
+import { useAuthStore } from '@/store';
 
 type CommunityTab = 'browse' | 'leaderboard' | 'standing';
 
 export const CommunityHomeScreen: React.FC = () => {
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const {
     resources,
     myUploads,

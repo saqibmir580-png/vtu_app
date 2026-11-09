@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    shrink: 0,
+    flexShrink: 0,
   },
   ctaButtonText: {
     color: '#FFFFFF',
@@ -348,3 +348,4 @@ const styles = StyleSheet.create({
     color: '#0745E8',
   },
 });
+
