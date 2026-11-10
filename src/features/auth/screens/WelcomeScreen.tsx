@@ -32,7 +32,6 @@ export const WelcomeScreen: React.FC = () => {
               priority="high"
             />
           </View>
-          <Text style={styles.title}>VTU Ultima</Text>
           <Text style={styles.subtitle}>
             Your all-in-one companion for notes, past question papers, SGPA/CGPA calculators & VTU community.
           </Text>
@@ -98,8 +97,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoWrapper: {
-    width: 260,
-    height: 110,
+    width: 280,
+    height: 120,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
@@ -108,20 +107,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  title: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    letterSpacing: -0.5,
-    marginBottom: 10,
-  },
   subtitle: {
-    fontSize: 15,
+    fontSize: 16,
     color: '#DBEAFE',
     textAlign: 'center',
-    lineHeight: 23,
-    paddingHorizontal: 16,
+    lineHeight: 24,
+    paddingHorizontal: 20,
+    maxWidth: 340,
   },
   actions: {
     gap: 12,

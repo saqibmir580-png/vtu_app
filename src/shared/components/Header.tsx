@@ -54,15 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
       // Continue
     }
 
-    // 3. Force try router.back() directly
-    try {
-      router.back();
-      return;
-    } catch {
-      // Continue
-    }
-
-    // 4. Safe fallback: navigate back to Home tab
+    // 3. Safe fallback: navigate back to Home tab without triggering unhandled GO_BACK
     try {
       router.replace('/(tabs)/home' as any);
     } catch {
