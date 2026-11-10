@@ -9,6 +9,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { Header } from '@/shared/components';
+import { StatusBar } from 'react-native';
 import { MOCK_SUBJECTS, MOCK_UNITS } from '../api/notesData';
 
 export const SubjectOverviewScreen: React.FC = () => {
@@ -19,7 +20,12 @@ export const SubjectOverviewScreen: React.FC = () => {
 
   return (
     <View style={styles.rootContainer}>
-      <Header title={subject.code} showBack />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title={subject.code ? `${subject.code} Overview` : 'Subject Overview'}
+        dark={true}
+        showBack={true}
+      />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Subject Header Card */}
         <View style={styles.subjectCard}>

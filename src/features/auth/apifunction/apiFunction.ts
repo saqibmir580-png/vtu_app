@@ -167,3 +167,17 @@ export const getSemestersApiFunction = async (): Promise<any[]> => {
     return [];
   }
 };
+
+export const getCoursesApiFunction = async (params?: {
+  semester?: number;
+  branchCode?: string;
+  schemeYear?: string;
+}): Promise<any[]> => {
+  try {
+    const response: any = await apiClient.get('/academics/courses', { params });
+    const data = response.data || response;
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+};

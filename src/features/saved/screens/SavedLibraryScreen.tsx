@@ -17,6 +17,7 @@ import { SavedItemCard } from '../components/SavedItemCard';
 import { SavedItem, SavedTab } from '../types/saved.types';
 import { PaperPreviewModal } from '@/features/papers/components/PaperPreviewModal';
 import { MOCK_PAPERS } from '@/features/papers/api/mockPapers';
+import { Header } from '@/shared/components/Header';
 
 export const SavedLibraryScreen: React.FC = () => {
   const router = useRouter();
@@ -60,37 +61,25 @@ export const SavedLibraryScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header title="Bookmarks & Downloads" dark={true} showBack={true} />
 
-      {/* Top Navigation Header */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Feather name="search" size={18} color="#64748B" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search saved notes, question papers..."
+          placeholderTextColor="#94A3B8"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery !== '' && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Feather name="x-circle" size={16} color="#94A3B8" />
           </TouchableOpacity>
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>Bookmark & Downloads</Text>
-            <Text style={styles.headerSub}>Offline Study Library</Text>
-          </View>
-        </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Feather name="search" size={18} color="#64748B" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search saved notes, question papers..."
-            placeholderTextColor="#94A3B8"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery !== '' && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Feather name="x-circle" size={16} color="#94A3B8" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </SafeAreaView>
+        )}
+      </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Storage Summary Gauge Card */}

@@ -14,9 +14,9 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { Header } from '@/shared/components';
 import { useAcademicRecordStore } from '../store/useAcademicRecordStore';
 import { useAuthStore } from '@/store';
 import { SemesterRecord } from '../types/calculator.types';
@@ -130,27 +130,14 @@ export const CgpaCalculatorScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
 
-      {/* Header Bar */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>CGPA Calculator</Text>
-            <Text style={styles.headerSub}>VTU Cumulative Grade Point Average</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.saveHeaderBtn}
-            onPress={calcMode === 'DIRECT' ? handleSaveDirect : triggerSuccessFeedback}
-          >
-            <Feather name="check" size={16} color="#FFFFFF" />
-            <Text style={styles.saveHeaderBtnText}>Save</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      {/* Royal Blue Header (No Save Button in Header) */}
+      <Header
+        title="CGPA Calculator"
+        dark={true}
+        showBack={true}
+      />
 
       {/* Success Notification Banner */}
       {savedToastVisible && (
@@ -177,6 +164,31 @@ export const CgpaCalculatorScreen: React.FC = () => {
               <Text style={[styles.classificationText, { color: classification.color }]}>
                 {classification.label}
               </Text>
+            </View>
+          </View>
+
+          {/* Graphical Analysis: Milestone Trajectory Bar */}
+          <View style={styles.trajectoryContainer}>
+            <View style={styles.trajectoryHeader}>
+              <Text style={styles.trajectoryTitle}>Degree Classification Milestone</Text>
+              <Text style={styles.trajectoryTarget}>Goal: 7.75 FCD</Text>
+            </View>
+            <View style={styles.trajectoryTrack}>
+              <View
+                style={[
+                  styles.trajectoryFill,
+                  {
+                    width: `${Math.min(100, Math.max(0, (currentCgpa / 10) * 100))}%`,
+                    backgroundColor: classification.color,
+                  },
+                ]}
+              />
+            </View>
+            <View style={styles.milestonesRow}>
+              <Text style={[styles.mPoint, currentCgpa >= 5.0 && styles.mPointActive]}>5.0 Pass</Text>
+              <Text style={[styles.mPoint, currentCgpa >= 6.75 && styles.mPointActive]}>6.75 FC</Text>
+              <Text style={[styles.mPoint, currentCgpa >= 7.75 && styles.mPointActive]}>7.75 FCD</Text>
+              <Text style={[styles.mPoint, currentCgpa >= 9.0 && styles.mPointActive]}>9.0 Honors</Text>
             </View>
           </View>
 
@@ -532,53 +544,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  headerSafeArea: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  headerTitleGroup: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  headerSub: {
-    fontSize: 11,
-    color: '#64748B',
-  },
-  saveHeaderBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#0745E8',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  saveHeaderBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-  },
   toastBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -648,6 +613,52 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     textAlign: 'right',
+  },
+  trajectoryContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    gap: 8,
+  },
+  trajectoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  trajectoryTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  trajectoryTarget: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0745E8',
+  },
+  trajectoryTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#F1F5F9',
+    overflow: 'hidden',
+  },
+  trajectoryFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  milestonesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  mPoint: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#94A3B8',
+  },
+  mPointActive: {
+    color: '#0745E8',
   },
   heroStatsRow: {
     flexDirection: 'row',

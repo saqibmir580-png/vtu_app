@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { usePassingPackageStore } from '../store/usePassingPackageStore';
 import { useSavedStore } from '@/features/saved/store/useSavedStore';
+import { Header } from '@/shared/components/Header';
 import { ImportantQuestionCard } from '../components/ImportantQuestionCard';
 import { RevisionResourceCard } from '../components/RevisionResourceCard';
 
@@ -46,22 +47,10 @@ export const SavedPackagesScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header title="Saved Packages" dark={true} showBack={true} />
 
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-
-          <View style={styles.headerTitleBox}>
-            <Text style={styles.headerTitle}>Saved Packages & Revision</Text>
-            <Text style={styles.headerSub}>Offline Hub & Saved Bookmarks</Text>
-          </View>
-
-          <View style={{ width: 36 }} />
-        </View>
-
+      <View style={styles.tabWrapper}>
         {/* Tab Switcher */}
         <View style={styles.tabRow}>
           <TouchableOpacity
@@ -84,7 +73,7 @@ export const SavedPackagesScreen: React.FC = () => {
             </Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {activeTab === 'Bookmarked Qs' ? (
@@ -180,6 +169,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#64748B',
     marginTop: 1,
+  },
+  tabWrapper: {
+    backgroundColor: '#FFFFFF',
+    paddingTop: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
   tabRow: {
     flexDirection: 'row',

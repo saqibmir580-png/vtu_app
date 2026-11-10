@@ -16,6 +16,8 @@ import { UpcomingEventCard } from '../components/UpcomingEventCard';
 import { CalendarFilterSheet } from '../components/CalendarFilterSheet';
 import { EmptyState } from '../components/EmptyState';
 import { AcademicEvent, EventCategory } from '../types/calendar.types';
+import { Header } from '@/shared/components/Header';
+import { StatusBar } from 'react-native';
 
 const CATEGORIES: Array<EventCategory | 'All'> = [
   'All',
@@ -53,25 +55,20 @@ export const UpcomingEventsScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>Upcoming Academic Events</Text>
-            <Text style={styles.headerSub}>Chronological Academic Schedule</Text>
-          </View>
-
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title="Upcoming Events"
+        dark={true}
+        showBack={true}
+        rightElement={
           <TouchableOpacity
             onPress={() => setFilterSheetVisible(true)}
             style={styles.filterBtn}
           >
-            <Feather name="sliders" size={18} color="#0745E8" />
+            <Feather name="sliders" size={18} color="#FFFFFF" />
           </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Search Bar */}
@@ -168,8 +165,8 @@ const styles = StyleSheet.create({
   filterBtn: {
     width: 36,
     height: 36,
-    borderRadius: 12,
-    backgroundColor: '#EEF2FF',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },

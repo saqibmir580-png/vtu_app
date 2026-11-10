@@ -14,6 +14,7 @@ import { usePassingPackageStore } from '../store/usePassingPackageStore';
 import { useSavedStore } from '@/features/saved/store/useSavedStore';
 import { DownloadButton } from '../components/DownloadButton';
 import { BookmarkButton } from '../components/BookmarkButton';
+import { Header } from '@/shared/components/Header';
 import * as ScreenCapture from 'expo-screen-capture';
 
 export const PackagePdfViewerScreen: React.FC = () => {
@@ -55,19 +56,12 @@ export const PackagePdfViewerScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-
-          <View style={styles.headerTitleBox}>
-            <Text style={styles.headerTitle} numberOfLines={1}>{resource.title}</Text>
-            <Text style={styles.headerSub}>Page {currentPage} of {resource.pageCount}</Text>
-          </View>
-
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title={resource.title}
+        dark={true}
+        showBack={true}
+        rightElement={
           <View style={styles.headerActions}>
             <BookmarkButton
               isBookmarked={isBookmarked}
@@ -80,8 +74,8 @@ export const PackagePdfViewerScreen: React.FC = () => {
               size={16}
             />
           </View>
-        </View>
-      </SafeAreaView>
+        }
+      />
 
       {/* Simulated Document Viewer Canvas */}
       <ScrollView contentContainerStyle={styles.viewerContainer}>

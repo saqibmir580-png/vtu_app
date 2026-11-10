@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -378,21 +379,31 @@ export const PaperPreviewModal: React.FC<PaperPreviewModalProps> = ({
                     <Text style={styles.openExternalText}>Open External</Text>
                   </TouchableOpacity>
                 </View>
-                <WebView
-                  source={{
-                    uri: paper.pdfUrl.toLowerCase().endsWith('.pdf')
-                      ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(paper.pdfUrl)}`
-                      : paper.pdfUrl,
-                  }}
-                  style={{ flex: 1 }}
-                  startInLoadingState
-                  renderLoading={() => (
-                    <View style={styles.loadingContainer}>
-                      <ActivityIndicator size="large" color="#0745E8" />
-                      <Text style={styles.loadingText}>Rendering document preview...</Text>
-                    </View>
-                  )}
-                />
+                {paper.pdfUrl.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif)($|\?)/i) ? (
+                  <View style={styles.imageViewerContainer}>
+                    <Image
+                      source={{ uri: paper.pdfUrl }}
+                      style={styles.imageViewer}
+                      resizeMode="contain"
+                    />
+                  </View>
+                ) : (
+                  <WebView
+                    source={{
+                      uri: paper.pdfUrl.toLowerCase().endsWith('.pdf')
+                        ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(paper.pdfUrl)}`
+                        : paper.pdfUrl,
+                    }}
+                    style={{ flex: 1 }}
+                    startInLoadingState
+                    renderLoading={() => (
+                      <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color="#0745E8" />
+                        <Text style={styles.loadingText}>Rendering document preview...</Text>
+                      </View>
+                    )}
+                  />
+                )}
               </>
             ) : (
               <View style={styles.noDocContainer}>
@@ -886,5 +897,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
+  },
+  imageViewerContainer: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageViewer: {
+    width: '100%',
+    height: '100%',
   },
 });

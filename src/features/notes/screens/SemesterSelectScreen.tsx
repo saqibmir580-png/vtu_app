@@ -9,6 +9,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { Header } from '@/shared/components';
+import { StatusBar } from 'react-native';
 import { useAuthStore } from '@/store';
 
 export const SemesterSelectScreen: React.FC = () => {
@@ -33,7 +34,8 @@ export const SemesterSelectScreen: React.FC = () => {
 
   return (
     <View style={styles.rootContainer}>
-      <Header title="Select Semester" showBack />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header title="Select Semester" dark={true} showBack={true} />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.headerSubtitle}>
           Choose a semester to view department curriculum notes and syllabus.

@@ -11,10 +11,12 @@ import {
   RefreshControl,
   Alert,
   Image,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { Header } from '@/shared/components/Header';
 import { useAuthStore } from '@/store';
 import { useToast } from '@/core/providers/ToastProvider';
 import { MOCK_SUBJECTS, MOCK_RESOURCES } from '../api/notesData';
@@ -176,17 +178,19 @@ export const NotesListScreen: React.FC = () => {
 
   return (
     <View style={styles.rootContainer}>
-      {/* Top Header */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerTopRow}>
-          <Text style={styles.headerTitle}>Notes Library</Text>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title="Notes Library"
+        dark={true}
+        showBack={false}
+        rightElement={
           <View style={styles.headerRightActions}>
             <TouchableOpacity
               activeOpacity={0.8}
               style={styles.iconCircle}
               onPress={() => router.push('/notifications' as any)}
             >
-              <Feather name="bell" size={18} color="#0F172A" />
+              <Feather name="bell" size={18} color="#FFFFFF" />
             </TouchableOpacity>
             <TouchableOpacity
               activeOpacity={0.85}
@@ -203,8 +207,8 @@ export const NotesListScreen: React.FC = () => {
               />
             </TouchableOpacity>
           </View>
-        </View>
-      </SafeAreaView>
+        }
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -651,7 +655,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },

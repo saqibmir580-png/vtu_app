@@ -12,6 +12,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { usePassingPackageStore } from '../store/usePassingPackageStore';
 import { NightBeforeCard } from '../components/NightBeforeCard';
+import { Header } from '@/shared/components/Header';
 import { QuickRevisionList } from '../components/QuickRevisionList';
 
 export const NightBeforeExamScreen: React.FC = () => {
@@ -41,30 +42,20 @@ export const NightBeforeExamScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
-
-      {/* Header Bar */}
-      <View style={styles.header}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-              <Feather name="arrow-left" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-
-            <View style={styles.headerTitleBox}>
-              <Text style={styles.headerTitle}>1-Night-Before-Exam</Text>
-              <Text style={styles.headerSub}>{pkg.subjectCode} • Focused Revision</Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.backBtn}
-              onPress={() => setCompletedIds([])}
-            >
-              <Feather name="refresh-cw" size={18} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title="1-Night-Before-Exam"
+        dark={true}
+        showBack={true}
+        rightElement={
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => setCompletedIds([])}
+          >
+            <Feather name="refresh-cw" size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Night Before Hero Card */}

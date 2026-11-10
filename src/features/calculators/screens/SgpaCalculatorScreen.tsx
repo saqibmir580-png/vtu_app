@@ -1,21 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   StatusBar,
   Modal,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { Header } from '@/shared/components';
 import { useAcademicRecordStore } from '../store/useAcademicRecordStore';
 import { SubjectGrade, VTU_GRADE_SCALE } from '../types/calculator.types';
 import { useAuthStore } from '@/store';
+import { getCoursesApiFunction } from '@/features/auth/apifunction/apiFunction';
 
 interface DefaultSubjectTemplate {
   name: string;
@@ -132,47 +133,68 @@ export const SgpaCalculatorScreen: React.FC = () => {
   const [subjects, setSubjects] = useState<SubjectGrade[]>(() =>
     createInitialSubjects(selectedSemester)
   );
+  const [loadingCourses, setLoadingCourses] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
 
   // Grade Picker Sheet State
   const [activeGradeSubjectId, setActiveGradeSubjectId] = useState<string | null>(null);
 
+  // Load official courses from Academic Master data dynamically
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadMasterCourses = async () => {
+      // Check if user already has saved subjects for this semester
+      const existing = semesters.find((s) => s.semester === selectedSemester);
+      if (existing && existing.subjects && existing.subjects.length > 0) {
+        setSubjects(existing.subjects);
+        return;
+      }
+
+      setLoadingCourses(true);
+      try {
+        const branchCode = user?.branch || (user as any)?.branchCode || 'CS';
+        const schemeYear = (user as any)?.schemeYear || (user as any)?.scheme || '2021';
+
+        const remoteCourses = await getCoursesApiFunction({
+          semester: selectedSemester,
+          branchCode,
+          schemeYear: String(schemeYear),
+        });
+
+        if (isMounted && remoteCourses && remoteCourses.length > 0) {
+          const mapped: SubjectGrade[] = remoteCourses.map((c: any, idx: number) => ({
+            id: c.id || `course-${idx}`,
+            name: c.courseName || c.title || c.name || `Subject ${idx + 1}`,
+            code: c.courseCode || c.code || `SUB${idx + 1}`,
+            credits: Number(c.credits) || 3,
+            grade: 'A',
+            gradePoint: 8,
+          }));
+          setSubjects(mapped);
+          return;
+        }
+      } catch {
+        // Fallback to official VTU template
+      } finally {
+        if (isMounted) setLoadingCourses(false);
+      }
+
+      if (isMounted) {
+        setSubjects(createInitialSubjects(selectedSemester));
+      }
+    };
+
+    loadMasterCourses();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedSemester]);
+
   // Switch Semester
   const handleSelectSemester = (sem: number) => {
     setSelectedSemester(sem);
-    const existing = semesters.find((s) => s.semester === sem);
-    if (existing && existing.subjects && existing.subjects.length > 0) {
-      setSubjects(existing.subjects);
-    } else {
-      setSubjects(createInitialSubjects(sem));
-    }
-  };
-
-  // Add custom subject
-  const handleAddSubject = () => {
-    const newSub: SubjectGrade = {
-      id: `sub-${Date.now()}`,
-      name: `Subject ${subjects.length + 1}`,
-      code: `21CS${selectedSemester}${subjects.length + 1}`,
-      credits: 3,
-      grade: 'A',
-      gradePoint: 8,
-    };
-    setSubjects([...subjects, newSub]);
-  };
-
-  // Reset to syllabus template
-  const handleResetTemplate = () => {
-    setSubjects(createInitialSubjects(selectedSemester));
-  };
-
-  // Remove subject
-  const handleRemoveSubject = (id: string) => {
-    if (subjects.length <= 1) {
-      Alert.alert('Cannot Remove', 'At least one subject is required for SGPA calculation.');
-      return;
-    }
-    setSubjects(subjects.filter((s) => s.id !== id));
   };
 
   // Cycle Credits: 1 -> 2 -> 3 -> 4 -> 5 -> 1
@@ -201,6 +223,12 @@ export const SgpaCalculatorScreen: React.FC = () => {
   const equivalentPercentage =
     calculatedSgpa > 0.75 ? Math.min(100, (calculatedSgpa - 0.75) * 10).toFixed(2) : '0.00';
 
+  // Grade Distribution Analysis
+  const topGradesCredits = subjects
+    .filter((s) => s.gradePoint >= 8)
+    .reduce((sum, s) => sum + s.credits, 0);
+  const topGradesPercentage = totalCredits > 0 ? Math.round((topGradesCredits / totalCredits) * 100) : 0;
+
   // Save to academic profile
   const handleSaveToProfile = () => {
     saveSemesterSubjects(selectedSemester, subjects, calculatedSgpa, totalCredits);
@@ -214,24 +242,14 @@ export const SgpaCalculatorScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
 
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>SGPA Calculator</Text>
-            <Text style={styles.headerSub}>Semester {selectedSemester} Course Grading</Text>
-          </View>
-          <TouchableOpacity style={styles.saveHeaderBtn} onPress={handleSaveToProfile}>
-            <Feather name="check" size={16} color="#FFFFFF" />
-            <Text style={styles.saveHeaderBtnText}>Save</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      {/* Royal Blue Header (No Save Button in Header) */}
+      <Header
+        title="SGPA Calculator"
+        dark={true}
+        showBack={true}
+      />
 
       {/* Toast Notification */}
       {toastVisible && (
@@ -284,6 +302,17 @@ export const SgpaCalculatorScreen: React.FC = () => {
             </View>
           </View>
 
+          {/* Graphical Analysis Bar: Top Grades Distribution */}
+          <View style={styles.analysisContainer}>
+            <View style={styles.analysisLabelRow}>
+              <Text style={styles.analysisLabel}>High Grade Distribution (O, A+, A)</Text>
+              <Text style={styles.analysisPct}>{topGradesPercentage}% of credits</Text>
+            </View>
+            <View style={styles.analysisTrack}>
+              <View style={[styles.analysisFill, { width: `${topGradesPercentage}%` }]} />
+            </View>
+          </View>
+
           <View style={styles.meterStatsRow}>
             <View style={styles.meterStat}>
               <Text style={styles.mStatLabel}>Total Credits</Text>
@@ -291,12 +320,12 @@ export const SgpaCalculatorScreen: React.FC = () => {
             </View>
             <View style={styles.meterDivider} />
             <View style={styles.meterStat}>
-              <Text style={styles.mStatLabel}>Grade Points (Σ C×G)</Text>
+              <Text style={styles.mStatLabel}>Grade Points</Text>
               <Text style={styles.mStatVal}>{totalPoints.toFixed(0)} pts</Text>
             </View>
             <View style={styles.meterDivider} />
             <View style={styles.meterStat}>
-              <Text style={styles.mStatLabel}>Courses</Text>
+              <Text style={styles.mStatLabel}>Official Courses</Text>
               <Text style={styles.mStatVal}>{subjects.length}</Text>
             </View>
           </View>
@@ -304,75 +333,71 @@ export const SgpaCalculatorScreen: React.FC = () => {
 
         {/* Courses Section Header */}
         <View style={styles.coursesSectionHeader}>
-          <Text style={styles.coursesTitle}>Course Grades</Text>
-          <View style={styles.actionPillsRow}>
-            <TouchableOpacity style={styles.resetActionBtn} onPress={handleResetTemplate}>
-              <Feather name="rotate-ccw" size={12} color="#64748B" />
-              <Text style={styles.resetActionText}>Syllabus Preset</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.addActionBtn} onPress={handleAddSubject}>
-              <Feather name="plus" size={13} color="#0745E8" />
-              <Text style={styles.addActionText}>Add Course</Text>
-            </TouchableOpacity>
+          <View style={styles.coursesTitleRow}>
+            <Feather name="book" size={16} color="#0745E8" />
+            <Text style={styles.coursesTitle}>Academic Master Syllabus</Text>
+          </View>
+          <View style={styles.catalogPill}>
+            <Text style={styles.catalogPillText}>VTU Scheme {user?.branch || 'CSE'}</Text>
           </View>
         </View>
 
-        {/* Streamlined Modular Course Rows */}
-        <View style={styles.coursesList}>
-          {subjects.map((sub, index) => {
-            const gradeInfo =
-              VTU_GRADES.find((g) => g.grade === sub.grade) || VTU_GRADES[2];
+        {/* Loading Indicator when fetching courses */}
+        {loadingCourses ? (
+          <View style={styles.loadingBox}>
+            <ActivityIndicator size="small" color="#0745E8" />
+            <Text style={styles.loadingText}>Fetching official courses from catalog...</Text>
+          </View>
+        ) : (
+          /* Streamlined Course Rows (No manual add/delete) */
+          <View style={styles.coursesList}>
+            {subjects.map((sub, index) => {
+              const gradeInfo =
+                VTU_GRADES.find((g) => g.grade === sub.grade) || VTU_GRADES[2];
 
-            return (
-              <View key={sub.id} style={styles.courseRow}>
-                {/* Left: Index + Subject Info */}
-                <View style={styles.courseLeft}>
-                  <View style={styles.courseIndexBox}>
-                    <Text style={styles.courseIndexText}>{index + 1}</Text>
+              return (
+                <View key={sub.id} style={styles.courseRow}>
+                  {/* Left: Index + Subject Info */}
+                  <View style={styles.courseLeft}>
+                    <View style={styles.courseIndexBox}>
+                      <Text style={styles.courseIndexText}>{index + 1}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.courseCode}>{sub.code}</Text>
+                      <Text style={styles.courseName} numberOfLines={1}>
+                        {sub.name}
+                      </Text>
+                    </View>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.courseCode}>{sub.code}</Text>
-                    <Text style={styles.courseName} numberOfLines={1}>
-                      {sub.name}
+
+                  {/* Middle: Credits Indicator */}
+                  <TouchableOpacity
+                    style={styles.creditsPill}
+                    activeOpacity={0.7}
+                    onPress={() => handleCycleCredits(sub.id, sub.credits)}
+                  >
+                    <Text style={styles.creditsPillText}>{sub.credits} cr</Text>
+                    <Feather name="refresh-cw" size={10} color="#64748B" />
+                  </TouchableOpacity>
+
+                  {/* Right: VTU Grade Badge Dropdown */}
+                  <TouchableOpacity
+                    style={[styles.gradeBadgeBtn, { backgroundColor: gradeInfo.bg }]}
+                    activeOpacity={0.8}
+                    onPress={() => setActiveGradeSubjectId(sub.id)}
+                  >
+                    <Text style={[styles.gradeBadgeText, { color: gradeInfo.color }]}>
+                      {sub.grade} ({sub.gradePoint})
                     </Text>
-                  </View>
+                    <Feather name="chevron-down" size={14} color={gradeInfo.color} />
+                  </TouchableOpacity>
                 </View>
+              );
+            })}
+          </View>
+        )}
 
-                {/* Middle: Cycle Credits Pill */}
-                <TouchableOpacity
-                  style={styles.creditsPill}
-                  activeOpacity={0.7}
-                  onPress={() => handleCycleCredits(sub.id, sub.credits)}
-                >
-                  <Text style={styles.creditsPillText}>{sub.credits} cr</Text>
-                  <Feather name="refresh-cw" size={10} color="#64748B" />
-                </TouchableOpacity>
-
-                {/* Right: VTU Grade Badge Dropdown */}
-                <TouchableOpacity
-                  style={[styles.gradeBadgeBtn, { backgroundColor: gradeInfo.bg }]}
-                  activeOpacity={0.8}
-                  onPress={() => setActiveGradeSubjectId(sub.id)}
-                >
-                  <Text style={[styles.gradeBadgeText, { color: gradeInfo.color }]}>
-                    {sub.grade} ({sub.gradePoint})
-                  </Text>
-                  <Feather name="chevron-down" size={14} color={gradeInfo.color} />
-                </TouchableOpacity>
-
-                {/* Delete Icon */}
-                <TouchableOpacity
-                  style={styles.rowDeleteBtn}
-                  onPress={() => handleRemoveSubject(sub.id)}
-                >
-                  <Feather name="x" size={16} color="#94A3B8" />
-                </TouchableOpacity>
-              </View>
-            );
-          })}
-        </View>
-
-        {/* Bottom Save Button */}
+        {/* Bottom Save CTA Button */}
         <TouchableOpacity
           style={styles.saveBottomCta}
           activeOpacity={0.85}
@@ -460,53 +485,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  headerSafeArea: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  headerTitleGroup: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  headerSub: {
-    fontSize: 11,
-    color: '#64748B',
-  },
-  saveHeaderBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#0745E8',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  saveHeaderBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-  },
   toastBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -524,12 +502,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 16,
     paddingBottom: 40,
   },
   semCarousel: {
     gap: 8,
-    paddingBottom: 14,
+    paddingBottom: 16,
   },
   semTab: {
     paddingHorizontal: 16,
@@ -607,6 +585,40 @@ const styles = StyleSheet.create({
     color: '#6366F1',
     marginTop: 1,
   },
+  analysisContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    gap: 6,
+  },
+  analysisLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  analysisLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  analysisPct: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#059669',
+  },
+  analysisTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#F1F5F9',
+    overflow: 'hidden',
+  },
+  analysisFill: {
+    height: '100%',
+    backgroundColor: '#059669',
+    borderRadius: 3,
+  },
   meterStatsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -642,42 +654,38 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
+  coursesTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   coursesTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
   },
-  actionPillsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  resetActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  resetActionText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-  addActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  catalogPill: {
     backgroundColor: '#EEF2FF',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 8,
   },
-  addActionText: {
+  catalogPillText: {
     fontSize: 11,
     fontWeight: '800',
     color: '#0745E8',
+  },
+  loadingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 30,
+  },
+  loadingText: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '600',
   },
   coursesList: {
     gap: 8,
@@ -750,9 +758,6 @@ const styles = StyleSheet.create({
   gradeBadgeText: {
     fontSize: 12,
     fontWeight: '800',
-  },
-  rowDeleteBtn: {
-    padding: 4,
   },
   saveBottomCta: {
     flexDirection: 'row',

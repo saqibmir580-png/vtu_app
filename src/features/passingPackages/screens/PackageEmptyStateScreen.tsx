@@ -7,9 +7,9 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { Header } from '@/shared/components/Header';
 import { usePassingPackageStore } from '../store/usePassingPackageStore';
 
 export const PackageEmptyStateScreen: React.FC = () => {
@@ -26,17 +26,8 @@ export const PackageEmptyStateScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Package Unavailable</Text>
-          <View style={{ width: 36 }} />
-        </View>
-      </SafeAreaView>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header title="Package Unavailable" dark={true} showBack={true} />
 
       <View style={styles.content}>
         <View style={styles.illustrationCircle}>

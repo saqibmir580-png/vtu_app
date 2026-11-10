@@ -9,6 +9,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { Header } from '@/shared/components';
+import { StatusBar } from 'react-native';
 import { MOCK_UNITS, MOCK_RESOURCES } from '../api/notesData';
 
 export const UnitResourcesScreen: React.FC = () => {
@@ -34,7 +35,8 @@ export const UnitResourcesScreen: React.FC = () => {
 
   return (
     <View style={styles.rootContainer}>
-      <Header title={`Unit ${unit.unitNumber}`} showBack />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header title={`Unit ${unit.unitNumber} Resources`} dark={true} showBack={true} />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Unit Info Header */}
         <View style={styles.unitHeaderCard}>

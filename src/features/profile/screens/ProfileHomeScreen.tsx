@@ -12,6 +12,7 @@ import { SectionHeader } from '../components/SectionHeader';
 import { ProfileMenuRow } from '../components/ProfileMenuRow';
 import { AvatarUploadModal } from '../components/AvatarUploadModal';
 import { ChangePasswordModal } from '../components/ChangePasswordModal';
+import { Header } from '@/shared/components/Header';
 
 export const ProfileHomeScreen: React.FC = () => {
   const router = useRouter();
@@ -55,14 +56,27 @@ export const ProfileHomeScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title="Student Profile"
+        dark={true}
+        showBack={false}
+        rightElement={
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.headerEditBtn}
+            onPress={() => setAvatarModalVisible(true)}
+          >
+            <Feather name="edit-2" size={17} color="#FFFFFF" />
+          </TouchableOpacity>
+        }
+      />
 
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <StudentProfileHeader
-          user={user}
-          onEditPress={() => setAvatarModalVisible(true)}
-        />
-      </SafeAreaView>
+      <StudentProfileHeader
+        user={user}
+        hideTopBar={true}
+        onEditPress={() => setAvatarModalVisible(true)}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Academic Snapshot Card with Synchronized CGPA & Quick Badges */}
@@ -300,6 +314,14 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  headerEditBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerSafeArea: {
     backgroundColor: '#FFFFFF',

@@ -16,6 +16,8 @@ import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { useAuthStore } from '@/store';
 import { fetchVideoCoursesFromApi } from '../api/videoApi';
 import { VideoCourse } from '../types/video.types';
+import { Header } from '@/shared/components/Header';
+import { StatusBar } from 'react-native';
 
 export const VideoCoursesScreen: React.FC = () => {
   const router = useRouter();
@@ -74,26 +76,19 @@ export const VideoCoursesScreen: React.FC = () => {
   }, [courses, searchQuery, selectedSubject]);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-          activeOpacity={0.7}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Feather name="arrow-left" size={22} color="#0F172A" />
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Video Learning Modules</Text>
-          <Text style={styles.headerSubtitle}>Official YouTube Syllabus Lectures</Text>
-        </View>
-        <View style={styles.youtubeBrandBadge}>
-          <FontAwesome5 name="youtube" size={14} color="#EF4444" />
-          <Text style={styles.youtubeBrandText}>YouTube</Text>
-        </View>
-      </View>
+    <View style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title="Video Lectures"
+        dark={true}
+        showBack={true}
+        rightElement={
+          <View style={styles.youtubeBrandBadge}>
+            <FontAwesome5 name="youtube" size={14} color="#EF4444" />
+            <Text style={styles.youtubeBrandText}>YouTube</Text>
+          </View>
+        }
+      />
 
       <ScrollView
         style={styles.scrollView}
@@ -257,7 +252,7 @@ export const VideoCoursesScreen: React.FC = () => {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

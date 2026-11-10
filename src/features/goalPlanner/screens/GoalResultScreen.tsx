@@ -13,6 +13,8 @@ import { useGoalPlannerStore } from '../store/useGoalPlannerStore';
 import { GoalResultCard } from '../components/GoalResultCard';
 import { SemesterBreakdownItem } from '../components/SemesterBreakdownItem';
 import { ScenarioProjectionCard } from '../components/ScenarioProjectionCard';
+import { Header } from '@/shared/components/Header';
+import { StatusBar } from 'react-native';
 
 export const GoalResultScreen: React.FC = () => {
   const router = useRouter();
@@ -35,29 +37,12 @@ export const GoalResultScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      {/* Header Bar */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>Goal Calculation Result</Text>
-            <Text style={styles.headerSub}>Target {activeGoalResult.targetCgpa.toFixed(2)} CGPA Roadmap</Text>
-          </View>
-
-          <TouchableOpacity
-            disabled={saved}
-            onPress={handleSave}
-            style={[styles.saveHeaderBtn, saved && styles.saveHeaderBtnDisabled]}
-          >
-            <Feather name={saved ? 'check' : 'bookmark'} size={16} color={saved ? '#059669' : '#0745E8'} />
-            <Text style={[styles.saveHeaderBtnText, saved && { color: '#059669' }]}>
-              {saved ? 'Saved' : 'Save'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title={`Goal Result (${activeGoalResult.targetCgpa.toFixed(2)} CGPA)`}
+        dark={true}
+        showBack={true}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Result Hero Card */}

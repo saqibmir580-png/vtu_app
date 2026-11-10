@@ -4,13 +4,12 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
 import { useGoalPlannerStore } from '../store/useGoalPlannerStore';
 import { SemesterBreakdownItem } from '../components/SemesterBreakdownItem';
+import { Header } from '@/shared/components/Header';
 
 export const GoalBreakdownScreen: React.FC = () => {
   const router = useRouter();
@@ -23,20 +22,12 @@ export const GoalBreakdownScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>Semester Goal Breakdown</Text>
-            <Text style={styles.headerSub}>
-              Required SGPA per Semester for Target {activeGoalResult.targetCgpa.toFixed(2)}
-            </Text>
-          </View>
-        </View>
-      </SafeAreaView>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title={`Semester Targets (${activeGoalResult.targetCgpa.toFixed(2)} CGPA)`}
+        dark={true}
+        showBack={true}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionHeader}>Remaining Semester Targets</Text>
@@ -55,55 +46,22 @@ export const GoalBreakdownScreen: React.FC = () => {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  headerSafeArea: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
     backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  headerTitleGroup: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  headerSub: {
-    fontSize: 12,
-    color: '#64748B',
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 40,
+    paddingBottom: 32,
   },
   sectionHeader: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   sectionSub: {
     fontSize: 12,
     color: '#64748B',
-    marginBottom: 14,
+    marginBottom: 16,
   },
 });

@@ -20,6 +20,7 @@ import { PaperPreviewModal } from '../components/PaperPreviewModal';
 import { DownloadProgressModal } from '../components/DownloadProgressModal';
 import { PaperSkeleton } from '../components/PaperSkeleton';
 import { QuestionPaper } from '../types/paper.types';
+import { Header } from '@/shared/components/Header';
 
 export const PapersHomeScreen: React.FC = () => {
   const router = useRouter();
@@ -34,6 +35,7 @@ export const PapersHomeScreen: React.FC = () => {
     downloadedIds,
     bookmarkedIds,
     papers,
+    loadPapersFromBackend,
   } = usePaperStore();
 
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
@@ -43,6 +45,7 @@ export const PapersHomeScreen: React.FC = () => {
   const [activeChip, setActiveChip] = useState('All');
 
   useEffect(() => {
+    loadPapersFromBackend();
     if (user) {
       initFiltersFromProfile({
         branch: user.branch,
@@ -96,20 +99,14 @@ export const PapersHomeScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
 
-      {/* Header Bar */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Question Papers</Text>
-            <Text style={styles.headerSub}>VTU Previous Year & Model QPs</Text>
-          </View>
-
+      {/* Unified Custom Header */}
+      <Header
+        title="Question Papers"
+        dark={true}
+        showBack={true}
+        rightElement={
           <View style={styles.headerActions}>
             {/* Saved Papers Button */}
             <TouchableOpacity
@@ -117,7 +114,7 @@ export const PapersHomeScreen: React.FC = () => {
               style={styles.headerIconBtn}
               onPress={() => router.push('/papers/saved' as any)}
             >
-              <Feather name="folder" size={18} color="#0F172A" />
+              <Feather name="folder" size={18} color="#FFFFFF" />
               {downloadedIds.length > 0 && <View style={styles.badgeDot} />}
             </TouchableOpacity>
 
@@ -130,7 +127,7 @@ export const PapersHomeScreen: React.FC = () => {
               <Feather
                 name="sliders"
                 size={18}
-                color={activeFilterCount > 0 ? '#0745E8' : '#0F172A'}
+                color="#FFFFFF"
               />
               {activeFilterCount > 0 && (
                 <View style={styles.filterCountBadge}>
@@ -139,25 +136,25 @@ export const PapersHomeScreen: React.FC = () => {
               )}
             </TouchableOpacity>
           </View>
-        </View>
+        }
+      />
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Feather name="search" size={18} color="#64748B" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by subject name, code (e.g. 21CS52)..."
-            placeholderTextColor="#94A3B8"
-            value={activeFilters.searchQuery}
-            onChangeText={(text) => setFilters({ searchQuery: text })}
-          />
-          {activeFilters.searchQuery !== '' && (
-            <TouchableOpacity onPress={() => setFilters({ searchQuery: '' })}>
-              <Feather name="x-circle" size={16} color="#94A3B8" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </SafeAreaView>
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Feather name="search" size={18} color="#64748B" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by subject name, code (e.g. 21CS52)..."
+          placeholderTextColor="#94A3B8"
+          value={activeFilters.searchQuery}
+          onChangeText={(text) => setFilters({ searchQuery: text })}
+        />
+        {activeFilters.searchQuery !== '' && (
+          <TouchableOpacity onPress={() => setFilters({ searchQuery: '' })}>
+            <Feather name="x-circle" size={16} color="#94A3B8" />
+          </TouchableOpacity>
+        )}
+      </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Student Profile Default Banner */}
@@ -352,12 +349,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerIconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },

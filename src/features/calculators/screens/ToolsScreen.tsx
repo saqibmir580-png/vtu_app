@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
+  StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -79,12 +80,54 @@ export const ToolsScreen: React.FC = () => {
 
   return (
     <View style={styles.rootContainer}>
-      <Header title="Calculators & Tools" showBack={false} />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header title="Calculators & Tools" showBack={false} dark={true} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Academic Overview Quick Snapshot Banner - Top Prominence */}
+        <View style={styles.snapshotBanner}>
+          <View style={styles.snapshotHeader}>
+            <View style={styles.snapshotTitleRow}>
+              <Feather name="shield" size={18} color="#0745E8" />
+              <Text style={styles.snapshotTitle}>Academic Status Snapshot</Text>
+            </View>
+            <Text style={styles.snapshotSemBadge}>
+              Semester {user?.semester || 5} • {user?.branchCode || 'CSE'}
+            </Text>
+          </View>
+
+          <View style={styles.snapshotStatsRow}>
+            <View style={styles.snapshotStat}>
+              <Text style={styles.statLabel}>Current CGPA</Text>
+              <Text style={styles.statValue}>
+                {currentCgpa > 0 ? currentCgpa.toFixed(2) : '—'}
+              </Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.snapshotStat}>
+              <Text style={styles.statLabel}>Target CGPA</Text>
+              <Text style={styles.statValue}>
+                {user?.targetCgpa ? Number(user.targetCgpa).toFixed(2) : '9.00'}
+              </Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.snapshotStat}>
+              <Text style={styles.statLabel}>Avg Attendance</Text>
+              <Text
+                style={[
+                  styles.statValue,
+                  { color: overallPercentage >= 75 ? '#059669' : '#DC2626' },
+                ]}
+              >
+                {subjects.length > 0 ? `${overallPercentage}%` : '85%'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
         {/* Section Intro Pill */}
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>Academic Utilities</Text>
@@ -131,47 +174,6 @@ export const ToolsScreen: React.FC = () => {
               </View>
             </TouchableOpacity>
           ))}
-        </View>
-
-        {/* Academic Overview Quick Snapshot Banner */}
-        <View style={styles.snapshotBanner}>
-          <View style={styles.snapshotHeader}>
-            <View style={styles.snapshotTitleRow}>
-              <Feather name="shield" size={18} color="#0745E8" />
-              <Text style={styles.snapshotTitle}>Academic Status Snapshot</Text>
-            </View>
-            <Text style={styles.snapshotSemBadge}>
-              Semester {user?.semester || 5} • {user?.branchCode || 'CSE'}
-            </Text>
-          </View>
-
-          <View style={styles.snapshotStatsRow}>
-            <View style={styles.snapshotStat}>
-              <Text style={styles.statLabel}>Current CGPA</Text>
-              <Text style={styles.statValue}>
-                {currentCgpa > 0 ? currentCgpa.toFixed(2) : '—'}
-              </Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.snapshotStat}>
-              <Text style={styles.statLabel}>Target CGPA</Text>
-              <Text style={styles.statValue}>
-                {user?.targetCgpa ? Number(user.targetCgpa).toFixed(2) : '9.00'}
-              </Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.snapshotStat}>
-              <Text style={styles.statLabel}>Avg Attendance</Text>
-              <Text
-                style={[
-                  styles.statValue,
-                  { color: overallPercentage >= 75 ? '#059669' : '#DC2626' },
-                ]}
-              >
-                {subjects.length > 0 ? `${overallPercentage}%` : '85%'}
-              </Text>
-            </View>
-          </View>
         </View>
       </ScrollView>
     </View>
@@ -287,6 +289,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     padding: 18,
     gap: 14,
+    marginBottom: 20,
   },
   snapshotHeader: {
     flexDirection: 'row',

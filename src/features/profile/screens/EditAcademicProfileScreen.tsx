@@ -18,6 +18,8 @@ import { CollegeSelector } from '../components/CollegeSelector';
 import { CGPAField } from '../components/CGPAField';
 import { SaveButton } from '../components/SaveButton';
 import { SuccessToast } from '../components/SuccessToast';
+import { Header } from '@/shared/components/Header';
+import { StatusBar } from 'react-native';
 
 export const EditAcademicProfileScreen: React.FC = () => {
   const router = useRouter();
@@ -89,24 +91,14 @@ export const EditAcademicProfileScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header title="Edit Academic Profile" dark={true} showBack={true} />
+
       <SuccessToast
         message="Academic profile updated successfully!"
         visible={toastVisible}
         onHide={() => setToastVisible(false)}
       />
-
-      {/* Header Bar */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>Edit Academic Profile</Text>
-            <Text style={styles.headerSub}>Update College, Branch, Sem & CGPA</Text>
-          </View>
-        </View>
-      </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* College & Location Trigger Row */}

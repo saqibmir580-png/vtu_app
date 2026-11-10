@@ -15,6 +15,8 @@ import { AttendanceStatusBadge } from '../components/AttendanceStatusBadge';
 import { AttendanceInsightCard } from '../components/AttendanceInsightCard';
 import { EditAttendanceModal } from './EditAttendanceModal';
 import { ConfirmationBottomSheet } from '../components/ConfirmationBottomSheet';
+import { Header } from '@/shared/components/Header';
+import { StatusBar } from 'react-native';
 
 export const SubjectAttendanceDetailScreen: React.FC = () => {
   const router = useRouter();
@@ -42,27 +44,20 @@ export const SubjectAttendanceDetailScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerCode}>{subject.subjectCode}</Text>
-            <Text style={styles.headerTitle} numberOfLines={1}>
-              {subject.subjectName}
-            </Text>
-          </View>
-
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title={subject.subjectCode ? `${subject.subjectCode} Attendance` : 'Subject Attendance'}
+        dark={true}
+        showBack={true}
+        rightElement={
           <TouchableOpacity
             onPress={() => setDeleteSheetVisible(true)}
             style={styles.deleteHeaderBtn}
           >
-            <Feather name="trash-2" size={18} color="#EF4444" />
+            <Feather name="trash-2" size={18} color="#FFFFFF" />
           </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Large Percentage Metric Hero Card */}
@@ -204,8 +199,8 @@ const styles = StyleSheet.create({
   deleteHeaderBtn: {
     width: 36,
     height: 36,
-    borderRadius: 12,
-    backgroundColor: '#FEF2F2',
+    borderRadius: 18,
+    backgroundColor: 'rgba(239, 68, 68, 0.4)',
     alignItems: 'center',
     justifyContent: 'center',
   },

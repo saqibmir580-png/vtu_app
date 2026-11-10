@@ -35,4 +35,7 @@ export interface NotificationPreferencesState {
   newQuestionPapers: boolean;
   appUpdates: boolean;
   importantAnnouncements: boolean;
+  communityActivity: boolean;
+  attendanceAlerts: boolean;
+  resultsAnnouncements: boolean;
 }

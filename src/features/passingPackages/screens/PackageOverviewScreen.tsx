@@ -17,6 +17,7 @@ import { PackageSectionCard } from '../components/PackageSectionCard';
 import { SubjectSelector } from '../components/SubjectSelector';
 import { PaymentCheckoutModal } from '@/features/notes/components/PaymentCheckoutModal';
 import { AdBannerCard } from '@/shared/components/AdBannerCard';
+import { Header } from '@/shared/components/Header';
 
 export const PackageOverviewScreen: React.FC = () => {
   const router = useRouter();
@@ -79,33 +80,20 @@ export const PackageOverviewScreen: React.FC = () => {
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
 
-      {/* Header Bar */}
-      <View style={styles.header}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
-              <Feather name="arrow-left" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-
-            <View style={styles.headerTitleBox}>
-              <View style={styles.codePill}>
-                <Text style={styles.codeText}>{pkg.subjectCode}</Text>
-              </View>
-
-              <Text style={styles.headerSubject} numberOfLines={1}>
-                {pkg.subjectName}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.iconBtn}
-              onPress={() => router.push('/passing-packages/saved' as any)}
-            >
-              <Feather name="bookmark" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </View>
+      {/* Unified Custom Header */}
+      <Header
+        title={`${pkg.subjectCode} Package`}
+        dark={true}
+        showBack={true}
+        rightElement={
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={() => router.push('/passing-packages/saved' as any)}
+          >
+            <Feather name="bookmark" size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+        }
+      />
 
       {/* Subject Switcher Bar */}
       {currentPackages.length > 1 && (

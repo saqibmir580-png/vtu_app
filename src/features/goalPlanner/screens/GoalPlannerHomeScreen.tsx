@@ -8,17 +8,17 @@ import {
   StatusBar,
   TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useGoalPlannerStore, computeGoalResult } from '../store/useGoalPlannerStore';
 import { useAcademicRecordStore } from '@/features/calculators/store/useAcademicRecordStore';
 import { useAuthStore } from '@/store';
+import { Header } from '@/shared/components/Header';
 
 export const GoalPlannerHomeScreen: React.FC = () => {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const { academicData, syncProfileData, saveGoal, savedGoals } = useGoalPlannerStore();
+  const { academicData, syncProfileData, saveGoal } = useGoalPlannerStore();
   const { currentCgpa } = useAcademicRecordStore();
 
   const [targetInput, setTargetInput] = useState<string>(
@@ -67,30 +67,27 @@ export const GoalPlannerHomeScreen: React.FC = () => {
     'Already Achieved': { color: '#0284C7', bg: '#E0F2FE', icon: 'award' as const, label: 'Target Already Achieved!' },
   }[liveResult.feasibilityStatus];
 
+  const renderHeaderRight = () => (
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={() => router.push('/calculators/goal-planner/saved' as any)}
+      style={styles.savedHeaderBtn}
+    >
+      <Feather name="bookmark" size={18} color="#FFFFFF" />
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
 
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>Grade & GPA Predictor</Text>
-            <Text style={styles.headerSub}>What-If Graduation Target Simulator</Text>
-          </View>
-
-          <TouchableOpacity
-            onPress={() => router.push('/calculators/goal-planner/saved' as any)}
-            style={styles.savedHeaderBtn}
-          >
-            <Feather name="bookmark" size={18} color="#0745E8" />
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      {/* Royal Blue Header */}
+      <Header
+        title="Grade & GPA Predictor"
+        dark={true}
+        showBack={true}
+        rightElement={renderHeaderRight()}
+      />
 
       {/* Toast Notification */}
       {toastVisible && (
@@ -302,44 +299,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  headerSafeArea: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  headerTitleGroup: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  headerSub: {
-    fontSize: 11,
-    color: '#64748B',
-  },
   savedHeaderBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: '#EEF2FF',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },

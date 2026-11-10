@@ -7,12 +7,12 @@ import {
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAttendanceStore } from '../store/useAttendanceStore';
 import { SubjectSelector } from '../components/SubjectSelector';
 import { CalculatorMode } from '../types/attendance.types';
+import { Header } from '@/shared/components/Header';
 
 export const AttendanceCalculatorScreen: React.FC = () => {
   const router = useRouter();
@@ -45,57 +45,59 @@ export const AttendanceCalculatorScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>Attendance Calculator</Text>
-            <Text style={styles.headerSub}>Bunk Allowance & Target Projections</Text>
-          </View>
-        </View>
-      </SafeAreaView>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header title="Attendance Calculator" dark={true} showBack={true} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Modular Subject Selector Card */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={styles.subjectCard}
-          onPress={() => setSelectorVisible(true)}
-        >
-          <View style={styles.subjectLeft}>
-            <View style={styles.subjectIconBox}>
-              <Feather name="book-open" size={20} color="#0745E8" />
+        {/* TOP SNAPSHOT: Circular Gauge & Visual Graphical Threshold Indicator */}
+        <View style={styles.gaugeCard}>
+          <View style={styles.gaugeHeaderRow}>
+            <View style={styles.gaugeRing}>
+              <Text style={[styles.gaugePctText, { color: statusColor }]}>{currPct}%</Text>
+              <Text style={styles.gaugeSubText}>Current Attendance</Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <View style={styles.subjectCodeRow}>
-                <Text style={styles.subjectCode}>{selectedSubject.subjectCode}</Text>
-                <View style={[styles.statusPill, { backgroundColor: statusBg }]}>
-                  <Text style={[styles.statusPillText, { color: statusColor }]}>
-                    {statusLabel}
-                  </Text>
-                </View>
+
+            <View style={styles.gaugeHeaderMeta}>
+              <View style={[styles.statusPill, { backgroundColor: statusBg }]}>
+                <Text style={[styles.statusPillText, { color: statusColor }]}>
+                  {statusLabel}
+                </Text>
               </View>
-              <Text style={styles.subjectName} numberOfLines={1}>
-                {selectedSubject.subjectName}
+              <Text style={styles.selectedSubjectHeading} numberOfLines={1}>
+                {selectedSubject.subjectCode} - {selectedSubject.subjectName}
+              </Text>
+              <Text style={styles.gaugeFormulaSub}>
+                Formula: ({selectedSubject.attendedClasses} / {selectedSubject.conductedClasses}) × 100
               </Text>
             </View>
           </View>
 
-          <Feather name="chevron-down" size={18} color="#64748B" />
-        </TouchableOpacity>
-
-        {/* Circular Percentage Gauge & Stats Card */}
-        <View style={styles.gaugeCard}>
-          <View style={styles.gaugeRing}>
-            <Text style={[styles.gaugePctText, { color: statusColor }]}>{currPct}%</Text>
-            <Text style={styles.gaugeSubText}>Current Attendance</Text>
+          {/* Graphical Threshold Progress Bar */}
+          <View style={styles.graphicalBarSection}>
+            <View style={styles.graphicalBarLabels}>
+              <Text style={styles.barMarkerText}>0%</Text>
+              <Text style={[styles.barMarkerText, { color: '#DC2626', fontWeight: '800' }]}>75% (Min)</Text>
+              <Text style={[styles.barMarkerText, { color: '#059669', fontWeight: '800' }]}>85% (Safe)</Text>
+              <Text style={styles.barMarkerText}>100%</Text>
+            </View>
+            <View style={styles.barTrack}>
+              <View
+                style={[
+                  styles.barFill,
+                  {
+                    width: `${Math.min(100, Math.max(0, currPct))}%`,
+                    backgroundColor: statusColor,
+                  },
+                ]}
+              />
+              {/* VTU Minimum Marker at 75% */}
+              <View style={[styles.barThresholdLine, { left: '75%' }]} />
+              {/* Safe Buffer Marker at 85% */}
+              <View style={[styles.barThresholdLine, { left: '85%' }]} />
+            </View>
           </View>
 
+          {/* Quick Stats Strip */}
           <View style={styles.statsStrip}>
             <View style={styles.statTile}>
               <Text style={styles.statVal}>{selectedSubject.attendedClasses}</Text>
@@ -113,6 +115,30 @@ export const AttendanceCalculatorScreen: React.FC = () => {
             </View>
           </View>
         </View>
+
+        {/* Modular Subject Switcher Card */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.subjectCard}
+          onPress={() => setSelectorVisible(true)}
+        >
+          <View style={styles.subjectLeft}>
+            <View style={styles.subjectIconBox}>
+              <Feather name="book-open" size={20} color="#0745E8" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.subjectCodeRow}>
+                <Text style={styles.subjectCode}>{selectedSubject.subjectCode}</Text>
+                <Text style={styles.changeSubjectBadge}>Change Subject</Text>
+              </View>
+              <Text style={styles.subjectName} numberOfLines={1}>
+                {selectedSubject.subjectName}
+              </Text>
+            </View>
+          </View>
+
+          <Feather name="chevron-down" size={18} color="#64748B" />
+        </TouchableOpacity>
 
         {/* Target Percentage Quick Steppers */}
         <View style={styles.targetSection}>
@@ -261,45 +287,135 @@ export const AttendanceCalculatorScreen: React.FC = () => {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  headerSafeArea: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
     backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  headerTitleGroup: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  headerSub: {
-    fontSize: 11,
-    color: '#64748B',
   },
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 40,
+  },
+  gaugeCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 18,
+    marginBottom: 16,
+    gap: 16,
+    shadowColor: '#0745E8',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  gaugeHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  gaugeRing: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 5,
+    borderColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0745E8',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  gaugePctText: {
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  gaugeSubText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#64748B',
+    marginTop: 2,
+  },
+  gaugeHeaderMeta: {
+    flex: 1,
+    gap: 4,
+  },
+  selectedSubjectHeading: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  gaugeFormulaSub: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  graphicalBarSection: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  graphicalBarLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  barMarkerText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  barTrack: {
+    height: 10,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 5,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: '100%',
+    borderRadius: 5,
+  },
+  barThresholdLine: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 2,
+    backgroundColor: '#FFFFFF',
+  },
+  statsStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    paddingVertical: 12,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  statTile: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statVal: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  statLbl: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#E2E8F0',
   },
   subjectCard: {
     flexDirection: 'row',
@@ -342,84 +458,29 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0745E8',
   },
+  changeSubjectBadge: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748B',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
   statusPill: {
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
+    alignSelf: 'flex-start',
   },
   statusPillText: {
     fontSize: 10,
     fontWeight: '800',
   },
   subjectName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#0F172A',
-  },
-  gaugeCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 16,
-  },
-  gaugeRing: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 6,
-    borderColor: '#EEF2FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#0745E8',
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  gaugePctText: {
-    fontSize: 34,
-    fontWeight: '900',
-    letterSpacing: -1,
-  },
-  gaugeSubText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#64748B',
-    marginTop: 2,
-  },
-  statsStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 12,
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-  },
-  statTile: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statVal: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  statLbl: {
-    fontSize: 11,
-    color: '#64748B',
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  statDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#E2E8F0',
   },
   targetSection: {
     marginBottom: 16,
@@ -438,7 +499,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
     alignItems: 'center',
@@ -457,7 +518,7 @@ const styles = StyleSheet.create({
   },
   modeTabs: {
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#E2E8F0',
     borderRadius: 14,
     padding: 4,
     marginBottom: 16,
@@ -554,7 +615,7 @@ const styles = StyleSheet.create({
     color: '#0745E8',
   },
   breakdownCard: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',

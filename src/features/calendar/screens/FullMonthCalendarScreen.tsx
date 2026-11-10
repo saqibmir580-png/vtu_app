@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -15,6 +16,7 @@ import { CalendarGrid } from '../components/CalendarGrid';
 import { CalendarLegend } from '../components/CalendarLegend';
 import { UpcomingEventCard } from '../components/UpcomingEventCard';
 import { CalendarFilterSheet } from '../components/CalendarFilterSheet';
+import { Header } from '@/shared/components/Header';
 import { AcademicEvent } from '../types/calendar.types';
 
 export const FullMonthCalendarScreen: React.FC = () => {
@@ -60,25 +62,20 @@ export const FullMonthCalendarScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>Full Month Calendar</Text>
-            <Text style={styles.headerSub}>Select Date to View Scheduled Events</Text>
-          </View>
-
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title="Full Month Calendar"
+        dark={true}
+        showBack={true}
+        rightElement={
           <TouchableOpacity
             onPress={() => setFilterSheetVisible(true)}
             style={styles.filterBtn}
           >
-            <Feather name="sliders" size={18} color="#0745E8" />
+            <Feather name="sliders" size={18} color="#FFFFFF" />
           </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <MonthNavigator
@@ -176,8 +173,8 @@ const styles = StyleSheet.create({
   filterBtn: {
     width: 36,
     height: 36,
-    borderRadius: 12,
-    backgroundColor: '#EEF2FF',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },

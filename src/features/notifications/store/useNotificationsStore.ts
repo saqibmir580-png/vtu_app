@@ -53,6 +53,9 @@ export const useNotificationsStore = create<NotificationsStoreState>((set, get) 
     newQuestionPapers: true,
     appUpdates: true,
     importantAnnouncements: true,
+    communityActivity: true,
+    attendanceAlerts: true,
+    resultsAnnouncements: true,
   },
 
   fetchNotifications: async () => {

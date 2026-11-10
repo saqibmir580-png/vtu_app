@@ -13,6 +13,8 @@ import { usePaperStore } from '../store/usePaperStore';
 import { PaperCard } from '../components/PaperCard';
 import { PaperPreviewModal } from '../components/PaperPreviewModal';
 import { QuestionPaper } from '../types/paper.types';
+import { Header } from '@/shared/components/Header';
+import { StatusBar } from 'react-native';
 
 export const SavedPapersScreen: React.FC = () => {
   const router = useRouter();
@@ -46,18 +48,10 @@ export const SavedPapersScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      {/* Top Header */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>Saved Papers</Text>
-            <Text style={styles.headerSub}>Offline Library & Bookmarks</Text>
-          </View>
-        </View>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header title="Saved Papers" dark={true} showBack={true} />
 
+      <View style={styles.subHeaderContainer}>
         {/* Storage Footprint Banner */}
         <View style={styles.storageCard}>
           <View style={styles.storageLeft}>
@@ -107,7 +101,7 @@ export const SavedPapersScreen: React.FC = () => {
             </Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {displayPapers.length === 0 ? (
@@ -154,6 +148,11 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  subHeaderContainer: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
   headerSafeArea: {
     backgroundColor: '#FFFFFF',

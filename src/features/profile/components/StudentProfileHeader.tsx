@@ -8,31 +8,35 @@ interface StudentProfileHeaderProps {
   user: UserProfile;
   onSettingsPress?: () => void;
   onEditPress?: () => void;
+  hideTopBar?: boolean;
 }
 
 export const StudentProfileHeader: React.FC<StudentProfileHeaderProps> = ({
   user,
   onSettingsPress,
   onEditPress,
+  hideTopBar = false,
 }) => {
   return (
     <View style={styles.container}>
       {/* Top Header Row */}
-      <View style={styles.topRow}>
-        <Text style={styles.headerTitle}>Profile</Text>
-        {(onEditPress || onSettingsPress) && (
-          <TouchableOpacity
-            activeOpacity={0.8}
-            style={styles.settingsBtn}
-            onPress={onEditPress || onSettingsPress}
-          >
-            <Feather name={onEditPress ? "edit-2" : "settings"} size={18} color="#0745E8" />
-          </TouchableOpacity>
-        )}
-      </View>
+      {!hideTopBar && (
+        <View style={styles.topRow}>
+          <Text style={styles.headerTitle}>Profile</Text>
+          {(onEditPress || onSettingsPress) && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={styles.settingsBtn}
+              onPress={onEditPress || onSettingsPress}
+            >
+              <Feather name={onEditPress ? "edit-2" : "settings"} size={18} color="#0745E8" />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       {/* Hero Content */}
-      <View style={styles.heroContent}>
+      <View style={[styles.heroContent, hideTopBar && styles.heroContentStandalone]}>
         <Avatar
           name={user.name}
           avatarUrl={user.avatarUrl}
@@ -96,6 +100,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     gap: 16,
+  },
+  heroContentStandalone: {
+    paddingTop: 16,
   },
   infoCol: {
     flex: 1,

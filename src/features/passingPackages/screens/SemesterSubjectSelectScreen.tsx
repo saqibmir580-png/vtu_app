@@ -13,6 +13,7 @@ import { Feather } from '@expo/vector-icons';
 import { usePassingPackageStore } from '../store/usePassingPackageStore';
 import { BRANCH_LIST, SEMESTER_LIST, SCHEME_LIST } from '../api/mockPassingPackages';
 import { PackageSubjectCard } from '../components/PackageSubjectCard';
+import { Header } from '@/shared/components/Header';
 
 export const SemesterSubjectSelectScreen: React.FC = () => {
   const router = useRouter();
@@ -40,21 +41,8 @@ export const SemesterSubjectSelectScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Select Semester & Branch</Text>
-          <View style={{ width: 36 }} />
-        </View>
-      </SafeAreaView>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header title="Select Semester & Branch" dark={true} showBack={true} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Branch Selection */}

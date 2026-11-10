@@ -13,6 +13,7 @@ import { Feather } from '@expo/vector-icons';
 import { usePassingPackageStore } from '../store/usePassingPackageStore';
 import { ExpectedQuestionCard } from '../components/ExpectedQuestionCard';
 import { QuestionPriority } from '../types/passingPackages.types';
+import { Header } from '@/shared/components/Header';
 
 export const ExpectedQuestionsScreen: React.FC = () => {
   const router = useRouter();
@@ -49,20 +50,14 @@ export const ExpectedQuestionsScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title="Most Expected Questions"
+        dark={true}
+        showBack={true}
+      />
 
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleBox}>
-            <Text style={styles.headerTitle}>Most Expected Questions</Text>
-            <Text style={styles.headerSub}>{pkg.subjectCode} • High Probability</Text>
-          </View>
-          <View style={{ width: 36 }} />
-        </View>
-
+      <View style={styles.tabsWrapper}>
         {/* Priority Tabs */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsRow}>
           {priorityTabs.map((p) => {
@@ -81,7 +76,7 @@ export const ExpectedQuestionsScreen: React.FC = () => {
             );
           })}
         </ScrollView>
-      </SafeAreaView>
+      </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Responsible Disclaimer Header */}
@@ -159,6 +154,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#64748B',
     marginTop: 1,
+  },
+  tabsWrapper: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingTop: 10,
   },
   tabsRow: {
     paddingHorizontal: 16,

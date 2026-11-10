@@ -16,6 +16,7 @@ import { NotificationCategoryChip } from '../components/NotificationCategoryChip
 import { NotificationCard } from '../components/NotificationCard';
 import { MarkAllReadButton } from '../components/MarkAllReadButton';
 import { NotificationFilterSheet } from '../components/NotificationFilterSheet';
+import { Header } from '@/shared/components/Header';
 import { NotificationPermissionCard } from '../components/NotificationPermissionCard';
 import { NotificationEmptyState } from '../components/NotificationEmptyState';
 import { UnreadBadge } from '../components/UnreadBadge';
@@ -74,34 +75,23 @@ export const NotificationCenterScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-
-          <View style={styles.headerTitleGroup}>
-            <View style={styles.titleWithBadge}>
-              <Text style={styles.headerTitle}>Notifications</Text>
-              <UnreadBadge count={unreadCount} />
-            </View>
-            <Text style={styles.headerSub}>VTU Academic Updates & Reminders</Text>
-          </View>
-
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title="Notifications"
+        dark={true}
+        showBack={true}
+        rightElement={
           <View style={styles.headerActions}>
             <MarkAllReadButton onPress={markAllAsRead} disabled={unreadCount === 0} />
             <TouchableOpacity
               onPress={() => setFilterSheetVisible(true)}
               style={styles.filterBtn}
             >
-              <Feather name="sliders" size={18} color="#0745E8" />
+              <Feather name="sliders" size={18} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
-        </View>
-      </SafeAreaView>
+        }
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -226,7 +216,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },

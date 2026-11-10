@@ -16,6 +16,7 @@ import { usePassingPackageStore } from '../store/usePassingPackageStore';
 import { PassingPackageHero } from '../components/PassingPackageHero';
 import { PackageSubjectCard } from '../components/PackageSubjectCard';
 import { PackageEmptyState } from '../components/PackageEmptyState';
+import { Header } from '@/shared/components/Header';
 
 export const PassingPackagesHomeScreen: React.FC = () => {
   const router = useRouter();
@@ -46,34 +47,22 @@ export const PassingPackagesHomeScreen: React.FC = () => {
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
-      
-      {/* Top Header */}
-      <View style={styles.topHeader}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={styles.backBtn}
-              onPress={() => router.back()}
-            >
-              <Feather name="arrow-left" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
 
-            <View style={styles.headerTitleWrapper}>
-              <Text style={styles.headerTitle}>Passing Packages</Text>
-              <Text style={styles.headerSub}>Exam Focus & Revision Hub</Text>
-            </View>
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={styles.headerIconBtn}
-              onPress={() => router.push('/passing-packages/saved' as any)}
-            >
-              <Feather name="bookmark" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </View>
+      {/* Unified Custom Header */}
+      <Header
+        title="Passing Packages"
+        dark={true}
+        showBack={true}
+        rightElement={
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.headerIconBtn}
+            onPress={() => router.push('/passing-packages/saved' as any)}
+          >
+            <Feather name="bookmark" size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}

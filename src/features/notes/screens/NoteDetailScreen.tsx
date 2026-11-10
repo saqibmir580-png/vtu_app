@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { Header } from '@/shared/components';
+import { StatusBar } from 'react-native';
 import { fetchNotesFromApi } from '../api/notesApi';
 import { NoteResource } from '../types/notes.types';
 import { MOCK_RESOURCES } from '../api/notesData';
@@ -60,7 +61,8 @@ export const NoteDetailScreen: React.FC = () => {
 
   return (
     <View style={styles.rootContainer}>
-      <Header title="Notes & PDFs" showBack />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header title="Notes & PDFs" dark={true} showBack={true} />
       <View style={styles.container}>
         {/* Unit Filter Pills */}
         <View style={styles.filterRow}>

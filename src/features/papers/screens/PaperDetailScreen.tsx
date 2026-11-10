@@ -14,6 +14,8 @@ import { DocumentThumbnail } from '../components/DocumentThumbnail';
 import { PaperPreviewModal } from '../components/PaperPreviewModal';
 import { DownloadProgressModal } from '../components/DownloadProgressModal';
 import { QuestionPaper } from '../types/paper.types';
+import { Header } from '@/shared/components/Header';
+import { StatusBar } from 'react-native';
 
 export const PaperDetailScreen: React.FC = () => {
   const router = useRouter();
@@ -37,18 +39,12 @@ export const PaperDetailScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      {/* Header Bar */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>{paper.subjectCode} Paper Details</Text>
-            <Text style={styles.headerSub}>{paper.month} {paper.year} Exam</Text>
-          </View>
-        </View>
-      </SafeAreaView>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title={`${paper.subjectCode} Paper`}
+        dark={true}
+        showBack={true}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Document Hero Banner */}

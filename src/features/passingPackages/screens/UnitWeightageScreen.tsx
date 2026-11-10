@@ -12,6 +12,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { usePassingPackageStore } from '../store/usePassingPackageStore';
 import { UnitWeightageCard } from '../components/UnitWeightageCard';
+import { Header } from '@/shared/components/Header';
 
 export const UnitWeightageScreen: React.FC = () => {
   const router = useRouter();
@@ -35,20 +36,8 @@ export const UnitWeightageScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleBox}>
-            <Text style={styles.headerTitle}>Unit Weightage</Text>
-            <Text style={styles.headerSub}>{pkg.subjectCode} • {pkg.subjectName}</Text>
-          </View>
-          <View style={{ width: 36 }} />
-        </View>
-      </SafeAreaView>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header title="Unit Weightage" dark={true} showBack={true} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* High Yield Banner */}

@@ -16,6 +16,7 @@ import { SubjectAttendanceCard } from '../components/SubjectAttendanceCard';
 import { EmptyState } from '../components/EmptyState';
 import { AddSubjectModal } from './AddSubjectModal';
 import { SubjectAttendance } from '../types/attendance.types';
+import { Header } from '@/shared/components/Header';
 
 export const AttendanceHomeScreen: React.FC = () => {
   const router = useRouter();
@@ -34,26 +35,20 @@ export const AttendanceHomeScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
 
-      {/* Header Bar */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>Attendance Calculator</Text>
-            <Text style={styles.headerSub}>VTU Semester Attendance Tracker</Text>
-          </View>
-
+      {/* Unified Custom Header */}
+      <Header
+        title="Attendance Tracker"
+        dark={true}
+        showBack={true}
+        rightElement={
           <View style={styles.headerActions}>
             <TouchableOpacity
               onPress={() => router.push('/calculators/attendance/history' as any)}
               style={styles.actionIconBtn}
             >
-              <Feather name="clock" size={18} color="#0F172A" />
+              <Feather name="clock" size={18} color="#FFFFFF" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -63,8 +58,8 @@ export const AttendanceHomeScreen: React.FC = () => {
               <Feather name="plus" size={18} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
-        </View>
-      </SafeAreaView>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Quick Shortcut Pills */}
@@ -176,18 +171,16 @@ const styles = StyleSheet.create({
   actionIconBtn: {
     width: 36,
     height: 36,
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
   addHeaderBtn: {
     width: 36,
     height: 36,
-    borderRadius: 12,
-    backgroundColor: '#0745E8',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },

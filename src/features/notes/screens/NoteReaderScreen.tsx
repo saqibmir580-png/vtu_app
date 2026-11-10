@@ -7,6 +7,7 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -203,6 +204,17 @@ export const NoteReaderScreen: React.FC = () => {
   if (rawUrl.startsWith('http://')) {
     rawUrl = rawUrl.replace('http://', 'https://');
   }
+
+  const isImage = Boolean(
+    rawUrl.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) ||
+    (resource.fileFormat as string) === 'IMAGE' ||
+    (resource as any).format === 'IMAGE'
+  );
+  const isOfficeDoc = Boolean(
+    rawUrl.match(/\.(doc|docx|ppt|pptx|xls|xlsx|txt|rtf)($|\?)/i) ||
+    resource.fileFormat === 'PPTX' ||
+    (resource as any).format === 'PPT'
+  );
 
   // Note fields resolution
   const isPaidNote = Boolean(resource.isPaid && (resource.price && resource.price > 0));
@@ -495,9 +507,17 @@ export const NoteReaderScreen: React.FC = () => {
             </Text>
           </View>
         ) : (
-          /* Single-Page PDF.js HTML Canvas Engine or Cloud Document Viewer */
+          /* Single-Page PDF.js HTML Canvas Engine, Image Viewer, or Cloud Document Viewer */
           <View style={styles.webViewContainer}>
-            {useCloudViewer ? (
+            {isImage ? (
+              <View style={styles.imageViewerBox}>
+                <Image
+                  source={{ uri: rawUrl }}
+                  style={styles.imageViewer}
+                  resizeMode="contain"
+                />
+              </View>
+            ) : useCloudViewer || isOfficeDoc ? (
               <WebView
                 ref={webViewRef}
                 key={`cloud-viewer-${rawUrl}`}
@@ -730,6 +750,18 @@ const styles = StyleSheet.create({
   webView: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  imageViewerBox: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  imageViewer: {
+    width: '100%',
+    height: '100%',
   },
   previewFloatingBanner: {
     position: 'absolute',

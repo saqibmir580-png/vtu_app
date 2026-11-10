@@ -1,9 +1,41 @@
+import React from 'react';
+import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+
+interface CenterHomeButtonProps {
+  onPress?: (e: any) => void;
+  accessibilityState?: { selected?: boolean };
+}
+
+const CenterHomeButton: React.FC<CenterHomeButtonProps> = ({
+  onPress,
+  accessibilityState,
+}) => {
+  const isSelected = accessibilityState?.selected;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={onPress}
+      style={styles.centerButtonWrapper}
+    >
+      <View
+        style={[
+          styles.centerButtonCircle,
+          isSelected && styles.centerButtonActive,
+        ]}
+      >
+        <Feather name="home" size={24} color="#FFFFFF" />
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 export default function TabsLayout() {
   return (
     <Tabs
+      initialRouteName="home"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#0745E8',
@@ -12,25 +44,17 @@ export default function TabsLayout() {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#E2E8F0',
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
+          height: Platform.OS === 'ios' ? 84 : 64,
+          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
           paddingTop: 6,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
+          fontSize: 11,
+          fontWeight: '700',
         },
       }}
     >
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="home" size={size || 22} color={color} />
-          ),
-        }}
-      />
+      {/* 1. Library */}
       <Tabs.Screen
         name="library"
         options={{
@@ -40,6 +64,8 @@ export default function TabsLayout() {
           ),
         }}
       />
+
+      {/* 2. Tools & Calculators */}
       <Tabs.Screen
         name="tools"
         options={{
@@ -49,6 +75,17 @@ export default function TabsLayout() {
           ),
         }}
       />
+
+      {/* 3. Centerpiece Elevated Home Button */}
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: '',
+          tabBarButton: (props) => <CenterHomeButton {...props} />,
+        }}
+      />
+
+      {/* 4. Community */}
       <Tabs.Screen
         name="community"
         options={{
@@ -58,6 +95,8 @@ export default function TabsLayout() {
           ),
         }}
       />
+
+      {/* 5. Profile */}
       <Tabs.Screen
         name="profile"
         options={{
@@ -70,3 +109,32 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  centerButtonWrapper: {
+    top: -18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 1,
+  },
+  centerButtonCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#0745E8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3.5,
+    borderColor: '#FFFFFF',
+    shadowColor: '#0745E8',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  centerButtonActive: {
+    backgroundColor: '#0534B3',
+    borderColor: '#EFF6FF',
+    transform: [{ scale: 1.05 }],
+  },
+});
