@@ -48,7 +48,9 @@ export const NotificationCenterScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    fetchNotifications();
+    fetchNotifications().then(() => {
+      markAllAsRead();
+    });
   }, []);
 
   const onRefresh = useCallback(async () => {

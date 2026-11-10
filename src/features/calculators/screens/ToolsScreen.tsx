@@ -85,15 +85,6 @@ export const ToolsScreen: React.FC = () => {
         title="Calculators & Tools"
         showBack={true}
         dark={true}
-        rightElement={
-          <TouchableOpacity
-            activeOpacity={0.8}
-            style={styles.notificationBtn}
-            onPress={() => router.push('/notifications' as any)}
-          >
-            <Feather name="bell" size={18} color="#FFFFFF" />
-          </TouchableOpacity>
-        }
       />
 
       <ScrollView

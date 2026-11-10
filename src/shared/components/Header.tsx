@@ -3,12 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useNavigation } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { useNotificationsStore } from '@/features/notifications/store/useNotificationsStore';
 
 interface HeaderProps {
   title?: string;
   showBack?: boolean;
   onBackPress?: () => void;
   rightElement?: React.ReactNode;
+  showNotification?: boolean;
   dark?: boolean;
   style?: ViewStyle;
 }
@@ -18,11 +20,13 @@ export const Header: React.FC<HeaderProps> = ({
   showBack = true,
   onBackPress,
   rightElement,
+  showNotification = true,
   dark = false,
   style,
 }) => {
   const router = useRouter();
   const navigation = useNavigation();
+  const unreadCount = useNotificationsStore((state) => state.getUnreadCount());
 
   const handleBack = () => {
     if (onBackPress) {
@@ -102,7 +106,21 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         <View style={styles.rightSlot}>
-          {rightElement || <View style={{ width: 40 }} />}
+          {rightElement ? (
+            rightElement
+          ) : showNotification ? (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[styles.headerNotificationBtn, dark && styles.darkNotificationBtn]}
+              onPress={() => router.push('/notifications' as any)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Feather name="bell" size={18} color={dark ? '#FFFFFF' : '#0745E8'} />
+              {unreadCount > 0 && <View style={styles.unreadBadge} />}
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 40 }} />
+          )}
         </View>
       </View>
     </SafeAreaView>
@@ -184,5 +202,30 @@ const styles = StyleSheet.create({
     minWidth: 44,
     alignItems: 'flex-end',
     justifyContent: 'center',
+  },
+  headerNotificationBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  darkNotificationBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: 7,
+    right: 7,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
   },
 });

@@ -183,15 +183,6 @@ export const NotesListScreen: React.FC = () => {
         title="Notes Library"
         dark={true}
         showBack={true}
-        rightElement={
-          <TouchableOpacity
-            activeOpacity={0.8}
-            style={styles.iconCircle}
-            onPress={() => router.push('/notifications' as any)}
-          >
-            <Feather name="bell" size={18} color="#FFFFFF" />
-          </TouchableOpacity>
-        }
       />
 
       <ScrollView
