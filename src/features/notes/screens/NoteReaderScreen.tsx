@@ -27,6 +27,7 @@ import { useStudyActivityStore } from '@/features/home';
 import { useAuthStore } from '@/store';
 import { PaymentCheckoutModal } from '../components/PaymentCheckoutModal';
 import { AdBannerCard } from '@/shared/components/AdBannerCard';
+import { apiClient } from '@/infrastructure/api/client';
 
 import * as ScreenCapture from 'expo-screen-capture';
 
@@ -362,10 +363,21 @@ export const NoteReaderScreen: React.FC = () => {
       handleUnlockPurchase();
     } else {
       setIsOfflineSaved(true);
+      if (resource?.id) {
+        apiClient.post(`/notes/${resource.id}/download`).catch(() => {});
+      }
       Alert.alert(
         'Saved for In-App Offline Access',
         'Note file is securely saved inside VTU App sandbox. (External exports & screenshots blocked).'
       );
+    }
+  };
+
+  const handleToggleBookmark = () => {
+    const nextVal = !isBookmarked;
+    setIsBookmarked(nextVal);
+    if (nextVal && resource?.id) {
+      apiClient.post(`/notes/${resource.id}/upvote`).catch(() => {});
     }
   };
 
@@ -437,7 +449,7 @@ export const NoteReaderScreen: React.FC = () => {
           <TouchableOpacity style={styles.iconBtn} onPress={handleOpenExternalDocument}>
             <Feather name="external-link" size={18} color="#0745E8" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => setIsBookmarked(!isBookmarked)}>
+          <TouchableOpacity style={styles.iconBtn} onPress={handleToggleBookmark}>
             <Feather
               name="bookmark"
               size={18}

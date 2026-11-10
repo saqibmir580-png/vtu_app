@@ -39,8 +39,8 @@ export const mapBackendNoteToCommunityResource = (n: any): CommunityResource => 
       n.user?.profilePic ||
       n.contributor?.avatarUrl ||
       undefined,
-    contributionsCount: n.contributionsCount || 5,
-    totalUpvotes: n.bookmarks ? n.bookmarks * 3 : 150,
+    contributionsCount: n.contributionsCount || 1,
+    totalUpvotes: n.bookmarks !== undefined && n.bookmarks !== null ? n.bookmarks * 3 : 0,
     reputationBadge:
       n.authorRole === 'TOPPER_STUDENT'
         ? 'VTU Top Contributor'
@@ -80,10 +80,10 @@ export const mapBackendNoteToCommunityResource = (n: any): CommunityResource => 
     pageCount: n.pageCount || 16,
     contributor,
     rating: 4.8,
-    ratingCount: n.views ? Math.max(1, Math.round(n.views / 20)) : 42,
-    usefulCount: n.bookmarks || 89,
-    downloadsCount: n.downloads || 120,
-    viewsCount: n.views || 340,
+    ratingCount: n.views ? Math.max(1, Math.round(n.views / 20)) : 1,
+    usefulCount: n.bookmarks ?? 0,
+    downloadsCount: n.downloads ?? 0,
+    viewsCount: n.views ?? 0,
     isOfficial: n.authorRole === 'ADMIN' || n.authorRole === 'FACULTY',
     isVerified: true,
     uploadStatus,

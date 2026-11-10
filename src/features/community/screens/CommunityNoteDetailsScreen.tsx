@@ -14,6 +14,8 @@ import { Feather } from '@expo/vector-icons';
 import { useCommunityStore } from '../store/useCommunityStore';
 import { useSavedStore } from '@/features/saved/store/useSavedStore';
 import { useAuthStore } from '@/store';
+import { toggleUsefulVoteApi } from '../api/communityApi';
+import { apiClient } from '@/infrastructure/api/client';
 import { ResourceInfoCard } from '../components/ResourceInfoCard';
 import { ResourcePreview } from '../components/ResourcePreview';
 import { ResourceActionBar } from '../components/ResourceActionBar';
@@ -261,8 +263,18 @@ export const CommunityNoteDetailsScreen: React.FC = () => {
       <ResourceActionBar
         isDownloaded={isDownloaded}
         isBookmarked={isBookmarked}
-        onToggleDownload={() => toggleDownload(resource.id)}
-        onToggleBookmark={() => toggleBookmark(resource.id)}
+        onToggleDownload={() => {
+          toggleDownload(resource.id);
+          if (!isDownloaded && resource.id) {
+            apiClient.post(`/notes/${resource.id}/download`).catch(() => {});
+          }
+        }}
+        onToggleBookmark={() => {
+          toggleBookmark(resource.id);
+          if (!isBookmarked && resource.id) {
+            toggleUsefulVoteApi(resource.id);
+          }
+        }}
         onPressReadNotes={() => {
           router.push({
             pathname: '/notes/[id]',
