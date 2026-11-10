@@ -81,7 +81,20 @@ export const ToolsScreen: React.FC = () => {
   return (
     <View style={styles.rootContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
-      <Header title="Calculators & Tools" showBack={true} dark={true} />
+      <Header
+        title="Calculators & Tools"
+        showBack={true}
+        dark={true}
+        rightElement={
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.notificationBtn}
+            onPress={() => router.push('/notifications' as any)}
+          >
+            <Feather name="bell" size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -119,13 +132,22 @@ export const ToolsScreen: React.FC = () => {
               <Text
                 style={[
                   styles.statValue,
-                  { color: overallPercentage >= 75 ? '#059669' : '#DC2626' },
+                  { color: subjects.length > 0 && overallPercentage >= 75 ? '#059669' : '#DC2626' },
                 ]}
               >
-                {subjects.length > 0 ? `${overallPercentage}%` : '85%'}
+                {subjects.length > 0 ? `${overallPercentage}%` : '—'}
               </Text>
             </View>
           </View>
+
+          {currentCgpa === 0 && subjects.length === 0 && (
+            <View style={styles.snapshotEmptyHint}>
+              <Feather name="info" size={13} color="#0745E8" />
+              <Text style={styles.snapshotEmptyHintText}>
+                No academic data recorded yet. Use the tools below to calculate SGPA and track attendance.
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Section Intro Pill */}
@@ -184,6 +206,33 @@ const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  notificationBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  snapshotEmptyHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  snapshotEmptyHintText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#1E40AF',
+    fontWeight: '600',
+    lineHeight: 15,
   },
   scrollContent: {
     paddingHorizontal: HORIZONTAL_PADDING,

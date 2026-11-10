@@ -351,49 +351,59 @@ export const SgpaCalculatorScreen: React.FC = () => {
         ) : (
           /* Streamlined Course Rows (No manual add/delete) */
           <View style={styles.coursesList}>
-            {subjects.map((sub, index) => {
-              const gradeInfo =
-                VTU_GRADES.find((g) => g.grade === sub.grade) || VTU_GRADES[2];
+            {subjects.length === 0 ? (
+              <View style={styles.emptyCoursesBox}>
+                <Feather name="book-open" size={36} color="#94A3B8" />
+                <Text style={styles.emptyCoursesTitle}>No Syllabus Courses Found</Text>
+                <Text style={styles.emptyCoursesSub}>
+                  No courses found for {user?.branch || 'CSE'} Semester {selectedSemester} in VTU master database.
+                </Text>
+              </View>
+            ) : (
+              subjects.map((sub, index) => {
+                const gradeInfo =
+                  VTU_GRADES.find((g) => g.grade === sub.grade) || VTU_GRADES[2];
 
-              return (
-                <View key={sub.id} style={styles.courseRow}>
-                  {/* Left: Index + Subject Info */}
-                  <View style={styles.courseLeft}>
-                    <View style={styles.courseIndexBox}>
-                      <Text style={styles.courseIndexText}>{index + 1}</Text>
+                return (
+                  <View key={sub.id} style={styles.courseRow}>
+                    {/* Left: Index + Subject Info */}
+                    <View style={styles.courseLeft}>
+                      <View style={styles.courseIndexBox}>
+                        <Text style={styles.courseIndexText}>{index + 1}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.courseCode}>{sub.code}</Text>
+                        <Text style={styles.courseName} numberOfLines={1}>
+                          {sub.name}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.courseCode}>{sub.code}</Text>
-                      <Text style={styles.courseName} numberOfLines={1}>
-                        {sub.name}
+
+                    {/* Middle: Credits Indicator */}
+                    <TouchableOpacity
+                      style={styles.creditsPill}
+                      activeOpacity={0.7}
+                      onPress={() => handleCycleCredits(sub.id, sub.credits)}
+                    >
+                      <Text style={styles.creditsPillText}>{sub.credits} cr</Text>
+                      <Feather name="refresh-cw" size={10} color="#64748B" />
+                    </TouchableOpacity>
+
+                    {/* Right: VTU Grade Badge Dropdown */}
+                    <TouchableOpacity
+                      style={[styles.gradeBadgeBtn, { backgroundColor: gradeInfo.bg }]}
+                      activeOpacity={0.8}
+                      onPress={() => setActiveGradeSubjectId(sub.id)}
+                    >
+                      <Text style={[styles.gradeBadgeText, { color: gradeInfo.color }]}>
+                        {sub.grade} ({sub.gradePoint})
                       </Text>
-                    </View>
+                      <Feather name="chevron-down" size={14} color={gradeInfo.color} />
+                    </TouchableOpacity>
                   </View>
-
-                  {/* Middle: Credits Indicator */}
-                  <TouchableOpacity
-                    style={styles.creditsPill}
-                    activeOpacity={0.7}
-                    onPress={() => handleCycleCredits(sub.id, sub.credits)}
-                  >
-                    <Text style={styles.creditsPillText}>{sub.credits} cr</Text>
-                    <Feather name="refresh-cw" size={10} color="#64748B" />
-                  </TouchableOpacity>
-
-                  {/* Right: VTU Grade Badge Dropdown */}
-                  <TouchableOpacity
-                    style={[styles.gradeBadgeBtn, { backgroundColor: gradeInfo.bg }]}
-                    activeOpacity={0.8}
-                    onPress={() => setActiveGradeSubjectId(sub.id)}
-                  >
-                    <Text style={[styles.gradeBadgeText, { color: gradeInfo.color }]}>
-                      {sub.grade} ({sub.gradePoint})
-                    </Text>
-                    <Feather name="chevron-down" size={14} color={gradeInfo.color} />
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
+                );
+              })
+            )}
           </View>
         )}
 
@@ -690,6 +700,29 @@ const styles = StyleSheet.create({
   coursesList: {
     gap: 8,
     marginBottom: 20,
+  },
+  emptyCoursesBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingVertical: 36,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  emptyCoursesTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 4,
+  },
+  emptyCoursesSub: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 18,
   },
   courseRow: {
     flexDirection: 'row',

@@ -28,7 +28,29 @@ export const SubjectAttendanceDetailScreen: React.FC = () => {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [deleteSheetVisible, setDeleteSheetVisible] = useState(false);
 
-  if (!subject) return null;
+  if (!subject) {
+    return (
+      <View style={styles.root}>
+        <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+        <Header title="Subject Attendance" dark={true} showBack={true} />
+        <View style={{ flex: 1, padding: 24, justifyContent: 'center', alignItems: 'center' }}>
+          <Feather name="alert-circle" size={42} color="#94A3B8" />
+          <Text style={{ fontSize: 17, fontWeight: '800', color: '#0F172A', marginTop: 12 }}>
+            Subject Not Available
+          </Text>
+          <Text style={{ fontSize: 13, color: '#64748B', textAlign: 'center', marginTop: 6, marginBottom: 20 }}>
+            This subject attendance record is not found or has been removed.
+          </Text>
+          <TouchableOpacity
+            style={{ backgroundColor: '#0745E8', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 }}
+            onPress={() => router.back()}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Back to Attendance</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   const percentage =
     subject.conductedClasses > 0

@@ -184,29 +184,13 @@ export const NotesListScreen: React.FC = () => {
         dark={true}
         showBack={true}
         rightElement={
-          <View style={styles.headerRightActions}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={styles.iconCircle}
-              onPress={() => router.push('/notifications' as any)}
-            >
-              <Feather name="bell" size={18} color="#FFFFFF" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              style={styles.avatarCircle}
-              onPress={() => router.push('/(tabs)/profile')}
-            >
-              <Image
-                source={{
-                  uri:
-                    user?.avatarUrl ||
-                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
-                }}
-                style={styles.avatarImg}
-              />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.iconCircle}
+            onPress={() => router.push('/notifications' as any)}
+          >
+            <Feather name="bell" size={18} color="#FFFFFF" />
+          </TouchableOpacity>
         }
       />
 

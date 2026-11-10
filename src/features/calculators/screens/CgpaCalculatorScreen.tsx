@@ -60,6 +60,9 @@ export const CgpaCalculatorScreen: React.FC = () => {
     currentCgpa > 0.75 ? Math.min(100, (currentCgpa - 0.75) * 10).toFixed(2) : '0.00';
 
   const getClassification = (cgpa: number) => {
+    if (cgpa <= 0) {
+      return { label: 'No Records Recorded Yet', color: '#64748B', bg: '#F1F5F9' };
+    }
     if (cgpa >= 7.75) {
       return { label: 'First Class with Distinction (FCD)', color: '#16A34A', bg: '#DCFCE7' };
     }
@@ -156,7 +159,9 @@ export const CgpaCalculatorScreen: React.FC = () => {
             <View>
               <Text style={styles.heroSubLabel}>Cumulative Grade Point Average</Text>
               <View style={styles.cgpaValueRow}>
-                <Text style={styles.heroValue}>{currentCgpa.toFixed(2)}</Text>
+                <Text style={styles.heroValue}>
+                  {currentCgpa > 0 ? currentCgpa.toFixed(2) : '—'}
+                </Text>
                 <Text style={styles.heroMax}>/ 10.00</Text>
               </View>
             </View>
@@ -262,6 +267,15 @@ export const CgpaCalculatorScreen: React.FC = () => {
                 <Text style={styles.calcCoursesText}>Calculate SGPA ➔</Text>
               </TouchableOpacity>
             </View>
+
+            {completedCount === 0 && (
+              <View style={styles.emptyHintBox}>
+                <Feather name="info" size={14} color="#0745E8" />
+                <Text style={styles.emptyHintText}>
+                  No semesters completed yet. Tap any semester card below or tap "Calculate SGPA" to record your grades.
+                </Text>
+              </View>
+            )}
 
             {semesters.map((sem) => {
               const isDone = sem.isCompleted && sem.sgpa > 0;
@@ -1104,5 +1118,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  emptyHintBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    marginBottom: 12,
+  },
+  emptyHintText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#1E40AF',
+    fontWeight: '600',
+    lineHeight: 16,
   },
 });

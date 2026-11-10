@@ -64,10 +64,10 @@ export const ProfileHomeScreen: React.FC = () => {
         rightElement={
           <TouchableOpacity
             activeOpacity={0.8}
-            style={styles.headerEditBtn}
-            onPress={() => setAvatarModalVisible(true)}
+            style={styles.headerNotificationBtn}
+            onPress={() => router.push('/notifications' as any)}
           >
-            <Feather name="edit-2" size={17} color="#FFFFFF" />
+            <Feather name="bell" size={18} color="#FFFFFF" />
           </TouchableOpacity>
         }
       />
@@ -315,10 +315,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  headerEditBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  headerNotificationBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',

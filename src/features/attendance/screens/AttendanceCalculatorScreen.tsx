@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAttendanceStore } from '../store/useAttendanceStore';
 import { SubjectSelector } from '../components/SubjectSelector';
+import { EmptyState } from '../components/EmptyState';
 import { CalculatorMode } from '../types/attendance.types';
 import { Header } from '@/shared/components/Header';
 
@@ -26,7 +27,21 @@ export const AttendanceCalculatorScreen: React.FC = () => {
   const [target, setTarget] = useState(selectedSubject?.targetAttendance || 85);
   const [selectorVisible, setSelectorVisible] = useState(false);
 
-  if (!selectedSubject) return null;
+  if (!selectedSubject) {
+    return (
+      <View style={styles.root}>
+        <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+        <Header title="Attendance Calculator" dark={true} showBack={true} />
+        <View style={{ flex: 1, padding: 20, justifyContent: 'center' }}>
+          <EmptyState
+            title="No Subjects Enrolled"
+            subTitle="Add your VTU semester subjects to calculate attendance targets, required classes, and safe margins."
+            onAddPress={() => router.push('/calculators/attendance' as any)}
+          />
+        </View>
+      </View>
+    );
+  }
 
   const result = calculateAttendanceResult(
     selectedSubject.attendedClasses,
