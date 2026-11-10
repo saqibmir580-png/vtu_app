@@ -8,6 +8,9 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import {
@@ -98,115 +101,125 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <Text style={styles.title}>
-              {step === 1 && 'Forgot Password'}
-              {step === 2 && 'Verify Email OTP'}
-              {step === 3 && 'Set New Password'}
-            </Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Feather name="x" size={20} color="#0F172A" />
-            </TouchableOpacity>
-          </View>
-
-          {errorMsg ? (
-            <View style={styles.errorBox}>
-              <Feather name="alert-circle" size={16} color="#DC2626" />
-              <Text style={styles.errorText}>{errorMsg}</Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.overlay}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+        >
+          <View style={styles.card}>
+            <View style={styles.header}>
+              <Text style={styles.title}>
+                {step === 1 && 'Forgot Password'}
+                {step === 2 && 'Verify Email OTP'}
+                {step === 3 && 'Set New Password'}
+              </Text>
+              <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+                <Feather name="x" size={20} color="#0F172A" />
+              </TouchableOpacity>
             </View>
-          ) : null}
 
-          {step === 1 && (
-            <>
-              <Text style={styles.subtitle}>
-                Enter your registered VTU student email address. We will dispatch a 6-digit OTP code.
-              </Text>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email Address</Text>
-                <TextInput
-                  style={styles.input}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="student@vtu.ac.in"
-                  placeholderTextColor="#94A3B8"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
+            {errorMsg ? (
+              <View style={styles.errorBox}>
+                <Feather name="alert-circle" size={16} color="#DC2626" />
+                <Text style={styles.errorText}>{errorMsg}</Text>
               </View>
-              <TouchableOpacity
-                style={styles.submitBtn}
-                onPress={handleRequestOtp}
-                disabled={loading}
-              >
-                {loading ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.submitText}>Send OTP Code ➔</Text>}
-              </TouchableOpacity>
-            </>
-          )}
+            ) : null}
 
-          {step === 2 && (
-            <>
-              <Text style={styles.subtitle}>
-                Enter the 6-digit verification code sent to <Text style={{ fontWeight: '800' }}>{email}</Text>.
-              </Text>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>6-Digit OTP Code</Text>
-                <TextInput
-                  style={styles.input}
-                  value={otp}
-                  onChangeText={setOtp}
-                  placeholder="e.g. 123456"
-                  placeholderTextColor="#94A3B8"
-                  keyboardType="number-pad"
-                  maxLength={6}
-                />
-              </View>
-              <TouchableOpacity
-                style={styles.submitBtn}
-                onPress={handleVerifyOtp}
-                disabled={loading}
-              >
-                {loading ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.submitText}>Verify OTP ➔</Text>}
-              </TouchableOpacity>
-            </>
-          )}
+            {step === 1 && (
+              <>
+                <Text style={styles.subtitle}>
+                  Enter your registered VTU student email address. We will dispatch a 6-digit OTP code.
+                </Text>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Email Address</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="student@vtu.ac.in"
+                    placeholderTextColor="#94A3B8"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+                <TouchableOpacity
+                  style={styles.submitBtn}
+                  onPress={handleRequestOtp}
+                  disabled={loading}
+                >
+                  {loading ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.submitText}>Send OTP Code ➔</Text>}
+                </TouchableOpacity>
+              </>
+            )}
 
-          {step === 3 && (
-            <>
-              <Text style={styles.subtitle}>Create a strong new password for your student account.</Text>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>New Password</Text>
-                <TextInput
-                  style={styles.input}
-                  secureTextEntry
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                  placeholder="At least 6 characters"
-                  placeholderTextColor="#94A3B8"
-                />
-              </View>
-              <TouchableOpacity
-                style={styles.submitBtn}
-                onPress={handleResetPassword}
-                disabled={loading}
-              >
-                {loading ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.submitText}>Reset Password 🚀</Text>}
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </View>
+            {step === 2 && (
+              <>
+                <Text style={styles.subtitle}>
+                  Enter the 6-digit verification code sent to <Text style={{ fontWeight: '800' }}>{email}</Text>.
+                </Text>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>6-Digit OTP Code</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={otp}
+                    onChangeText={setOtp}
+                    placeholder="e.g. 123456"
+                    placeholderTextColor="#94A3B8"
+                    keyboardType="number-pad"
+                    maxLength={6}
+                  />
+                </View>
+                <TouchableOpacity
+                  style={styles.submitBtn}
+                  onPress={handleVerifyOtp}
+                  disabled={loading}
+                >
+                  {loading ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.submitText}>Verify OTP ➔</Text>}
+                </TouchableOpacity>
+              </>
+            )}
+
+            {step === 3 && (
+              <>
+                <Text style={styles.subtitle}>Create a strong new password for your student account.</Text>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>New Password</Text>
+                  <TextInput
+                    style={styles.input}
+                    secureTextEntry
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    placeholder="At least 6 characters"
+                    placeholderTextColor="#94A3B8"
+                  />
+                </View>
+                <TouchableOpacity
+                  style={styles.submitBtn}
+                  onPress={handleResetPassword}
+                  disabled={loading}
+                >
+                  {loading ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.submitText}>Reset Password 🚀</Text>}
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.6)',
     justifyContent: 'center',
     paddingHorizontal: 20,
+    paddingVertical: 40,
   },
   card: {
     backgroundColor: '#FFFFFF',
