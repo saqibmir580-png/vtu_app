@@ -7,20 +7,19 @@ import { useAuthStore } from '@/store';
 import { useAcademicRecordStore } from '@/features/calculators';
 import { useSavedStore } from '@/features/saved/store/useSavedStore';
 import { StudentProfileHeader } from '../components/StudentProfileHeader';
-import { AcademicIdentityCard } from '../components/AcademicIdentityCard';
 import { SectionHeader } from '../components/SectionHeader';
 import { ProfileMenuRow } from '../components/ProfileMenuRow';
-import { AvatarUploadModal } from '../components/AvatarUploadModal';
+import { EditProfileModal } from '../components/EditProfileModal';
 import { ChangePasswordModal } from '../components/ChangePasswordModal';
 import { Header } from '@/shared/components/Header';
 
 export const ProfileHomeScreen: React.FC = () => {
   const router = useRouter();
   const { user, logout } = useAuthStore();
-  const { currentCgpa, totalCreditsEarned, loadAcademicRecords } = useAcademicRecordStore();
+  const { loadAcademicRecords } = useAcademicRecordStore();
   const { items } = useSavedStore();
 
-  const [avatarModalVisible, setAvatarModalVisible] = useState(false);
+  const [editProfileVisible, setEditProfileVisible] = useState(false);
   const [changePasswordVisible, setChangePasswordVisible] = useState(false);
   const [activeSavedTab, setActiveSavedTab] = useState<'BOOKMARKS' | 'DOWNLOADS'>('BOOKMARKS');
 
@@ -30,7 +29,6 @@ export const ProfileHomeScreen: React.FC = () => {
 
   if (!user) return null;
 
-  const effectiveCgpa = (user?.currentCgpa && user.currentCgpa > 0) ? user.currentCgpa : (currentCgpa > 0 ? currentCgpa : 0);
   const bookmarkedItems = items.filter((i) => i.isBookmarked);
   const downloadedItems = items.filter((i) => i.isDownloaded);
 
@@ -75,22 +73,10 @@ export const ProfileHomeScreen: React.FC = () => {
       <StudentProfileHeader
         user={user}
         hideTopBar={true}
-        onEditPress={() => setAvatarModalVisible(true)}
+        onEditPress={() => setEditProfileVisible(true)}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Academic Snapshot Card with Synchronized CGPA & Quick Badges */}
-        <AcademicIdentityCard
-          semester={user.semester || 5}
-          cgpa={effectiveCgpa}
-          scheme={user.scheme || '2022'}
-          bookmarksCount={bookmarkedItems.length}
-          downloadsCount={downloadedItems.length}
-          onPressBookmarks={() => setActiveSavedTab('BOOKMARKS')}
-          onPressDownloads={() => setActiveSavedTab('DOWNLOADS')}
-          onPressEdit={() => router.push('/profile/edit' as any)}
-        />
-
         {/* Section: My In-App Library & DRM Vault */}
         <View style={styles.vaultSection}>
           <View style={styles.vaultHeaderRow}>
@@ -228,7 +214,7 @@ export const ProfileHomeScreen: React.FC = () => {
           iconName="award"
           iconBg="#EEF2FF"
           iconColor="#0745E8"
-          onPress={() => router.push('/profile/academic' as any)}
+          onPress={() => setEditProfileVisible(true)}
         />
 
         {/* Section 2: Study */}
@@ -295,10 +281,10 @@ export const ProfileHomeScreen: React.FC = () => {
         />
       </ScrollView>
 
-      {/* Avatar Upload Modal */}
-      <AvatarUploadModal
-        visible={avatarModalVisible}
-        onClose={() => setAvatarModalVisible(false)}
+      {/* Comprehensive Student Profile Editor Modal */}
+      <EditProfileModal
+        visible={editProfileVisible}
+        onClose={() => setEditProfileVisible(false)}
       />
 
       {/* Change Password Modal */}

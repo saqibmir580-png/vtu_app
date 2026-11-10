@@ -9,9 +9,22 @@ import {
   ScrollView,
   SafeAreaView,
   Alert,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useAuthStore, UserProfile } from '@/store';
+import * as ImagePicker from 'expo-image-picker';
+import { useAuthStore } from '@/store';
+import { apiClient } from '@/infrastructure/api/client';
+
+export const PRESET_AVATARS = [
+  'https://api.dicebear.com/7.x/adventurer/png?seed=ScholarFelix&backgroundColor=c0aede',
+  'https://api.dicebear.com/7.x/adventurer/png?seed=CoderAria&backgroundColor=ffdfbf',
+  'https://api.dicebear.com/7.x/bottts/png?seed=VTUEngineer&backgroundColor=b6e3f4',
+  'https://api.dicebear.com/7.x/adventurer/png?seed=CampusPro&backgroundColor=ffd5dc',
+  'https://api.dicebear.com/7.x/bottts/png?seed=TechPioneer&backgroundColor=d1d4f9',
+  'https://api.dicebear.com/7.x/adventurer/png?seed=DataScientist&backgroundColor=c0ebd7',
+];
 
 interface EditProfileModalProps {
   visible: boolean;
@@ -31,6 +44,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [semester, setSemester] = useState(5);
   const [scheme, setScheme] = useState('2022');
   const [targetCgpa, setTargetCgpa] = useState('9.20');
+  const [selectedAvatarUri, setSelectedAvatarUri] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -41,14 +56,60 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       setSemester(user.semester || 5);
       setScheme(user.scheme || '2022');
       setTargetCgpa(user.targetCgpa ? String(user.targetCgpa) : '9.20');
+      setSelectedAvatarUri(user.avatarUrl || PRESET_AVATARS[0]);
     }
   }, [user, visible]);
 
-  const branches = ['CSE', 'ISE', 'ECE', 'EEE', 'ME', 'CIV'];
+  const branches = ['CSE', 'ISE', 'ECE', 'AIML', 'EEE', 'ME', 'CIV'];
   const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
   const schemes = ['2022', '2021', '2018', '2017'];
 
-  const handleSave = () => {
+  // Gallery Picker
+  const handlePickFromGallery = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Needed', 'Please allow gallery access to select a profile picture.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.85,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setSelectedAvatarUri(result.assets[0].uri);
+      }
+    } catch {
+      Alert.alert('Selection Error', 'Could not open photo library.');
+    }
+  };
+
+  // Camera Capture
+  const handleTakeWithCamera = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Needed', 'Please allow camera access to take a profile photo.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: false,
+        quality: 0.85,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setSelectedAvatarUri(result.assets[0].uri);
+      }
+    } catch {
+      Alert.alert('Camera Error', 'Could not start camera.');
+    }
+  };
+
+  const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert('Required Field', 'Please enter your full name.');
       return;
@@ -60,18 +121,82 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       return;
     }
 
-    updateProfile({
-      name: name.trim(),
-      usn: usn.trim().toUpperCase(),
-      college: college.trim(),
-      branch,
-      semester,
-      scheme,
-      targetCgpa: parsedCgpa,
-    });
+    setIsSaving(true);
+    let resolvedAvatarUrl = selectedAvatarUri || user?.avatarUrl;
 
-    Alert.alert('Profile Updated', 'Your academic details have been successfully saved!');
-    onClose();
+    try {
+      // 1. Upload avatar if selected from local file
+      const isLocalFile =
+        selectedAvatarUri &&
+        (selectedAvatarUri.startsWith('file:') || selectedAvatarUri.startsWith('content:'));
+
+      if (isLocalFile) {
+        try {
+          const formData = new FormData();
+          const filename = selectedAvatarUri.split('/').pop() || 'avatar.jpg';
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+          formData.append('avatar', {
+            uri: selectedAvatarUri,
+            name: filename,
+            type,
+          } as any);
+
+          if (user?.id) {
+            formData.append('userId', user.id);
+          }
+
+          const res: any = await apiClient.post('/users/avatar', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+
+          resolvedAvatarUrl = res.data?.data?.avatarUrl || res.data?.avatarUrl || selectedAvatarUri;
+        } catch (uploadErr) {
+          console.warn('[Avatar Upload Network Warning]:', uploadErr);
+        }
+      } else if (selectedAvatarUri && selectedAvatarUri !== user?.avatarUrl) {
+        try {
+          await apiClient.post('/users/avatar', {
+            avatarUrl: selectedAvatarUri,
+            userId: user?.id,
+          });
+        } catch {
+          // resilient fallback
+        }
+      }
+
+      // 2. Update Auth Store immediately
+      updateProfile({
+        name: name.trim(),
+        usn: usn.trim().toUpperCase(),
+        college: college.trim(),
+        branch,
+        semester,
+        scheme,
+        targetCgpa: parsedCgpa,
+        avatarUrl: resolvedAvatarUrl,
+      });
+
+      // 3. Sync Student Academic Profile with Backend
+      try {
+        await apiClient.post('/users/student-profile', {
+          name: name.trim(),
+          usn: usn.trim().toUpperCase(),
+          collegeCode: college.trim(),
+          branchCode: branch,
+          semester,
+          schemeYear: scheme,
+        });
+      } catch (profileSyncErr) {
+        console.warn('[Student Profile Sync Note]:', profileSyncErr);
+      }
+
+      Alert.alert('Profile Updated', 'Your profile details and picture have been updated successfully!');
+      onClose();
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -84,12 +209,20 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.headerRow}>
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+          <TouchableOpacity onPress={onClose} style={styles.closeBtn} disabled={isSaving}>
             <Feather name="x" size={20} color="#0F172A" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Academic Profile</Text>
-          <TouchableOpacity onPress={handleSave} style={styles.saveHeaderBtn}>
-            <Text style={styles.saveHeaderBtnText}>Save</Text>
+          <Text style={styles.headerTitle}>Edit Student Profile</Text>
+          <TouchableOpacity
+            onPress={handleSave}
+            style={styles.saveHeaderBtn}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <ActivityIndicator size="small" color="#0745E8" />
+            ) : (
+              <Text style={styles.saveHeaderBtnText}>Save</Text>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -99,6 +232,73 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* 1. Profile Picture Selector */}
+          <View style={styles.avatarSection}>
+            <View style={styles.avatarPreviewWrapper}>
+              <Image
+                source={{
+                  uri:
+                    selectedAvatarUri ||
+                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
+                }}
+                style={styles.avatarPreviewImg}
+              />
+              <View style={styles.avatarPencilBadge}>
+                <Feather name="edit-2" size={12} color="#FFFFFF" />
+              </View>
+            </View>
+
+            {/* Quick Action Buttons */}
+            <View style={styles.avatarActionRow}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.avatarActionBtn}
+                onPress={handlePickFromGallery}
+              >
+                <Feather name="image" size={14} color="#0745E8" />
+                <Text style={styles.avatarActionText}>Gallery</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.avatarActionBtn}
+                onPress={handleTakeWithCamera}
+              >
+                <Feather name="camera" size={14} color="#0745E8" />
+                <Text style={styles.avatarActionText}>Camera</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Preset Avatars Carousel */}
+            <Text style={styles.presetLabel}>Or choose an illustrated avatar:</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.presetsList}
+            >
+              {PRESET_AVATARS.map((uri, idx) => {
+                const isSelected = selectedAvatarUri === uri;
+                return (
+                  <TouchableOpacity
+                    key={`preset-${idx}`}
+                    activeOpacity={0.8}
+                    style={[styles.presetItem, isSelected && styles.presetItemActive]}
+                    onPress={() => setSelectedAvatarUri(uri)}
+                  >
+                    <Image source={{ uri }} style={styles.presetImg} />
+                    {isSelected && (
+                      <View style={styles.presetCheck}>
+                        <Feather name="check" size={10} color="#FFFFFF" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          <View style={styles.sectionDivider} />
+
           {/* Full Name Field */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Full Name</Text>
@@ -209,10 +409,15 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           {/* Save Button */}
           <TouchableOpacity
             activeOpacity={0.9}
-            style={styles.saveSubmitBtn}
+            style={[styles.saveSubmitBtn, isSaving && { opacity: 0.7 }]}
             onPress={handleSave}
+            disabled={isSaving}
           >
-            <Text style={styles.saveSubmitBtnText}>Save Profile Updates</Text>
+            {isSaving ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.saveSubmitBtnText}>Save Profile Updates</Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
@@ -250,6 +455,8 @@ const styles = StyleSheet.create({
   saveHeaderBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
+    minWidth: 44,
+    alignItems: 'center',
   },
   saveHeaderBtnText: {
     fontSize: 15,
@@ -261,8 +468,103 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
   },
+  avatarSection: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  avatarPreviewWrapper: {
+    position: 'relative',
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    marginBottom: 12,
+  },
+  avatarPreviewImg: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    borderWidth: 3,
+    borderColor: '#0745E8',
+  },
+  avatarPencilBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#0745E8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  avatarActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  avatarActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  avatarActionText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0745E8',
+  },
+  presetLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+  },
+  presetsList: {
+    gap: 10,
+    paddingBottom: 4,
+  },
+  presetItem: {
+    position: 'relative',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+    overflow: 'hidden',
+  },
+  presetItemActive: {
+    borderColor: '#0745E8',
+    borderWidth: 2.5,
+  },
+  presetImg: {
+    width: '100%',
+    height: '100%',
+  },
+  presetCheck: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#0745E8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 16,
+  },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
   inputLabel: {
     fontSize: 13,

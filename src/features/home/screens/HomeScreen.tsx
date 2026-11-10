@@ -267,8 +267,8 @@ export const HomeScreen: React.FC = () => {
         <SafeAreaView edges={['top']}>
           {/* Top Brand & Actions Bar */}
           <View style={styles.brandRow}>
-            {/* VTU Ultima Brand Logo */}
-            <View style={styles.logoContainer}>
+            {/* Circular Framed Brand Logo */}
+            <View style={styles.circularLogoFrame}>
               <Image
                 source={require('../../../../assets/vtu_ultima_logo.png')}
                 style={styles.headerLogo}
@@ -433,11 +433,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 4,
   },
-  logoContainer: {
-    height: 36,
-    width: 130,
+  circularLogoFrame: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.65)',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    padding: 3,
+    overflow: 'hidden',
   },
   headerLogo: {
     width: '100%',
