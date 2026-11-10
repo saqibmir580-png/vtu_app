@@ -182,7 +182,7 @@ export const NotesListScreen: React.FC = () => {
       <Header
         title="Notes Library"
         dark={true}
-        showBack={false}
+        showBack={true}
         rightElement={
           <View style={styles.headerRightActions}>
             <TouchableOpacity

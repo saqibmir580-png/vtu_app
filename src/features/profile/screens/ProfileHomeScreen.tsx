@@ -60,7 +60,7 @@ export const ProfileHomeScreen: React.FC = () => {
       <Header
         title="Student Profile"
         dark={true}
-        showBack={false}
+        showBack={true}
         rightElement={
           <TouchableOpacity
             activeOpacity={0.8}

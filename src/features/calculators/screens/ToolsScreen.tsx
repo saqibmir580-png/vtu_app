@@ -81,7 +81,7 @@ export const ToolsScreen: React.FC = () => {
   return (
     <View style={styles.rootContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
-      <Header title="Calculators & Tools" showBack={false} dark={true} />
+      <Header title="Calculators & Tools" showBack={true} dark={true} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
