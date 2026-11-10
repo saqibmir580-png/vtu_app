@@ -8,12 +8,18 @@ import {
   TextInput,
   Alert,
   StatusBar,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAcademicRecordStore } from '../store/useAcademicRecordStore';
 import { useAuthStore } from '@/store';
+import { SemesterRecord } from '../types/calculator.types';
 
 export const CgpaCalculatorScreen: React.FC = () => {
   const router = useRouter();
@@ -33,6 +39,12 @@ export const CgpaCalculatorScreen: React.FC = () => {
     currentCgpa ? currentCgpa.toFixed(2) : '8.74'
   );
   const [savedToastVisible, setSavedToastVisible] = useState(false);
+  const [showFormulaInfo, setShowFormulaInfo] = useState(false);
+
+  // Edit Modal State for Modular Progressive Disclosure
+  const [editingSemester, setEditingSemester] = useState<SemesterRecord | null>(null);
+  const [modalSgpa, setModalSgpa] = useState('');
+  const [modalCredits, setModalCredits] = useState('20');
 
   useEffect(() => {
     loadAcademicRecords();
@@ -65,22 +77,28 @@ export const CgpaCalculatorScreen: React.FC = () => {
 
   const classification = getClassification(currentCgpa);
 
-  const handleSgpaChange = (semesterNum: number, text: string) => {
-    const val = parseFloat(text);
-    if (isNaN(val)) {
-      updateSemesterSgpa(semesterNum, 0, undefined, false);
-    } else {
-      const sanitized = Math.min(10, Math.max(0, val));
-      updateSemesterSgpa(semesterNum, sanitized, undefined, true);
-    }
+  // Open Edit Modal for a specific semester
+  const openEditModal = (sem: SemesterRecord) => {
+    setEditingSemester(sem);
+    setModalSgpa(sem.sgpa > 0 ? String(sem.sgpa) : '');
+    setModalCredits(String(sem.credits || 20));
   };
 
-  const handleCreditsChange = (semesterNum: number, text: string) => {
-    const credits = parseInt(text, 10);
-    const existing = semesters.find((s) => s.semester === semesterNum);
-    if (existing && !isNaN(credits)) {
-      updateSemesterSgpa(semesterNum, existing.sgpa, Math.max(1, credits), existing.isCompleted);
+  // Save changes from Edit Modal
+  const handleSaveModal = () => {
+    if (!editingSemester) return;
+    const parsedSgpa = parseFloat(modalSgpa);
+    const parsedCredits = parseInt(modalCredits, 10);
+
+    if (isNaN(parsedSgpa) || parsedSgpa < 0 || parsedSgpa > 10) {
+      Alert.alert('Invalid SGPA', 'Please enter an SGPA value between 0.00 and 10.00');
+      return;
     }
+
+    const credits = isNaN(parsedCredits) || parsedCredits <= 0 ? 20 : parsedCredits;
+    updateSemesterSgpa(editingSemester.semester, parsedSgpa, credits, true);
+    setEditingSemester(null);
+    triggerSuccessFeedback();
   };
 
   const toggleSemesterCompleted = (semesterNum: number) => {
@@ -107,6 +125,8 @@ export const CgpaCalculatorScreen: React.FC = () => {
       setSavedToastVisible(false);
     }, 2500);
   };
+
+  const completedCount = semesters.filter((s) => s.isCompleted && s.sgpa > 0).length;
 
   return (
     <View style={styles.root}>
@@ -137,18 +157,21 @@ export const CgpaCalculatorScreen: React.FC = () => {
         <View style={styles.toastBanner}>
           <Feather name="check-circle" size={16} color="#16A34A" />
           <Text style={styles.toastText}>
-            CGPA saved! Dashboard Academic Overview has been updated.
+            CGPA saved! Academic overview updated.
           </Text>
         </View>
       )}
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* CGPA Display Hero Card */}
+        {/* Dynamic Hero Scorecard */}
         <View style={styles.heroCard}>
           <View style={styles.heroTopRow}>
             <View>
               <Text style={styles.heroSubLabel}>Cumulative Grade Point Average</Text>
-              <Text style={styles.heroValue}>{currentCgpa.toFixed(2)}</Text>
+              <View style={styles.cgpaValueRow}>
+                <Text style={styles.heroValue}>{currentCgpa.toFixed(2)}</Text>
+                <Text style={styles.heroMax}>/ 10.00</Text>
+              </View>
             </View>
             <View style={[styles.classificationBadge, { backgroundColor: classification.bg }]}>
               <Text style={[styles.classificationText, { color: classification.color }]}>
@@ -159,15 +182,15 @@ export const CgpaCalculatorScreen: React.FC = () => {
 
           <View style={styles.heroStatsRow}>
             <View style={styles.heroStatItem}>
-              <Text style={styles.statLabel}>VTU Equivalent %</Text>
+              <Text style={styles.statLabel}>Equivalent %</Text>
               <Text style={styles.statValue}>{equivalentPercentage}%</Text>
               <Text style={styles.statFormula}>Formula: (CGPA - 0.75) × 10</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.heroStatItem}>
               <Text style={styles.statLabel}>Completed Credits</Text>
-              <Text style={styles.statValue}>{totalCreditsEarned}</Text>
-              <Text style={styles.statFormula}>Weighted calculation</Text>
+              <Text style={styles.statValue}>{totalCreditsEarned} cr</Text>
+              <Text style={styles.statFormula}>{completedCount} of 8 Semesters</Text>
             </View>
           </View>
         </View>
@@ -190,7 +213,7 @@ export const CgpaCalculatorScreen: React.FC = () => {
                 calcMode === 'SEMESTER' && styles.modeTabTextActive,
               ]}
             >
-              Semester Breakdown
+              Semester Breakdown ({completedCount}/8)
             </Text>
           </TouchableOpacity>
 
@@ -210,109 +233,110 @@ export const CgpaCalculatorScreen: React.FC = () => {
                 calcMode === 'DIRECT' && styles.modeTabTextActive,
               ]}
             >
-              Direct Entry
+              Quick Direct Entry
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Mode 1: Semester Breakdown */}
+        {/* Mode 1: Semester Breakdown (Modular Accordion / Cards) */}
         {calcMode === 'SEMESTER' ? (
           <View style={styles.semesterListSection}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Semesters (1 - 8)</Text>
-              <Text style={styles.sectionNote}>Enter SGPA & Credits for completed semesters</Text>
+              <Text style={styles.sectionTitle}>Semesters Breakdown</Text>
+              <TouchableOpacity
+                style={styles.calcCoursesLink}
+                onPress={() => router.push('/calculators/sgpa')}
+              >
+                <Text style={styles.calcCoursesText}>Calculate SGPA ➔</Text>
+              </TouchableOpacity>
             </View>
 
-            {semesters.map((sem) => (
-              <View
-                key={`sem-${sem.semester}`}
-                style={[
-                  styles.semesterCard,
-                  sem.isCompleted && styles.semesterCardActive,
-                ]}
-              >
-                <View style={styles.semCardHeader}>
+            {semesters.map((sem) => {
+              const isDone = sem.isCompleted && sem.sgpa > 0;
+              const isCurrent = sem.semester === (user?.semester || 5);
+
+              return (
+                <View
+                  key={`sem-${sem.semester}`}
+                  style={[
+                    styles.modularSemCard,
+                    isDone && styles.modularSemCardActive,
+                  ]}
+                >
+                  {/* Left: Sem Number & Status */}
                   <TouchableOpacity
-                    style={styles.semToggleRow}
+                    style={styles.semLeftGroup}
                     onPress={() => toggleSemesterCompleted(sem.semester)}
                     activeOpacity={0.7}
                   >
                     <View
                       style={[
                         styles.checkbox,
-                        sem.isCompleted && styles.checkboxChecked,
+                        isDone && styles.checkboxChecked,
                       ]}
                     >
-                      {sem.isCompleted && (
-                        <Feather name="check" size={14} color="#FFFFFF" />
-                      )}
+                      {isDone && <Feather name="check" size={13} color="#FFFFFF" />}
                     </View>
-                    <Text style={styles.semNumberTitle}>Semester {sem.semester}</Text>
-                    {sem.semester === (user?.semester || 5) && (
-                      <View style={styles.currentSemBadge}>
-                        <Text style={styles.currentSemText}>Current</Text>
+                    <View>
+                      <View style={styles.semTitleRow}>
+                        <Text style={styles.semTitleText}>Semester {sem.semester}</Text>
+                        {isCurrent && (
+                          <View style={styles.currentSemBadge}>
+                            <Text style={styles.currentSemText}>Current</Text>
+                          </View>
+                        )}
                       </View>
-                    )}
+                      <Text style={styles.semSubText}>
+                        {isDone
+                          ? `${sem.credits} Credits • ${(sem.sgpa * sem.credits).toFixed(0)} Points`
+                          : 'Not completed yet'}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.calcSgpaBtn}
-                    onPress={() => router.push('/calculators/sgpa')}
-                  >
-                    <Text style={styles.calcSgpaBtnText}>Calculate SGPA</Text>
-                    <Feather name="chevron-right" size={12} color="#0745E8" />
-                  </TouchableOpacity>
-                </View>
+                  {/* Right: SGPA Value & Edit Action */}
+                  <View style={styles.semRightGroup}>
+                    {isDone ? (
+                      <View style={styles.scorePill}>
+                        <Text style={styles.scorePillValue}>{sem.sgpa.toFixed(2)}</Text>
+                        <Text style={styles.scorePillLabel}>SGPA</Text>
+                      </View>
+                    ) : null}
 
-                <View style={styles.semInputsRow}>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>SGPA (0 - 10)</Text>
-                    <TextInput
-                      style={[
-                        styles.textInput,
-                        !sem.isCompleted && styles.textInputDisabled,
-                      ]}
-                      keyboardType="numeric"
-                      placeholder="0.00"
-                      placeholderTextColor="#94A3B8"
-                      value={sem.sgpa > 0 ? String(sem.sgpa) : ''}
-                      onChangeText={(t) => handleSgpaChange(sem.semester, t)}
-                    />
-                  </View>
-
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Credits</Text>
-                    <TextInput
-                      style={[
-                        styles.textInput,
-                        !sem.isCompleted && styles.textInputDisabled,
-                      ]}
-                      keyboardType="numeric"
-                      placeholder="20"
-                      placeholderTextColor="#94A3B8"
-                      value={String(sem.credits)}
-                      onChangeText={(t) => handleCreditsChange(sem.semester, t)}
-                    />
-                  </View>
-
-                  <View style={styles.inputGroupPoints}>
-                    <Text style={styles.inputLabel}>Grade Points</Text>
-                    <Text style={styles.pointsValue}>
-                      {sem.isCompleted ? (sem.sgpa * sem.credits).toFixed(1) : '—'}
-                    </Text>
+                    <TouchableOpacity
+                      style={[styles.editSemBtn, !isDone && styles.addSemBtn]}
+                      onPress={() => openEditModal(sem)}
+                      activeOpacity={0.8}
+                    >
+                      <Feather
+                        name={isDone ? 'edit-2' : 'plus'}
+                        size={14}
+                        color={isDone ? '#0745E8' : '#059669'}
+                      />
+                      <Text style={[styles.editSemText, !isDone && { color: '#059669' }]}>
+                        {isDone ? 'Edit' : 'Add'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         ) : (
           /* Mode 2: Direct Entry */
           <View style={styles.directEntrySection}>
             <View style={styles.directCard}>
-              <Text style={styles.directTitle}>Direct CGPA Input</Text>
-              <Text style={styles.directSub}>
-                If you already know your official VTU CGPA from provisional results, enter it directly below to update your profile and dashboard.
-              </Text>
+              <View style={styles.directHeaderRow}>
+                <View style={styles.directIconBox}>
+                  <Feather name="check-circle" size={20} color="#0745E8" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.directTitle}>Direct CGPA Input</Text>
+                  <Text style={styles.directSub}>
+                    Enter your official VTU provisional CGPA score below:
+                  </Text>
+                </View>
+              </View>
 
               <View style={styles.directInputContainer}>
                 <TextInput
@@ -327,6 +351,15 @@ export const CgpaCalculatorScreen: React.FC = () => {
                 <Text style={styles.directInputMax}>/ 10.00</Text>
               </View>
 
+              <View style={styles.directLiveFeedback}>
+                <Text style={styles.feedbackLabel}>Equivalent Percentage:</Text>
+                <Text style={styles.feedbackValue}>
+                  {parseFloat(directInput) > 0.75
+                    ? `${((parseFloat(directInput) - 0.75) * 10).toFixed(2)}%`
+                    : '0.00%'}
+                </Text>
+              </View>
+
               <TouchableOpacity
                 style={styles.saveDirectBtn}
                 activeOpacity={0.85}
@@ -339,35 +372,157 @@ export const CgpaCalculatorScreen: React.FC = () => {
           </View>
         )}
 
-        {/* VTU Formula Explainer */}
-        <View style={styles.infoCard}>
-          <View style={styles.infoTitleRow}>
-            <Feather name="info" size={16} color="#0745E8" />
-            <Text style={styles.infoCardTitle}>VTU CGPA & Percentage Guidelines</Text>
-          </View>
-          <Text style={styles.infoText}>
-            • Cumulative GPA Formula:{' '}
-            <Text style={{ fontWeight: '700' }}>CGPA = Σ(C_i × S_i) / Σ(C_i)</Text>
-          </Text>
-          <Text style={styles.infoText}>
-            • Equivalent Percentage:{' '}
-            <Text style={{ fontWeight: '700' }}>Percentage = (CGPA - 0.75) × 10</Text>
-          </Text>
-          <Text style={styles.infoText}>
-            • First Class with Distinction requires a minimum CGPA of 7.75 without active backlogs.
-          </Text>
-        </View>
-
-        {/* Save to Profile Sticky CTA */}
+        {/* Collapsible VTU Formula Explainer */}
         <TouchableOpacity
-          style={styles.bigSaveButton}
-          activeOpacity={0.85}
-          onPress={calcMode === 'DIRECT' ? handleSaveDirect : triggerSuccessFeedback}
+          activeOpacity={0.8}
+          style={styles.formulaCollapsible}
+          onPress={() => setShowFormulaInfo(!showFormulaInfo)}
         >
-          <Feather name="bookmark" size={18} color="#FFFFFF" />
-          <Text style={styles.bigSaveButtonText}>Save to Academic Profile</Text>
+          <View style={styles.formulaTitleRow}>
+            <Feather name="help-circle" size={16} color="#0745E8" />
+            <Text style={styles.formulaTitle}>How is VTU CGPA & Percentage calculated?</Text>
+          </View>
+          <Feather
+            name={showFormulaInfo ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color="#64748B"
+          />
         </TouchableOpacity>
+
+        {showFormulaInfo && (
+          <View style={styles.infoCard}>
+            <Text style={styles.infoText}>
+              • <Text style={{ fontWeight: '700' }}>CGPA Formula:</Text> CGPA = Σ(Credit_i × SGPA_i) / Σ(Credit_i)
+            </Text>
+            <Text style={styles.infoText}>
+              • <Text style={{ fontWeight: '700' }}>Equivalent Percentage:</Text> % = (CGPA - 0.75) × 10
+            </Text>
+            <Text style={styles.infoText}>
+              • <Text style={{ fontWeight: '700' }}>First Class with Distinction:</Text> Minimum 7.75 CGPA without active backlogs.
+            </Text>
+          </View>
+        )}
       </ScrollView>
+
+      {/* Modular Focused Score Edit Modal */}
+      {editingSemester && (
+        <Modal
+          visible={!!editingSemester}
+          animationType="fade"
+          transparent={true}
+          statusBarTranslucent={true}
+          onRequestClose={() => setEditingSemester(null)}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.modalBackdrop}>
+              <KeyboardAvoidingView
+                style={{ width: '100%' }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              >
+                <View style={styles.modalCard}>
+                  <View style={styles.modalHeader}>
+                    <View>
+                      <Text style={styles.modalTitle}>
+                        Semester {editingSemester.semester} Score
+                      </Text>
+                      <Text style={styles.modalSubtitle}>
+                        Enter SGPA & total completed credits
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => setEditingSemester(null)}
+                      style={styles.modalCloseBtn}
+                    >
+                      <Feather name="x" size={20} color="#0F172A" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* SGPA Input Field */}
+                  <View style={styles.modalInputGroup}>
+                    <Text style={styles.modalLabel}>SGPA (0.00 – 10.00)</Text>
+                    <TextInput
+                      style={styles.modalInput}
+                      keyboardType="numeric"
+                      placeholder="e.g. 8.60"
+                      placeholderTextColor="#94A3B8"
+                      value={modalSgpa}
+                      onChangeText={setModalSgpa}
+                      autoFocus
+                    />
+                  </View>
+
+                  {/* Quick SGPA Stepper Pills */}
+                  <View style={styles.quickPillsRow}>
+                    {['7.50', '8.00', '8.50', '9.00', '9.50'].map((val) => (
+                      <TouchableOpacity
+                        key={val}
+                        style={[
+                          styles.quickPill,
+                          modalSgpa === val && styles.quickPillActive,
+                        ]}
+                        onPress={() => setModalSgpa(val)}
+                      >
+                        <Text
+                          style={[
+                            styles.quickPillText,
+                            modalSgpa === val && styles.quickPillTextActive,
+                          ]}
+                        >
+                          {val}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* Credits Input Field */}
+                  <View style={styles.modalInputGroup}>
+                    <Text style={styles.modalLabel}>Semester Credits</Text>
+                    <View style={styles.creditsSelectorRow}>
+                      {[18, 20, 22, 24, 25].map((cr) => (
+                        <TouchableOpacity
+                          key={cr}
+                          style={[
+                            styles.creditOption,
+                            modalCredits === String(cr) && styles.creditOptionActive,
+                          ]}
+                          onPress={() => setModalCredits(String(cr))}
+                        >
+                          <Text
+                            style={[
+                              styles.creditOptionText,
+                              modalCredits === String(cr) && styles.creditOptionTextActive,
+                            ]}
+                          >
+                            {cr}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* Action Buttons */}
+                  <View style={styles.modalActionsRow}>
+                    <TouchableOpacity
+                      style={styles.modalCancelBtn}
+                      onPress={() => setEditingSemester(null)}
+                    >
+                      <Text style={styles.modalCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.modalSaveBtn}
+                      onPress={handleSaveModal}
+                    >
+                      <Feather name="check" size={16} color="#FFFFFF" />
+                      <Text style={styles.modalSaveText}>Save Semester</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </KeyboardAvoidingView>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
     </View>
   );
 };
@@ -375,7 +530,7 @@ export const CgpaCalculatorScreen: React.FC = () => {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   headerSafeArea: {
     backgroundColor: '#FFFFFF',
@@ -407,38 +562,37 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   headerSub: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
   },
   saveHeaderBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
     backgroundColor: '#0745E8',
     paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 10,
-    gap: 4,
+    paddingVertical: 8,
+    borderRadius: 12,
   },
   saveHeaderBtnText: {
     color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   toastBanner: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
     backgroundColor: '#DCFCE7',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#BBF7D0',
+    borderBottomColor: '#86EFAC',
   },
   toastText: {
-    color: '#166534',
-    fontSize: 13,
-    fontWeight: '600',
-    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#15803D',
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -446,42 +600,49 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   heroCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    shadowColor: '#0745E8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
+    padding: 18,
+    marginBottom: 16,
+    gap: 14,
   },
   heroTopRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    gap: 12,
   },
   heroSubLabel: {
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: '700',
     color: '#64748B',
-    fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  cgpaValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+    marginTop: 2,
+  },
   heroValue: {
-    fontSize: 42,
+    fontSize: 38,
     fontWeight: '900',
     color: '#0745E8',
-    marginTop: 2,
+    letterSpacing: -1,
+  },
+  heroMax: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#94A3B8',
   },
   classificationBadge: {
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 10,
-    maxWidth: '50%',
+    borderRadius: 12,
+    maxWidth: '52%',
   },
   classificationText: {
     fontSize: 11,
@@ -490,8 +651,9 @@ const styles = StyleSheet.create({
   },
   heroStatsRow: {
     flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 14,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     padding: 12,
     borderWidth: 1,
     borderColor: '#F1F5F9',
@@ -500,29 +662,30 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
-  statDivider: {
-    width: 1,
-    backgroundColor: '#E2E8F0',
-    marginVertical: 4,
-  },
   statLabel: {
     fontSize: 11,
     color: '#64748B',
     fontWeight: '600',
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
-    marginVertical: 2,
+    marginTop: 2,
   },
   statFormula: {
-    fontSize: 10,
+    fontSize: 9,
     color: '#94A3B8',
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: '#E2E8F0',
   },
   modeTabs: {
     flexDirection: 'row',
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#F1F5F9',
     borderRadius: 14,
     padding: 4,
     marginBottom: 16,
@@ -533,31 +696,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
     paddingVertical: 10,
     borderRadius: 10,
-    gap: 8,
   },
   modeTabActive: {
     backgroundColor: '#FFFFFF',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
   },
   modeTabText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#64748B',
   },
   modeTabTextActive: {
     color: '#0745E8',
-    fontWeight: '800',
   },
   semesterListSection: {
-    gap: 12,
+    gap: 10,
+    marginBottom: 16,
   },
   sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 4,
   },
   sectionTitle: {
@@ -565,220 +730,368 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0F172A',
   },
-  sectionNote: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
+  calcCoursesLink: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
-  semesterCard: {
+  calcCoursesText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0745E8',
+  },
+  modularSemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    padding: 14,
   },
-  semesterCardActive: {
+  modularSemCardActive: {
     borderColor: '#C7D2FE',
     backgroundColor: '#FAFCFF',
   },
-  semCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  semToggleRow: {
+  semLeftGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
+    flex: 1,
   },
   checkbox: {
     width: 22,
     height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
+    borderRadius: 7,
+    borderWidth: 1.5,
     borderColor: '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
   },
   checkboxChecked: {
     backgroundColor: '#0745E8',
     borderColor: '#0745E8',
   },
-  semNumberTitle: {
-    fontSize: 15,
-    fontWeight: '700',
+  semTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  semTitleText: {
+    fontSize: 14,
+    fontWeight: '800',
     color: '#0F172A',
   },
   currentSemBadge: {
     backgroundColor: '#EEF2FF',
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   currentSemText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#0745E8',
-  },
-  calcSgpaBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  calcSgpaBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0745E8',
-  },
-  semInputsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  inputGroup: {
-    flex: 1,
-  },
-  inputGroupPoints: {
-    width: 90,
-    alignItems: 'flex-end',
-  },
-  inputLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
-    marginBottom: 6,
-  },
-  textInput: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  textInputDisabled: {
-    backgroundColor: '#F1F5F9',
-    color: '#94A3B8',
-  },
-  pointsValue: {
-    fontSize: 16,
+    fontSize: 9,
     fontWeight: '800',
     color: '#0745E8',
-    paddingTop: 8,
+  },
+  semSubText: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  semRightGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  scorePill: {
+    alignItems: 'center',
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  scorePillValue: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0745E8',
+  },
+  scorePillLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#6366F1',
+  },
+  editSemBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  addSemBtn: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+  },
+  editSemText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0745E8',
   },
   directEntrySection: {
     marginBottom: 16,
   },
   directCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 20,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    padding: 18,
+    gap: 14,
+  },
+  directHeaderRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+  },
+  directIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   directTitle: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 6,
   },
   directSub: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#64748B',
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 20,
+    marginTop: 2,
   },
   directInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 2,
-    borderColor: '#0745E8',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginBottom: 20,
-    width: '80%',
+    borderWidth: 1.5,
+    borderColor: '#0745E8',
+    paddingHorizontal: 16,
+    height: 58,
   },
   directInputField: {
-    fontSize: 36,
+    flex: 1,
+    fontSize: 26,
     fontWeight: '900',
     color: '#0745E8',
-    minWidth: 100,
-    textAlign: 'center',
   },
   directInputMax: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#94A3B8',
-    marginLeft: 6,
+  },
+  directLiveFeedback: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  feedbackLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  feedbackValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#059669',
   },
   saveDirectBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0745E8',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 14,
-    gap: 8,
-    width: '100%',
     justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#0745E8',
+    borderRadius: 14,
+    height: 48,
   },
   saveDirectBtnText: {
     color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '800',
   },
-  infoCard: {
-    backgroundColor: '#EEF2FF',
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: '#C7D2FE',
-    gap: 6,
-  },
-  infoTitleRow: {
+  formulaCollapsible: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  infoCardTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0745E8',
+  formulaTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  formulaTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  infoCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 8,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   infoText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#475569',
-    lineHeight: 18,
+    lineHeight: 16,
   },
-  bigSaveButton: {
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    gap: 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  modalInputGroup: {
+    gap: 6,
+  },
+  modalLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  modalInput: {
+    height: 50,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 14,
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  quickPillsRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  quickPill: {
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+  },
+  quickPillActive: {
+    backgroundColor: '#0745E8',
+  },
+  quickPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  quickPillTextActive: {
+    color: '#FFFFFF',
+  },
+  creditsSelectorRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  creditOption: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+  },
+  creditOptionActive: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#0745E8',
+  },
+  creditOptionText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#64748B',
+  },
+  creditOptionTextActive: {
+    color: '#0745E8',
+  },
+  modalActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 6,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  modalSaveBtn: {
+    flex: 1.5,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
+    height: 48,
+    borderRadius: 14,
     backgroundColor: '#0745E8',
-    paddingVertical: 16,
-    borderRadius: 16,
-    gap: 10,
-    marginTop: 20,
-    shadowColor: '#0745E8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
   },
-  bigSaveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+  modalSaveText: {
+    fontSize: 14,
     fontWeight: '800',
+    color: '#FFFFFF',
   },
 });

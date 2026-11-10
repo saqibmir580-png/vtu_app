@@ -5,16 +5,13 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAttendanceStore } from '../store/useAttendanceStore';
 import { SubjectSelector } from '../components/SubjectSelector';
-import { TargetAttendanceSelector } from '../components/TargetAttendanceSelector';
-import { AttendanceCalculatorCard } from '../components/AttendanceCalculatorCard';
-import { RequiredClassesCard } from '../components/RequiredClassesCard';
-import { MissableClassesCard } from '../components/MissableClassesCard';
 import { CalculatorMode } from '../types/attendance.types';
 
 export const AttendanceCalculatorScreen: React.FC = () => {
@@ -38,8 +35,18 @@ export const AttendanceCalculatorScreen: React.FC = () => {
     mode
   );
 
+  const currPct = result.currentPercentage;
+  const isShortage = currPct < 75;
+  const isSafe = currPct >= 85;
+
+  const statusColor = isSafe ? '#059669' : isShortage ? '#DC2626' : '#D97706';
+  const statusBg = isSafe ? '#DCFCE7' : isShortage ? '#FEE2E2' : '#FEF3C7';
+  const statusLabel = isSafe ? 'Safe (Above 85%)' : isShortage ? 'Critical Shortage (<75%)' : 'Borderline (75-84%)';
+
   return (
     <View style={styles.root}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
       {/* Header */}
       <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
         <View style={styles.headerRow}>
@@ -47,90 +54,192 @@ export const AttendanceCalculatorScreen: React.FC = () => {
             <Feather name="arrow-left" size={20} color="#0F172A" />
           </TouchableOpacity>
           <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>Attendance Goal Calculator</Text>
-            <Text style={styles.headerSub}>Project Required or Missable Classes</Text>
+            <Text style={styles.headerTitle}>Attendance Calculator</Text>
+            <Text style={styles.headerSub}>Bunk Allowance & Target Projections</Text>
           </View>
         </View>
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Subject Selector Trigger */}
-        <View style={styles.fieldSection}>
-          <Text style={styles.sectionLabel}>Select Subject</Text>
+        {/* Modular Subject Selector Card */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.subjectCard}
+          onPress={() => setSelectorVisible(true)}
+        >
+          <View style={styles.subjectLeft}>
+            <View style={styles.subjectIconBox}>
+              <Feather name="book-open" size={20} color="#0745E8" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.subjectCodeRow}>
+                <Text style={styles.subjectCode}>{selectedSubject.subjectCode}</Text>
+                <View style={[styles.statusPill, { backgroundColor: statusBg }]}>
+                  <Text style={[styles.statusPillText, { color: statusColor }]}>
+                    {statusLabel}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.subjectName} numberOfLines={1}>
+                {selectedSubject.subjectName}
+              </Text>
+            </View>
+          </View>
+
+          <Feather name="chevron-down" size={18} color="#64748B" />
+        </TouchableOpacity>
+
+        {/* Circular Percentage Gauge & Stats Card */}
+        <View style={styles.gaugeCard}>
+          <View style={styles.gaugeRing}>
+            <Text style={[styles.gaugePctText, { color: statusColor }]}>{currPct}%</Text>
+            <Text style={styles.gaugeSubText}>Current Attendance</Text>
+          </View>
+
+          <View style={styles.statsStrip}>
+            <View style={styles.statTile}>
+              <Text style={styles.statVal}>{selectedSubject.attendedClasses}</Text>
+              <Text style={styles.statLbl}>Attended</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statTile}>
+              <Text style={styles.statVal}>{selectedSubject.conductedClasses}</Text>
+              <Text style={styles.statLbl}>Conducted</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statTile}>
+              <Text style={[styles.statVal, { color: '#0745E8' }]}>{target}%</Text>
+              <Text style={styles.statLbl}>Target Goal</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Target Percentage Quick Steppers */}
+        <View style={styles.targetSection}>
+          <Text style={styles.sectionLabel}>Select Target Goal:</Text>
+          <View style={styles.targetPillsRow}>
+            {[75, 80, 85, 90].map((tVal) => {
+              const isSelected = target === tVal;
+              return (
+                <TouchableOpacity
+                  key={`target-${tVal}`}
+                  activeOpacity={0.8}
+                  style={[styles.targetPill, isSelected && styles.targetPillActive]}
+                  onPress={() => setTarget(tVal)}
+                >
+                  <Text style={[styles.targetPillText, isSelected && styles.targetPillTextActive]}>
+                    {tVal}% {tVal === 75 ? 'VTU' : ''}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Modular Mode Switcher (2 Tabs) */}
+        <View style={styles.modeTabs}>
           <TouchableOpacity
             activeOpacity={0.8}
-            style={styles.subjectTrigger}
-            onPress={() => setSelectorVisible(true)}
+            style={[styles.modeTab, mode === 'REACH_TARGET' && styles.modeTabActive]}
+            onPress={() => setMode('REACH_TARGET')}
           >
-            <View style={styles.triggerLeft}>
-              <View style={styles.iconBox}>
-                <Feather name="book" size={18} color="#0745E8" />
-              </View>
-              <View>
-                <Text style={styles.subjectCode}>{selectedSubject.subjectCode}</Text>
-                <Text style={styles.subjectName}>{selectedSubject.subjectName}</Text>
-              </View>
-            </View>
+            <Feather
+              name="trending-up"
+              size={16}
+              color={mode === 'REACH_TARGET' ? '#0745E8' : '#64748B'}
+            />
+            <Text style={[styles.modeTabText, mode === 'REACH_TARGET' && styles.modeTabTextActive]}>
+              Classes to Attend
+            </Text>
+          </TouchableOpacity>
 
-            <View style={styles.triggerRight}>
-              <Text style={styles.currPct}>{result.currentPercentage}%</Text>
-              <Feather name="chevron-down" size={18} color="#64748B" />
-            </View>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={[styles.modeTab, mode === 'CAN_MISS' && styles.modeTabActive]}
+            onPress={() => setMode('CAN_MISS')}
+          >
+            <Feather
+              name="coffee"
+              size={16}
+              color={mode === 'CAN_MISS' ? '#059669' : '#64748B'}
+            />
+            <Text style={[styles.modeTabText, mode === 'CAN_MISS' && { color: '#059669' }]}>
+              Can I Bunk?
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Current Stats Snapshot */}
-        <View style={styles.snapshotCard}>
-          <View style={styles.snapshotTile}>
-            <Text style={styles.snapshotVal}>{selectedSubject.attendedClasses}</Text>
-            <Text style={styles.snapshotSub}>Attended</Text>
-          </View>
-
-          <View style={styles.snapshotDivider} />
-
-          <View style={styles.snapshotTile}>
-            <Text style={styles.snapshotVal}>{selectedSubject.conductedClasses}</Text>
-            <Text style={styles.snapshotSub}>Conducted</Text>
-          </View>
-
-          <View style={styles.snapshotDivider} />
-
-          <View style={styles.snapshotTile}>
-            <Text style={[styles.snapshotVal, { color: '#0745E8' }]}>
-              {result.currentPercentage}%
-            </Text>
-            <Text style={styles.snapshotSub}>Current %</Text>
-          </View>
-        </View>
-
-        {/* Target Selector */}
-        <TargetAttendanceSelector selectedTarget={target} onSelectTarget={setTarget} />
-
-        {/* Segmented Mode Switcher */}
-        <AttendanceCalculatorCard mode={mode} onModeChange={setMode} />
-
-        {/* Result Cards based on Mode */}
+        {/* Hero Dynamic Projection Result Card */}
         {mode === 'REACH_TARGET' ? (
-          <RequiredClassesCard
-            requiredCount={result.requiredClassesToReachTarget}
-            targetPercentage={result.targetPercentage}
-            projectedPercentage={result.projectedPercentage}
-          />
+          <View style={styles.projectionHeroCard}>
+            <View style={styles.projectionHeader}>
+              <View style={[styles.projectionIconBox, { backgroundColor: '#EEF2FF' }]}>
+                <Feather name="calendar" size={24} color="#0745E8" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.projSubLabel}>REQUIRED LECTURES</Text>
+                <Text style={styles.projHeroValue}>
+                  {result.requiredClassesToReachTarget} Classes Needed
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.projExplanationBox}>
+              <Text style={styles.projExplanationText}>
+                {result.requiredClassesToReachTarget === 0
+                  ? `You already have ${currPct}%, which meets or exceeds your ${target}% target!`
+                  : `Attend the next ${result.requiredClassesToReachTarget} consecutive classes without missing to reach your ${target}% target.`}
+              </Text>
+            </View>
+
+            <View style={styles.projFooterRow}>
+              <Text style={styles.projFooterLabel}>Projected Percentage:</Text>
+              <Text style={styles.projFooterVal}>{result.projectedPercentage}%</Text>
+            </View>
+          </View>
         ) : (
-          <MissableClassesCard
-            missableCount={result.missableClassesCount}
-            targetPercentage={result.targetPercentage}
-            projectedPercentage={result.projectedPercentage}
-          />
+          <View style={[styles.projectionHeroCard, { borderColor: '#A7F3D0' }]}>
+            <View style={styles.projectionHeader}>
+              <View style={[styles.projectionIconBox, { backgroundColor: '#ECFDF5' }]}>
+                <Feather name="coffee" size={24} color="#059669" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.projSubLabel, { color: '#059669' }]}>SAFE BUNK ALLOWANCE</Text>
+                <Text style={[styles.projHeroValue, { color: result.missableClassesCount > 0 ? '#059669' : '#DC2626' }]}>
+                  {result.missableClassesCount} Bunk{result.missableClassesCount === 1 ? '' : 's'} Safe
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.projExplanationBox}>
+              <Text style={styles.projExplanationText}>
+                {result.missableClassesCount > 0
+                  ? `You can safely skip up to ${result.missableClassesCount} classes and still stay above your ${target}% threshold.`
+                  : `You cannot afford to miss any classes right now without dropping below your target!` }
+              </Text>
+            </View>
+
+            <View style={styles.projFooterRow}>
+              <Text style={styles.projFooterLabel}>Outcome if Missed:</Text>
+              <Text style={[styles.projFooterVal, { color: '#059669' }]}>
+                {result.projectedPercentage}%
+              </Text>
+            </View>
+          </View>
         )}
 
-        {/* Explanation Card */}
-        <View style={styles.explanationCard}>
-          <View style={styles.explanationHeader}>
-            <Feather name="info" size={16} color="#0745E8" />
-            <Text style={styles.explanationTitle}>Calculation Breakdown</Text>
+        {/* Calculation Rule Explainer */}
+        <View style={styles.breakdownCard}>
+          <View style={styles.breakdownTitleRow}>
+            <Feather name="info" size={15} color="#0745E8" />
+            <Text style={styles.breakdownTitle}>VTU Attendance Regulations</Text>
           </View>
-          <Text style={styles.explanationText}>{result.explanation}</Text>
+          <Text style={styles.breakdownText}>
+            • Minimum 75% attendance in each course is required to be eligible for VTU End Semester Examinations.
+          </Text>
+          <Text style={styles.breakdownText}>
+            • Maintaining 85% ensures a safe buffer against unexpected medical or personal emergencies.
+          </Text>
         </View>
       </ScrollView>
 
@@ -184,120 +293,288 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   headerSub: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 40,
   },
-  fieldSection: {
-    marginBottom: 14,
-  },
-  sectionLabel: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#64748B',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  subjectTrigger: {
+  subjectCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    padding: 14,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  triggerLeft: {
+  subjectLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     flex: 1,
+    marginRight: 8,
   },
-  iconBox: {
-    width: 38,
-    height: 38,
+  subjectIconBox: {
+    width: 42,
+    height: 42,
     borderRadius: 12,
     backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  subjectCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
   subjectCode: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
     color: '#0745E8',
+  },
+  statusPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  statusPillText: {
+    fontSize: 10,
+    fontWeight: '800',
   },
   subjectName: {
     fontSize: 14,
     fontWeight: '700',
     color: '#0F172A',
   },
-  triggerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  currPct: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  snapshotCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  gaugeCard: {
     backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    padding: 20,
+    alignItems: 'center',
     marginBottom: 16,
+    gap: 16,
   },
-  snapshotTile: {
+  gaugeRing: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 6,
+    borderColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0745E8',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  gaugePctText: {
+    fontSize: 34,
+    fontWeight: '900',
+    letterSpacing: -1,
+  },
+  gaugeSubText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748B',
+    marginTop: 2,
+  },
+  statsStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 12,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  statTile: {
     flex: 1,
     alignItems: 'center',
   },
-  snapshotVal: {
-    fontSize: 18,
+  statVal: {
+    fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
   },
-  snapshotSub: {
+  statLbl: {
     fontSize: 11,
     color: '#64748B',
-    marginTop: 1,
+    fontWeight: '600',
+    marginTop: 2,
   },
-  snapshotDivider: {
+  statDivider: {
     width: 1,
     height: 24,
-    backgroundColor: '#CBD5E1',
+    backgroundColor: '#E2E8F0',
   },
-  explanationCard: {
+  targetSection: {
+    marginBottom: 16,
+    gap: 8,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  targetPillsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  targetPill: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
     backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+  },
+  targetPillActive: {
+    backgroundColor: '#0745E8',
+    borderColor: '#0745E8',
+  },
+  targetPillText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#64748B',
+  },
+  targetPillTextActive: {
+    color: '#FFFFFF',
+  },
+  modeTabs: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 16,
+    gap: 4,
+  },
+  modeTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  modeTabActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  modeTabText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  modeTabTextActive: {
+    color: '#0745E8',
+  },
+  projectionHeroCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#C7D2FE',
+    padding: 18,
+    marginBottom: 16,
+    gap: 14,
+    shadowColor: '#0745E8',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  projectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  projectionIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  projSubLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0745E8',
+    letterSpacing: 0.5,
+  },
+  projHeroValue: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  projExplanationBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  explanationHeader: {
+  projExplanationText: {
+    fontSize: 13,
+    color: '#334155',
+    lineHeight: 19,
+    fontWeight: '500',
+  },
+  projFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 4,
+  },
+  projFooterLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  projFooterVal: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#0745E8',
+  },
+  breakdownCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 14,
+    gap: 6,
+  },
+  breakdownTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 6,
+    marginBottom: 2,
   },
-  explanationTitle: {
+  breakdownTitle: {
     fontSize: 13,
     fontWeight: '800',
     color: '#0F172A',
   },
-  explanationText: {
-    fontSize: 12,
-    color: '#475569',
-    lineHeight: 18,
+  breakdownText: {
+    fontSize: 11,
+    color: '#64748B',
+    lineHeight: 16,
   },
 });
