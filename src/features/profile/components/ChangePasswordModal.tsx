@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,11 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { changePasswordApiFunction } from '@/features/auth/apifunction/apiFunction';
@@ -26,6 +31,37 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      const height = e.endCoordinates ? e.endCoordinates.height : 280;
+      setKeyboardHeight(height);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleClose = () => {
+    Keyboard.dismiss();
+    setErrorMsg(null);
+    onClose();
+  };
 
   const handleSubmit = async () => {
     setErrorMsg(null);
@@ -49,7 +85,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      onClose();
+      handleClose();
     } catch (err: any) {
       setErrorMsg(err?.message || 'Failed to change password. Please verify current password.');
     } finally {
@@ -57,88 +93,142 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     }
   };
 
+  const isKeyboardOpen = keyboardHeight > 0;
+
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent={true}
-      onRequestClose={onClose}
+      statusBarTranslucent={true}
+      onRequestClose={handleClose}
     >
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Change Password</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Feather name="x" size={20} color="#0F172A" />
-            </TouchableOpacity>
-          </View>
-
-          {errorMsg ? (
-            <View style={styles.errorBox}>
-              <Feather name="alert-circle" size={16} color="#DC2626" />
-              <Text style={styles.errorText}>{errorMsg}</Text>
-            </View>
-          ) : null}
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Current Password</Text>
-            <TextInput
-              style={styles.input}
-              secureTextEntry
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              placeholder="••••••••"
-              placeholderTextColor="#94A3B8"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>New Password</Text>
-            <TextInput
-              style={styles.input}
-              secureTextEntry
-              value={newPassword}
-              onChangeText={setNewPassword}
-              placeholder="At least 6 characters"
-              placeholderTextColor="#94A3B8"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Confirm New Password</Text>
-            <TextInput
-              style={styles.input}
-              secureTextEntry
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              placeholder="Re-enter new password"
-              placeholderTextColor="#94A3B8"
-            />
-          </View>
-
-          <TouchableOpacity
-            style={styles.submitBtn}
-            activeOpacity={0.85}
-            onPress={handleSubmit}
-            disabled={loading}
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.backdrop}>
+          <KeyboardAvoidingView
+            style={styles.keyboardAvoiding}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : (
-              <Text style={styles.submitText}>Update Password</Text>
-            )}
-          </TouchableOpacity>
+            <ScrollView
+              ref={scrollViewRef}
+              contentContainerStyle={[
+                styles.scrollContainer,
+                isKeyboardOpen
+                  ? {
+                      justifyContent: 'flex-start',
+                      paddingTop: Platform.OS === 'ios' ? 70 : 45,
+                      paddingBottom: keyboardHeight + 60,
+                    }
+                  : {
+                      justifyContent: 'center',
+                      paddingTop: 20,
+                      paddingBottom: 40,
+                    },
+              ]}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+            >
+              <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+                <View style={styles.card}>
+                  <View style={styles.header}>
+                    <Text style={styles.title}>Change Password</Text>
+                    <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
+                      <Feather name="x" size={20} color="#0F172A" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {errorMsg ? (
+                    <View style={styles.errorBox}>
+                      <Feather name="alert-circle" size={16} color="#DC2626" />
+                      <Text style={styles.errorText}>{errorMsg}</Text>
+                    </View>
+                  ) : null}
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Current Password</Text>
+                    <TextInput
+                      style={styles.input}
+                      secureTextEntry
+                      value={currentPassword}
+                      onChangeText={setCurrentPassword}
+                      placeholder="••••••••"
+                      placeholderTextColor="#94A3B8"
+                      onFocus={() => {
+                        setTimeout(() => {
+                          scrollViewRef.current?.scrollTo({ y: 60, animated: true });
+                        }, 120);
+                      }}
+                    />
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>New Password</Text>
+                    <TextInput
+                      style={styles.input}
+                      secureTextEntry
+                      value={newPassword}
+                      onChangeText={setNewPassword}
+                      placeholder="At least 6 characters"
+                      placeholderTextColor="#94A3B8"
+                      onFocus={() => {
+                        setTimeout(() => {
+                          scrollViewRef.current?.scrollTo({ y: 120, animated: true });
+                        }, 120);
+                      }}
+                    />
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Confirm New Password</Text>
+                    <TextInput
+                      style={styles.input}
+                      secureTextEntry
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      placeholder="Re-enter new password"
+                      placeholderTextColor="#94A3B8"
+                      onFocus={() => {
+                        setTimeout(() => {
+                          scrollViewRef.current?.scrollToEnd({ animated: true });
+                        }, 120);
+                      }}
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.submitBtn}
+                    activeOpacity={0.85}
+                    onPress={handleSubmit}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <Text style={styles.submitText}>Update Password</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </TouchableWithoutFeedback>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+  backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    justifyContent: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+  },
+  keyboardAvoiding: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContainer: {
+    flexGrow: 1,
     paddingHorizontal: 20,
   },
   card: {
@@ -147,8 +237,8 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 14,
     shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
     elevation: 8,
   },
   header: {
@@ -190,13 +280,13 @@ const styles = StyleSheet.create({
     color: '#334155',
   },
   input: {
-    height: 46,
+    height: 48,
     borderRadius: 12,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 12,
-    fontSize: 14,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 14,
+    fontSize: 15,
     color: '#0F172A',
   },
   submitBtn: {

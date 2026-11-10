@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Platform,
   StatusBar,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -34,6 +35,34 @@ export const RegisterScreen: React.FC = () => {
 
   // Field Level Errors
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      const height = e.endCoordinates ? e.endCoordinates.height : 280;
+      setKeyboardHeight(height);
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleInputFocus = (offset: number) => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: offset, animated: true });
+    }, 120);
+  };
 
   const handleBack = () => {
     clearError();
@@ -109,7 +138,11 @@ export const RegisterScreen: React.FC = () => {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <ScrollView
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: 280 }]}
+          ref={scrollViewRef}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 160 : 120 },
+          ]}
           bounces={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
@@ -197,6 +230,7 @@ export const RegisterScreen: React.FC = () => {
                       setName(txt);
                       if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: '' }));
                     }}
+                    onFocus={() => handleInputFocus(80)}
                   />
                 </View>
                 {fieldErrors.name ? <Text style={styles.errorText}>{fieldErrors.name}</Text> : null}
@@ -218,6 +252,7 @@ export const RegisterScreen: React.FC = () => {
                     }}
                     keyboardType="email-address"
                     autoCapitalize="none"
+                    onFocus={() => handleInputFocus(140)}
                   />
                 </View>
                 {fieldErrors.email ? <Text style={styles.errorText}>{fieldErrors.email}</Text> : null}
@@ -238,6 +273,7 @@ export const RegisterScreen: React.FC = () => {
                       if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: '' }));
                     }}
                     secureTextEntry={!showPassword}
+                    onFocus={() => handleInputFocus(220)}
                   />
                   <TouchableOpacity
                     activeOpacity={0.7}
@@ -266,6 +302,7 @@ export const RegisterScreen: React.FC = () => {
                         setFieldErrors((prev) => ({ ...prev, confirmPassword: '' }));
                     }}
                     secureTextEntry={!showPassword}
+                    onFocus={() => handleInputFocus(290)}
                   />
                 </View>
                 {fieldErrors.confirmPassword ? (

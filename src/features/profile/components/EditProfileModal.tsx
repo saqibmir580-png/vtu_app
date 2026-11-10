@@ -93,7 +93,12 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.formScroll}
+          contentContainerStyle={{ paddingBottom: 160 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           {/* Full Name Field */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Full Name</Text>
