@@ -153,8 +153,8 @@ export const SgpaCalculatorScreen: React.FC = () => {
 
       setLoadingCourses(true);
       try {
-        const branchCode = user?.branch || (user as any)?.branchCode || 'CS';
-        const schemeYear = (user as any)?.schemeYear || (user as any)?.scheme || '2021';
+        const branchCode = (user?.branch === 'CS' ? 'CSE' : user?.branch) || (user as any)?.branchCode || 'CSE';
+        const schemeYear = (user as any)?.scheme || (user as any)?.schemeYear || '2022';
 
         const remoteCourses = await getCoursesApiFunction({
           semester: selectedSemester,
@@ -165,8 +165,8 @@ export const SgpaCalculatorScreen: React.FC = () => {
         if (isMounted && remoteCourses && remoteCourses.length > 0) {
           const mapped: SubjectGrade[] = remoteCourses.map((c: any, idx: number) => ({
             id: c.id || `course-${idx}`,
-            name: c.courseName || c.title || c.name || `Subject ${idx + 1}`,
-            code: c.courseCode || c.code || `SUB${idx + 1}`,
+            name: c.title || c.subjectName || c.courseName || c.name || `Subject ${idx + 1}`,
+            code: c.subjectCode || c.courseCode || c.code || `SUB${idx + 1}`,
             credits: Number(c.credits) || 3,
             grade: 'A',
             gradePoint: 8,
@@ -338,7 +338,9 @@ export const SgpaCalculatorScreen: React.FC = () => {
             <Text style={styles.coursesTitle}>Academic Master Syllabus</Text>
           </View>
           <View style={styles.catalogPill}>
-            <Text style={styles.catalogPillText}>VTU Scheme {user?.branch || 'CSE'}</Text>
+            <Text style={styles.catalogPillText}>
+              {user?.scheme || '2022'} Scheme • {user?.branch || 'CSE'}
+            </Text>
           </View>
         </View>
 

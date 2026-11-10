@@ -265,16 +265,15 @@ export const HomeScreen: React.FC = () => {
       {/* 1. FIXED Header Section (Blue Container - Stays fixed on scroll) */}
       <View style={styles.headerBackground}>
         <SafeAreaView edges={['top']}>
-          <View style={styles.headerTopRow}>
-            {/* Left Aligned Greeting & Academic Details Pill */}
-            <View style={styles.greetingWrapper}>
-              <Text style={styles.greetingSub}>{getTimeAwareGreeting()}</Text>
-              <Text style={styles.userName}>{user?.name || 'Fardeen'}</Text>
-              <View style={styles.branchPill}>
-                <Text style={styles.branchPillText}>
-                  {user?.branch || 'CSE'} • Sem {user?.semester || 5} • {user?.scheme || '2022'} Scheme
-                </Text>
-              </View>
+          {/* Top Brand & Actions Bar */}
+          <View style={styles.brandRow}>
+            {/* VTU Ultima Brand Logo */}
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('../../../../assets/vtu_ultima_logo.png')}
+                style={styles.headerLogo}
+                resizeMode="contain"
+              />
             </View>
 
             {/* Right Aligned Bell & Avatar */}
@@ -302,6 +301,19 @@ export const HomeScreen: React.FC = () => {
                   style={styles.avatarImg}
                 />
               </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Student Welcome & Academic Details Row */}
+          <View style={styles.headerGreetingRow}>
+            <View style={styles.greetingWrapper}>
+              <Text style={styles.greetingSub}>{getTimeAwareGreeting()}</Text>
+              <Text style={styles.userName}>{user?.name || 'Student'}</Text>
+            </View>
+            <View style={styles.branchPill}>
+              <Text style={styles.branchPillText}>
+                {user?.branch || 'CSE'} • Sem {user?.semester || 5} • {user?.scheme || '2022'} Scheme
+              </Text>
             </View>
           </View>
         </SafeAreaView>
@@ -405,36 +417,58 @@ const styles = StyleSheet.create({
     backgroundColor: '#0745E8',
     paddingHorizontal: 20,
     paddingTop: 10,
-    paddingBottom: 24,
+    paddingBottom: 22,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    shadowColor: '#0745E8',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  headerTopRow: {
+  brandRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 6,
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  logoContainer: {
+    height: 36,
+    width: 130,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  headerLogo: {
+    width: '100%',
+    height: '100%',
+  },
+  headerGreetingRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   greetingWrapper: {
     flex: 1,
   },
   greetingSub: {
     color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: '500',
   },
   userName: {
     color: '#FFFFFF',
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     marginTop: 2,
   },
   branchPill: {
-    alignSelf: 'flex-start',
+    alignSelf: 'flex-end',
     backgroundColor: 'rgba(255, 255, 255, 0.18)',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 12,
-    marginTop: 6,
   },
   branchPillText: {
     color: '#FFFFFF',
