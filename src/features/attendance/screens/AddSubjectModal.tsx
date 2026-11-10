@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -43,14 +43,7 @@ export const AddSubjectModal: React.FC<AddSubjectModalProps> = ({
   const [target, setTarget] = useState(85);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch admin subjects whenever semester changes or modal opens
-  useEffect(() => {
-    if (visible) {
-      loadSubjectsForSemester(selectedSemester);
-    }
-  }, [visible, selectedSemester]);
-
-  const loadSubjectsForSemester = async (sem: number) => {
+  const loadSubjectsForSemester = useCallback(async (sem: number) => {
     setIsLoadingSubjects(true);
     try {
       const courses = await fetchAdminCoursesFromApi(sem, user?.branch);
@@ -63,7 +56,14 @@ export const AddSubjectModal: React.FC<AddSubjectModalProps> = ({
     } finally {
       setIsLoadingSubjects(false);
     }
-  };
+  }, [user?.branch, selectedCourse]);
+
+  // Fetch admin subjects whenever semester changes or modal opens
+  useEffect(() => {
+    if (visible) {
+      loadSubjectsForSemester(selectedSemester);
+    }
+  }, [visible, selectedSemester, loadSubjectsForSemester]);
 
   const handleSelectCourse = (course: AdminSubjectItem) => {
     setSelectedCourse(course);
