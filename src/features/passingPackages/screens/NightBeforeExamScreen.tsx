@@ -37,12 +37,23 @@ export const NightBeforeExamScreen: React.FC = () => {
     );
   };
 
-  const sequence = pkg.nightBeforeSequence.length > 0 ? pkg.nightBeforeSequence : pkg.importantQuestions;
-  const progressPercent = Math.round((completedIds.length / sequence.length) * 100);
+  const sequence = pkg.nightBeforeSequence && pkg.nightBeforeSequence.length > 0
+    ? pkg.nightBeforeSequence
+    : pkg.importantQuestions || [];
+  const progressPercent = sequence.length > 0
+    ? Math.round((completedIds.length / sequence.length) * 100)
+    : 0;
+
+  const handleStartOrContinue = () => {
+    const nextQuestion = sequence.find((q) => !completedIds.includes(q.id)) || sequence[0];
+    if (nextQuestion) {
+      router.push(`/passing-packages/question/${nextQuestion.id}?pkgId=${pkg.id}` as any);
+    }
+  };
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
       <Header
         title="1-Night-Before-Exam"
         dark={true}
@@ -51,6 +62,7 @@ export const NightBeforeExamScreen: React.FC = () => {
           <TouchableOpacity
             style={styles.backBtn}
             onPress={() => setCompletedIds([])}
+            accessibilityLabel="Reset revision progress"
           >
             <Feather name="refresh-cw" size={18} color="#FFFFFF" />
           </TouchableOpacity>
@@ -61,8 +73,8 @@ export const NightBeforeExamScreen: React.FC = () => {
         {/* Night Before Hero Card */}
         <NightBeforeCard
           highYieldCount={sequence.length}
-          estimatedMinutes={45}
-          onPressStart={() => {}}
+          estimatedMinutes={Math.max(30, sequence.length * 8)}
+          onPressStart={handleStartOrContinue}
         />
 
         {/* Progress Bar */}
@@ -84,31 +96,40 @@ export const NightBeforeExamScreen: React.FC = () => {
           <Text style={styles.sequenceSub}>Tap questions to mark as revised</Text>
         </View>
 
-        <QuickRevisionList
-          questions={sequence}
-          completedIds={completedIds}
-          onToggleComplete={toggleComplete}
-          onPressQuestion={(q) =>
-            router.push(`/passing-packages/question/${q.id}?pkgId=${pkg.id}` as any)
-          }
-        />
+        {sequence.length > 0 ? (
+          <QuickRevisionList
+            questions={sequence}
+            completedIds={completedIds}
+            onToggleComplete={toggleComplete}
+            onPressQuestion={(q) =>
+              router.push(`/passing-packages/question/${q.id}?pkgId=${pkg.id}` as any)
+            }
+          />
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Feather name="book-open" size={36} color="#64748B" />
+            <Text style={styles.emptyText}>No high-yield questions found for this package.</Text>
+          </View>
+        )}
       </ScrollView>
 
       {/* Floating CTA */}
-      <View style={styles.floatingBar}>
-        <TouchableOpacity
-          activeOpacity={0.88}
-          style={styles.floatingCta}
-          onPress={() => {
-            if (sequence.length > 0) {
-              router.push(`/passing-packages/question/${sequence[0].id}?pkgId=${pkg.id}` as any);
-            }
-          }}
-        >
-          <Feather name="play" size={18} color="#0F172A" />
-          <Text style={styles.floatingCtaText}>Start Quick Revision Sequence</Text>
-        </TouchableOpacity>
-      </View>
+      {sequence.length > 0 && (
+        <View style={styles.floatingBar}>
+          <TouchableOpacity
+            activeOpacity={0.88}
+            style={styles.floatingCta}
+            onPress={handleStartOrContinue}
+          >
+            <Feather name="play" size={18} color="#0F172A" />
+            <Text style={styles.floatingCtaText}>
+              {completedIds.length > 0 && completedIds.length < sequence.length
+                ? 'Continue Revision Sequence'
+                : 'Start Quick Revision Sequence'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };
@@ -231,5 +252,18 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     fontSize: 15,
     fontWeight: '800',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+    gap: 12,
+  },
+  emptyText: {
+    color: '#94A3B8',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
