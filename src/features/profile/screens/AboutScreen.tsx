@@ -35,10 +35,10 @@ export const AboutScreen: React.FC = () => {
           <View style={styles.logoCircle}>
             <Feather name="book-open" size={32} color="#0745E8" />
           </View>
-          <Text style={styles.appName}>VTU Student Super App</Text>
+          <Text style={styles.appName}>VTU Ultima</Text>
           <Text style={styles.appVersion}>Version 1.0.0 (Build 2026.09)</Text>
           <Text style={styles.appTagline}>
-            The ultimate academic companion for Visvesvaraya Technological University engineering students.
+            The ultimate academic companion for VTU engineering students.
           </Text>
         </View>
 

@@ -240,7 +240,7 @@ export const ProfileHomeScreen: React.FC = () => {
         {/* Section 3: Information & Account */}
         <SectionHeader title="Information & Security" />
         <ProfileMenuRow
-          title="About VTU Super App"
+          title="About VTU Ultima"
           subtitle="Version v1.0.0, University disclaimer & Help"
           iconName="info"
           iconBg="#E0F2FE"

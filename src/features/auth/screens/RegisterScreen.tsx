@@ -142,10 +142,10 @@ export const RegisterScreen: React.FC = () => {
 
           {/* Bottom Sheet Card */}
           <View style={styles.whiteSheet}>
-            {/* Center Logo */}
+            {/* VTU Ultima Logo */}
             <View style={styles.logoWrapper}>
               <Image
-                source={require('@/../assets/vtu_logo.png')}
+                source={require('@/../assets/vtu_ultima_logo.png')}
                 style={styles.logoImage}
                 contentFit="contain"
               />
@@ -355,8 +355,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   logoImage: {
-    width: 60,
-    height: 60,
+    width: 140,
+    height: 44,
   },
   apiErrorBanner: {
     flexDirection: 'row',

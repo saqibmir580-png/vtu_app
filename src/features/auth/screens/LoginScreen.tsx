@@ -111,10 +111,10 @@ export const LoginScreen: React.FC = () => {
                 <Feather name="chevron-left" size={22} color="#FFFFFF" />
               </TouchableOpacity>
 
-              {/* Logo Badge */}
+              {/* VTU Ultima Logo Badge */}
               <View style={styles.logoWrapper}>
                 <Image
-                  source={require('@/../assets/vtu_logo.png')}
+                  source={require('@/../assets/vtu_ultima_logo.png')}
                   style={styles.logoImage}
                   contentFit="contain"
                 />
@@ -282,8 +282,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   logoWrapper: {
-    width: 86,
-    height: 86,
+    width: 180,
+    height: 56,
     marginBottom: 12,
     alignItems: 'center',
     justifyContent: 'center',
