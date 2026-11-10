@@ -18,6 +18,7 @@ import { SubjectSelector } from '../components/SubjectSelector';
 import { PaymentCheckoutModal } from '@/features/notes/components/PaymentCheckoutModal';
 import { AdBannerCard } from '@/shared/components/AdBannerCard';
 import { Header } from '@/shared/components/Header';
+import { CustomConfirmationModal } from '@/shared/components/CustomConfirmationModal';
 
 export const PackageOverviewScreen: React.FC = () => {
   const router = useRouter();
@@ -33,6 +34,7 @@ export const PackageOverviewScreen: React.FC = () => {
   const pkg = getPackageById(id || '') || currentPackages[0];
 
   const [isCheckoutVisible, setIsCheckoutVisible] = useState(false);
+  const [paymentSuccessVisible, setPaymentSuccessVisible] = useState(false);
 
   if (!pkg) {
     return (
@@ -64,10 +66,7 @@ export const PackageOverviewScreen: React.FC = () => {
   const handlePaymentSuccess = () => {
     unlockPackage(pkg.id);
     setIsCheckoutVisible(false);
-    Alert.alert(
-      '🎉 Passing Package Unlocked!',
-      'You now have complete access to the 1-Night-Before Exam Sequence, Repeated Exam Questions, Model Answers, and PDF Downloads.'
-    );
+    setPaymentSuccessVisible(true);
   };
 
   const handleLockedSectionPress = (sectionName: string) => {
@@ -295,6 +294,18 @@ export const PackageOverviewScreen: React.FC = () => {
         onClose={() => setIsCheckoutVisible(false)}
         resource={payableResource}
         onPaymentSuccess={handlePaymentSuccess}
+      />
+
+      {/* Custom Confirmation Modal for Payment Success */}
+      <CustomConfirmationModal
+        visible={paymentSuccessVisible}
+        onClose={() => setPaymentSuccessVisible(false)}
+        title="Passing Package Unlocked!"
+        message="You now have complete access to the 1-Night-Before Exam Sequence, Repeated Exam Questions, Model Answers, and PDF Downloads."
+        confirmText="Start Studying"
+        type="success"
+        icon="check-circle"
+        showCancel={false}
       />
     </View>
   );

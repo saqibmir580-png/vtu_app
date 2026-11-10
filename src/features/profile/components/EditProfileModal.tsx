@@ -15,6 +15,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '@/store';
+import { useAcademicRecordStore } from '@/features/calculators';
 import { apiClient } from '@/infrastructure/api/client';
 
 export const PRESET_AVATARS = [
@@ -36,6 +37,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   onClose,
 }) => {
   const { user, updateProfile } = useAuthStore();
+  const { currentCgpa, setDirectCgpa } = useAcademicRecordStore();
 
   const [name, setName] = useState('');
   const [usn, setUsn] = useState('');
@@ -43,7 +45,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [branch, setBranch] = useState('CSE');
   const [semester, setSemester] = useState(5);
   const [scheme, setScheme] = useState('2022');
-  const [targetCgpa, setTargetCgpa] = useState('9.20');
+  const [currentCgpaInput, setCurrentCgpaInput] = useState('');
   const [selectedAvatarUri, setSelectedAvatarUri] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -55,10 +57,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       setBranch(user.branch || 'CSE');
       setSemester(user.semester || 5);
       setScheme(user.scheme || '2022');
-      setTargetCgpa(user.targetCgpa ? String(user.targetCgpa) : '9.20');
+      const effectiveCgpa = (user?.currentCgpa && user.currentCgpa > 0) ? user.currentCgpa : (currentCgpa > 0 ? currentCgpa : 0);
+      setCurrentCgpaInput(effectiveCgpa > 0 ? String(effectiveCgpa) : '');
       setSelectedAvatarUri(user.avatarUrl || PRESET_AVATARS[0]);
     }
-  }, [user, visible]);
+  }, [user, currentCgpa, visible]);
 
   const branches = ['CSE', 'ISE', 'ECE', 'AIML', 'EEE', 'ME', 'CIV'];
   const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -115,11 +118,13 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       return;
     }
 
-    const parsedCgpa = parseFloat(targetCgpa);
-    if (isNaN(parsedCgpa) || parsedCgpa < 0 || parsedCgpa > 10) {
-      Alert.alert('Invalid CGPA', 'Target CGPA must be between 0.0 and 10.0.');
+    const parsedCgpa = parseFloat(currentCgpaInput);
+    if (currentCgpaInput.trim() !== '' && (isNaN(parsedCgpa) || parsedCgpa < 0 || parsedCgpa > 10)) {
+      Alert.alert('Invalid CGPA', 'Current CGPA must be a valid number between 0.00 and 10.00.');
       return;
     }
+
+    const validCgpa = !isNaN(parsedCgpa) && parsedCgpa >= 0 && parsedCgpa <= 10 ? parsedCgpa : 0;
 
     setIsSaving(true);
     let resolvedAvatarUrl = selectedAvatarUri || user?.avatarUrl;
@@ -166,7 +171,12 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         }
       }
 
-      // 2. Update Auth Store immediately
+      // 2. Direct Update to Academic Record Store (syncs CGPA Calculator & Dashboard immediately)
+      if (currentCgpaInput.trim() !== '') {
+        setDirectCgpa(validCgpa);
+      }
+
+      // 3. Update Auth Store immediately
       updateProfile({
         name: name.trim(),
         usn: usn.trim().toUpperCase(),
@@ -174,11 +184,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         branch,
         semester,
         scheme,
-        targetCgpa: parsedCgpa,
+        currentCgpa: validCgpa,
         avatarUrl: resolvedAvatarUrl,
       });
 
-      // 3. Sync Student Academic Profile with Backend
+      // 4. Sync Student Academic Profile with Backend
       try {
         await apiClient.post('/users/student-profile', {
           name: name.trim(),
@@ -187,12 +197,13 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           branchCode: branch,
           semester,
           schemeYear: scheme,
+          currentCgpa: validCgpa,
         });
       } catch (profileSyncErr) {
         console.warn('[Student Profile Sync Note]:', profileSyncErr);
       }
 
-      Alert.alert('Profile Updated', 'Your profile details and picture have been updated successfully!');
+      Alert.alert('Profile Updated', 'Your profile details and CGPA have been updated successfully!');
       onClose();
     } finally {
       setIsSaving(false);
@@ -393,15 +404,18 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             </View>
           </View>
 
-          {/* Target CGPA Input */}
+          {/* Current CGPA Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Target CGPA Goal</Text>
+            <View style={styles.cgpaLabelRow}>
+              <Text style={styles.inputLabel}>Current CGPA</Text>
+              <Text style={styles.cgpaHint}>Syncs CGPA Calculator & Dashboard</Text>
+            </View>
             <TextInput
               style={styles.textInput}
-              value={targetCgpa}
-              onChangeText={setTargetCgpa}
+              value={currentCgpaInput}
+              onChangeText={setCurrentCgpaInput}
               keyboardType="decimal-pad"
-              placeholder="e.g. 9.20"
+              placeholder="e.g. 8.75 (0.00 to 10.00)"
               placeholderTextColor="#94A3B8"
             />
           </View>
@@ -565,6 +579,17 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     marginBottom: 18,
+  },
+  cgpaLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  cgpaHint: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#0745E8',
   },
   inputLabel: {
     fontSize: 13,
