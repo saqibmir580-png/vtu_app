@@ -25,7 +25,12 @@
       }
     },
     "android": {
-      "package": "com.vtu.studentapp"
+      "package": "com.vtu.studentapp",
+      "softwareKeyboardLayoutMode": "resize",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#020B5A"
+      }
     },
     "web": {
       "bundler": "metro",

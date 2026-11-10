@@ -85,13 +85,14 @@ export const LoginScreen: React.FC = () => {
       <StatusBar barStyle="light-content" backgroundColor="#0953E8" translucent />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <ScrollView
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 220 }]}
           bounces={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
           {/* Top Royal Blue Header */}
@@ -114,9 +115,10 @@ export const LoginScreen: React.FC = () => {
               {/* VTU Ultima Logo Badge */}
               <View style={styles.logoWrapper}>
                 <Image
-                  source={require('@/../assets/vtu_ultima_logo.png')}
+                  source={require('../../../../assets/vtu_ultima_logo.png')}
                   style={styles.logoImage}
                   contentFit="contain"
+                  priority="high"
                 />
               </View>
 
@@ -305,7 +307,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   whiteSheet: {
-    flex: 1,
+    flexGrow: 1,
+    minHeight: 480,
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,

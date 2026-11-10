@@ -73,7 +73,7 @@ export const SplashScreen: React.FC = () => {
       <View style={styles.centerContent}>
         <Animated.View style={[styles.logoWrapper, animatedLogoStyle]}>
           <Image
-            source={require('@/../assets/vtu_ultima_logo.png')}
+            source={require('../../../../assets/vtu_ultima_logo.png')}
             style={styles.logoImage}
             contentFit="contain"
             priority="high"
@@ -135,8 +135,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
-    width: '85%',
-    height: 120,
+    width: 260,
+    height: 110,
   },
   logoImage: {
     width: '100%',

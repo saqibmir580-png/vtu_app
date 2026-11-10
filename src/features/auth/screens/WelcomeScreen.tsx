@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Image } from 'expo-image';
 import { Container, Button } from '@/shared/components';
 import { colors } from '@/core/theme';
 
@@ -10,10 +11,16 @@ export const WelcomeScreen: React.FC = () => {
   return (
     <Container style={styles.container}>
       <View style={styles.content}>
-        <View style={styles.logoBadge}>
-          <Text style={styles.logoText}>VTU</Text>
+        {/* VTU Ultima Branding Logo */}
+        <View style={styles.logoWrapper}>
+          <Image
+            source={require('../../../../assets/vtu_ultima_logo.png')}
+            style={styles.logoImage}
+            contentFit="contain"
+            priority="high"
+          />
         </View>
-        <Text style={styles.title}>Student Super App</Text>
+        <Text style={styles.title}>VTU Ultima</Text>
         <Text style={styles.subtitle}>
           Your all-in-one companion for notes, past question papers, SGPA/CGPA calculators & VTU community.
         </Text>
@@ -40,40 +47,37 @@ export const WelcomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     justifyContent: 'space-between',
-    paddingVertical: 32,
+    paddingVertical: 36,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: colors.primary[500],
+  logoWrapper: {
+    width: 240,
+    height: 90,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  logoText: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: '800',
+  logoImage: {
+    width: '100%',
+    height: '100%',
   },
   title: {
-    fontSize: 30,
-    fontWeight: '800',
+    fontSize: 28,
+    fontWeight: '900',
     color: colors.text.darkPrimary,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: colors.text.darkSecondary,
     textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: 16,
+    lineHeight: 22,
+    paddingHorizontal: 20,
   },
   actions: {
     gap: 12,
