@@ -10,6 +10,8 @@ interface AcademicOverviewCardProps {
 
 export const AcademicOverviewCard: React.FC<AcademicOverviewCardProps> = ({ summary }) => {
   const router = useRouter();
+  const hasCgpa = summary.cgpa > 0;
+  const hasAttendance = summary.attendancePercentage > 0;
   const isEligible = summary.attendancePercentage >= 75;
 
   return (
@@ -30,17 +32,19 @@ export const AcademicOverviewCard: React.FC<AcademicOverviewCardProps> = ({ summ
           onPress={() => router.push('/calculators/cgpa')}
         >
           <View style={styles.metricTopRow}>
-            <View style={[styles.iconCircle, { backgroundColor: '#EEF2FF' }]}>
-              <Feather name="bar-chart-2" size={15} color="#0745E8" />
+            <View style={[styles.iconCircle, { backgroundColor: hasCgpa ? '#EEF2FF' : '#F1F5F9' }]}>
+              <Feather name="bar-chart-2" size={15} color={hasCgpa ? '#0745E8' : '#94A3B8'} />
             </View>
-            <View style={styles.trendBadge}>
-              <Feather name="trending-up" size={10} color="#16A34A" />
-              <Text style={styles.trendText}>{summary.cgpaTrend}</Text>
+            <View style={[styles.trendBadge, !hasCgpa && { backgroundColor: '#F1F5F9' }]}>
+              {hasCgpa && <Feather name="trending-up" size={10} color="#16A34A" />}
+              <Text style={[styles.trendText, !hasCgpa && { color: '#64748B' }]}>
+                {hasCgpa ? summary.cgpaTrend : 'Tap to Add'}
+              </Text>
             </View>
           </View>
 
           <View style={styles.metricBottomCol}>
-            <Text style={styles.metricValue}>{summary.cgpa.toFixed(2)}</Text>
+            <Text style={styles.metricValue}>{hasCgpa ? summary.cgpa.toFixed(2) : '—'}</Text>
             <Text style={styles.metricLabel}>Current CGPA</Text>
           </View>
         </TouchableOpacity>
@@ -55,34 +59,52 @@ export const AcademicOverviewCard: React.FC<AcademicOverviewCardProps> = ({ summ
             <View
               style={[
                 styles.iconCircle,
-                { backgroundColor: isEligible ? '#ECFDF5' : '#FEF2F2' },
+                {
+                  backgroundColor: !hasAttendance
+                    ? '#F1F5F9'
+                    : isEligible
+                    ? '#ECFDF5'
+                    : '#FEF2F2',
+                },
               ]}
             >
               <Feather
-                name={isEligible ? 'check-circle' : 'alert-circle'}
+                name={!hasAttendance ? 'calendar' : isEligible ? 'check-circle' : 'alert-circle'}
                 size={15}
-                color={isEligible ? '#16A34A' : '#EF4444'}
+                color={!hasAttendance ? '#94A3B8' : isEligible ? '#16A34A' : '#EF4444'}
               />
             </View>
             <View
               style={[
                 styles.statusBadge,
-                { backgroundColor: isEligible ? '#DCFCE7' : '#FEE2E2' },
+                {
+                  backgroundColor: !hasAttendance
+                    ? '#F1F5F9'
+                    : isEligible
+                    ? '#DCFCE7'
+                    : '#FEE2E2',
+                },
               ]}
             >
               <Text
                 style={[
                   styles.statusText,
-                  { color: isEligible ? '#16A34A' : '#EF4444' },
+                  {
+                    color: !hasAttendance
+                      ? '#64748B'
+                      : isEligible
+                      ? '#16A34A'
+                      : '#EF4444',
+                  },
                 ]}
               >
-                {summary.attendanceStatus}
+                {!hasAttendance ? 'Set Up' : summary.attendanceStatus}
               </Text>
             </View>
           </View>
 
           <View style={styles.metricBottomCol}>
-            <Text style={styles.metricValue}>{summary.attendancePercentage}%</Text>
+            <Text style={styles.metricValue}>{hasAttendance ? `${summary.attendancePercentage}%` : '—'}</Text>
             <Text style={styles.metricLabel}>Attendance</Text>
           </View>
         </TouchableOpacity>

@@ -156,8 +156,10 @@ export const CgpaCalculatorScreen: React.FC = () => {
         {/* Dynamic Hero Scorecard */}
         <View style={styles.heroCard}>
           <View style={styles.heroTopRow}>
-            <View>
-              <Text style={styles.heroSubLabel}>Cumulative Grade Point Average</Text>
+            <View style={styles.heroLeftCol}>
+              <Text style={styles.heroSubLabel} numberOfLines={1}>
+                Cumulative GPA (CGPA)
+              </Text>
               <View style={styles.cgpaValueRow}>
                 <Text style={styles.heroValue}>
                   {currentCgpa > 0 ? currentCgpa.toFixed(2) : '—'}
@@ -166,7 +168,10 @@ export const CgpaCalculatorScreen: React.FC = () => {
               </View>
             </View>
             <View style={[styles.classificationBadge, { backgroundColor: classification.bg }]}>
-              <Text style={[styles.classificationText, { color: classification.color }]}>
+              <Text
+                style={[styles.classificationText, { color: classification.color }]}
+                numberOfLines={2}
+              >
                 {classification.label}
               </Text>
             </View>
@@ -589,9 +594,13 @@ const styles = StyleSheet.create({
   },
   heroTopRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
+  },
+  heroLeftCol: {
+    flex: 1,
+    minWidth: 0,
   },
   heroSubLabel: {
     fontSize: 11,
@@ -607,13 +616,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   heroValue: {
-    fontSize: 38,
+    fontSize: 36,
     fontWeight: '900',
     color: '#0745E8',
     letterSpacing: -1,
   },
   heroMax: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#94A3B8',
   },
@@ -621,12 +630,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
-    maxWidth: '52%',
+    maxWidth: 150,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   classificationText: {
     fontSize: 11,
     fontWeight: '800',
-    textAlign: 'right',
+    textAlign: 'center',
+    lineHeight: 14,
   },
   trajectoryContainer: {
     backgroundColor: '#FFFFFF',

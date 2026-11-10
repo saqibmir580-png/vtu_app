@@ -224,19 +224,20 @@ export const HomeScreen: React.FC = () => {
   };
 
   const attendanceStats = getOverallStats();
-  const effectiveCgpa = user?.currentCgpa ?? currentCgpa ?? 8.74;
-  const effectiveAttendancePct = attendanceStats.overallPercentage > 0 ? attendanceStats.overallPercentage : 85;
+  const effectiveCgpa = (user?.currentCgpa && user.currentCgpa > 0) ? user.currentCgpa : (currentCgpa > 0 ? currentCgpa : 0);
+  const effectiveAttendancePct = attendanceStats.overallPercentage;
+  const hasAttendanceData = attendanceStats.totalConducted > 0;
   const effectiveAttendanceStatus: 'Eligible' | 'Warning' | 'Critical' =
     effectiveAttendancePct >= 75 ? 'Eligible' : effectiveAttendancePct >= 65 ? 'Warning' : 'Critical';
 
   // Dynamic Academic Summary computed from active stores
   const academicSummary: AcademicSummary = {
     cgpa: effectiveCgpa,
-    cgpaTrend: '+0.25',
+    cgpaTrend: effectiveCgpa > 0 ? '+0.25' : '—',
     attendancePercentage: effectiveAttendancePct,
-    attendanceStatus: effectiveAttendanceStatus,
+    attendanceStatus: hasAttendanceData ? effectiveAttendanceStatus : ('Pending' as any),
     currentSemester: user?.semester || 5,
-    totalCreditsEarned: totalCreditsEarned || 112,
+    totalCreditsEarned: totalCreditsEarned || 0,
   };
 
   const onRefresh = React.useCallback(() => {

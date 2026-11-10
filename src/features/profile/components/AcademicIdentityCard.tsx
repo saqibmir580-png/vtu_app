@@ -51,7 +51,9 @@ export const AcademicIdentityCard: React.FC<AcademicIdentityCardProps> = ({
         {/* CGPA Metric */}
         <View style={styles.metricItem}>
           <Text style={styles.metricLabel}>CGPA</Text>
-          <Text style={[styles.metricValue, { color: '#0745E8' }]}>{cgpa.toFixed(2)}</Text>
+          <Text style={[styles.metricValue, { color: '#0745E8' }]}>
+            {cgpa > 0 ? cgpa.toFixed(2) : '—'}
+          </Text>
         </View>
 
         <View style={styles.divider} />

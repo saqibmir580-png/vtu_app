@@ -30,7 +30,7 @@ export const ProfileHomeScreen: React.FC = () => {
 
   if (!user) return null;
 
-  const effectiveCgpa = (user?.currentCgpa && user.currentCgpa > 0) ? user.currentCgpa : (currentCgpa || 8.74);
+  const effectiveCgpa = (user?.currentCgpa && user.currentCgpa > 0) ? user.currentCgpa : (currentCgpa > 0 ? currentCgpa : 0);
   const bookmarkedItems = items.filter((i) => i.isBookmarked);
   const downloadedItems = items.filter((i) => i.isDownloaded);
 
