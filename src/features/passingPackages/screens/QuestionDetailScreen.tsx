@@ -14,6 +14,7 @@ import { usePassingPackageStore } from '../store/usePassingPackageStore';
 import { QuestionPriorityBadge } from '../components/QuestionPriorityBadge';
 import { QuestionFrequencyBadge } from '../components/QuestionFrequencyBadge';
 import { BookmarkButton } from '../components/BookmarkButton';
+import { Header } from '@/shared/components/Header';
 import * as ScreenCapture from 'expo-screen-capture';
 
 export const QuestionDetailScreen: React.FC = () => {
@@ -55,26 +56,19 @@ export const QuestionDetailScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-
-          <View style={styles.headerTitleBox}>
-            <Text style={styles.headerTitle}>Question Analysis</Text>
-            <Text style={styles.headerSub}>{pkg.subjectCode} • Unit {question.unitNumber}</Text>
-          </View>
-
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title="Question Analysis"
+        dark={true}
+        showBack={true}
+        rightElement={
           <BookmarkButton
             isBookmarked={isBookmarked}
             onPress={() => toggleQuestionBookmark(question.id)}
             size={18}
           />
-        </View>
-      </SafeAreaView>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Badges Strip */}

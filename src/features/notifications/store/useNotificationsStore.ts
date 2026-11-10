@@ -9,6 +9,7 @@ import { apiClient } from '@/infrastructure/api/client';
 
 interface NotificationsStoreState {
   notifications: VTUNotification[];
+  readIds: string[];
   activeCategory: NotificationCategory | 'All';
   permissionGranted: boolean;
   activeInAppBanner: VTUNotification | null;
@@ -40,6 +41,7 @@ function mapCategory(rawCat?: string, rawType?: string): NotificationCategory {
 
 export const useNotificationsStore = create<NotificationsStoreState>((set, get) => ({
   notifications: MOCK_NOTIFICATIONS,
+  readIds: [],
   activeCategory: 'All',
   permissionGranted: false,
   activeInAppBanner: null,
@@ -53,6 +55,9 @@ export const useNotificationsStore = create<NotificationsStoreState>((set, get) 
     newQuestionPapers: true,
     appUpdates: true,
     importantAnnouncements: true,
+    communityActivity: true,
+    attendanceAlerts: true,
+    resultsAnnouncements: true,
   },
 
   fetchNotifications: async () => {
@@ -63,6 +68,7 @@ export const useNotificationsStore = create<NotificationsStoreState>((set, get) 
       const rawItems = Array.isArray(body) ? body : body.items || body.data || [];
 
       if (Array.isArray(rawItems) && rawItems.length > 0) {
+        const currentReadIds = get().readIds;
         const mapped: VTUNotification[] = rawItems.map((item: any) => ({
           id: item.id,
           title: item.title,
@@ -72,7 +78,7 @@ export const useNotificationsStore = create<NotificationsStoreState>((set, get) 
           priority: item.priority === 'High' ? 'High' : 'Normal',
           timestamp: item.timestamp || 'Just now',
           date: item.date || (item.createdAt ? item.createdAt.split('T')[0] : new Date().toISOString().split('T')[0]),
-          isRead: Boolean(item.isRead),
+          isRead: Boolean(item.isRead) || currentReadIds.includes(item.id),
           targetRoute: item.targetRoute || item.actionUrl || undefined,
           targetLabel: item.targetLabel || (item.resourceType ? 'Open Resource' : undefined),
           relatedContext: item.resourceType
@@ -94,6 +100,7 @@ export const useNotificationsStore = create<NotificationsStoreState>((set, get) 
 
   markAsRead: async (id) => {
     set((state) => ({
+      readIds: state.readIds.includes(id) ? state.readIds : [...state.readIds, id],
       notifications: state.notifications.map((n) =>
         n.id === id ? { ...n, isRead: true } : n
       ),
@@ -107,7 +114,9 @@ export const useNotificationsStore = create<NotificationsStoreState>((set, get) 
   },
 
   markAllAsRead: async () => {
+    const allIds = get().notifications.map((n) => n.id);
     set((state) => ({
+      readIds: Array.from(new Set([...state.readIds, ...allIds])),
       notifications: state.notifications.map((n) => ({ ...n, isRead: true })),
     }));
 

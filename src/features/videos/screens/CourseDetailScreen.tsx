@@ -7,14 +7,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { fetchVideoCourseByIdFromApi } from '../api/videoApi';
 import { VideoCourse, VideoLesson, SyllabusModule } from '../types/video.types';
 import { openYouTubeVideo, openYouTubePlaylist } from '../utils/youtubeLauncher';
 import { InAppYouTubePlayer } from '../components/InAppYouTubePlayer';
+import { Header } from '@/shared/components/Header';
 
 export const CourseDetailScreen: React.FC = () => {
   const router = useRouter();
@@ -95,59 +96,45 @@ export const CourseDetailScreen: React.FC = () => {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Feather name="arrow-left" size={22} color="#0F172A" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Course Modules</Text>
-          <View style={{ width: 34 }} />
-        </View>
+      <View style={styles.safeArea}>
+        <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+        <Header title="Course Modules" dark={true} showBack={true} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#EF4444" />
+          <ActivityIndicator size="large" color="#0745E8" />
           <Text style={styles.loadingText}>Loading course syllabus modules...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!course) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Feather name="arrow-left" size={22} color="#0F172A" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Course Not Found</Text>
-          <View style={{ width: 34 }} />
-        </View>
+      <View style={styles.safeArea}>
+        <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+        <Header title="Course Not Found" dark={true} showBack={true} />
         <View style={styles.emptyContainer}>
           <Feather name="alert-circle" size={40} color="#94A3B8" />
           <Text style={styles.emptyTitle}>Course Not Available</Text>
           <Text style={styles.emptySubtitle}>The requested video course could not be loaded.</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} activeOpacity={0.7}>
-          <Feather name="arrow-left" size={22} color="#0F172A" />
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle} numberOfLines={1}>
-            {course.subjectCode} - {course.subjectName}
-          </Text>
-          <Text style={styles.headerSubtitle}>Module 1 to 5 Syllabus Series</Text>
-        </View>
-        <View style={styles.headerBadge}>
-          <FontAwesome5 name="youtube" size={13} color="#EF4444" />
-          <Text style={styles.headerBadgeText}>YouTube</Text>
-        </View>
-      </View>
+    <View style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title={course.subjectCode ? `${course.subjectCode} Modules` : 'Course Modules'}
+        dark={true}
+        showBack={true}
+        rightElement={
+          <View style={styles.headerBadge}>
+            <FontAwesome5 name="youtube" size={13} color="#FFD1D1" />
+            <Text style={styles.headerBadgeText}>YouTube</Text>
+          </View>
+        }
+      />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Course Hero Card */}
@@ -376,7 +363,7 @@ export const CourseDetailScreen: React.FC = () => {
           router.push('/notes' as any);
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -385,47 +372,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  backButton: {
-    padding: 6,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
-  },
-  headerTitleContainer: {
-    flex: 1,
-    marginHorizontal: 10,
-  },
-  headerTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  headerSubtitle: {
-    fontSize: 11,
-    color: '#64748B',
-  },
   headerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    gap: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
   },
   headerBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#EF4444',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   scrollView: {
     flex: 1,

@@ -10,24 +10,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { Header } from '@/shared/components/Header';
+import { StatusBar } from 'react-native';
 
 export const AboutScreen: React.FC = () => {
   const router = useRouter();
 
   return (
     <View style={styles.root}>
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>About & Legal</Text>
-            <Text style={styles.headerSub}>App Info & Disclaimers</Text>
-          </View>
-        </View>
-      </SafeAreaView>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header title="About VTU Ultima" dark={true} showBack={true} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Branding Hero Banner */}
@@ -35,10 +27,10 @@ export const AboutScreen: React.FC = () => {
           <View style={styles.logoCircle}>
             <Feather name="book-open" size={32} color="#0745E8" />
           </View>
-          <Text style={styles.appName}>VTU Student Super App</Text>
+          <Text style={styles.appName}>VTU Ultima</Text>
           <Text style={styles.appVersion}>Version 1.0.0 (Build 2026.09)</Text>
           <Text style={styles.appTagline}>
-            The ultimate academic companion for Visvesvaraya Technological University engineering students.
+            The ultimate academic companion for VTU engineering students.
           </Text>
         </View>
 

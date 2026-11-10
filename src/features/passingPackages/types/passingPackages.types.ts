@@ -73,6 +73,11 @@ export interface PassingPackage {
   expectedQuestions: PassingQuestion[];
   revisionResources: RevisionResource[];
   nightBeforeSequence: PassingQuestion[];
+  isPaid?: boolean;
+  price?: number;
+  originalPrice?: number;
+  freePreviewQuestionsCount?: number;
+  isPurchased?: boolean;
 }
 
 export interface PackageFilterOptions {

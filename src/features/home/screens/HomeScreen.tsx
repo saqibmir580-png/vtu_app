@@ -18,6 +18,7 @@ import { AcademicOverviewCard } from '../components/AcademicOverviewCard';
 import { ContinueStudyingCard } from '../components/ContinueStudyingCard';
 import { QuickAccessGrid } from '../components/QuickAccessGrid';
 import { UpcomingEventsSection } from '../components/UpcomingEventsSection';
+import { AdBannerCard } from '@/shared/components/AdBannerCard';
 import { LatestNotificationsSection } from '../components/LatestNotificationsSection';
 import { RecentlyAddedSection } from '../components/RecentlyAddedSection';
 import {
@@ -223,19 +224,20 @@ export const HomeScreen: React.FC = () => {
   };
 
   const attendanceStats = getOverallStats();
-  const effectiveCgpa = user?.currentCgpa ?? currentCgpa ?? 8.74;
-  const effectiveAttendancePct = attendanceStats.overallPercentage > 0 ? attendanceStats.overallPercentage : 85;
+  const effectiveCgpa = (user?.currentCgpa && user.currentCgpa > 0) ? user.currentCgpa : (currentCgpa > 0 ? currentCgpa : 0);
+  const effectiveAttendancePct = attendanceStats.overallPercentage;
+  const hasAttendanceData = attendanceStats.totalConducted > 0;
   const effectiveAttendanceStatus: 'Eligible' | 'Warning' | 'Critical' =
     effectiveAttendancePct >= 75 ? 'Eligible' : effectiveAttendancePct >= 65 ? 'Warning' : 'Critical';
 
   // Dynamic Academic Summary computed from active stores
   const academicSummary: AcademicSummary = {
     cgpa: effectiveCgpa,
-    cgpaTrend: '+0.25',
+    cgpaTrend: effectiveCgpa > 0 ? '+0.25' : '—',
     attendancePercentage: effectiveAttendancePct,
-    attendanceStatus: effectiveAttendanceStatus,
+    attendanceStatus: hasAttendanceData ? effectiveAttendanceStatus : ('Pending' as any),
     currentSemester: user?.semester || 5,
-    totalCreditsEarned: totalCreditsEarned || 112,
+    totalCreditsEarned: totalCreditsEarned || 0,
   };
 
   const onRefresh = React.useCallback(() => {
@@ -260,6 +262,63 @@ export const HomeScreen: React.FC = () => {
         </View>
       )}
 
+      {/* 1. FIXED Header Section (Blue Container - Stays fixed on scroll) */}
+      <View style={styles.headerBackground}>
+        <SafeAreaView edges={['top']}>
+          {/* Top Brand & Actions Bar */}
+          <View style={styles.brandRow}>
+            {/* Circular Framed Brand Logo */}
+            <View style={styles.circularLogoFrame}>
+              <Image
+                source={require('../../../../assets/vtu_ultima_logo.png')}
+                style={styles.headerLogo}
+                resizeMode="contain"
+              />
+            </View>
+
+            {/* Right Aligned Bell & Avatar */}
+            <View style={styles.rightIcons}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.iconCircle}
+                onPress={() => router.push('/notifications' as any)}
+              >
+                <Feather name="bell" size={18} color="#FFFFFF" />
+                {unreadCount > 0 && <View style={styles.unreadBadge} />}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.avatarCircle}
+                onPress={() => router.push('/(tabs)/profile')}
+              >
+                <Image
+                  source={{
+                    uri:
+                      user?.avatarUrl ||
+                      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
+                  }}
+                  style={styles.avatarImg}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Student Welcome & Academic Details Row */}
+          <View style={styles.headerGreetingRow}>
+            <View style={styles.greetingWrapper}>
+              <Text style={styles.greetingSub}>{getTimeAwareGreeting()}</Text>
+              <Text style={styles.userName}>{user?.name || 'Student'}</Text>
+            </View>
+            <View style={styles.branchPill}>
+              <Text style={styles.branchPillText}>
+                {user?.branch || 'CSE'} • Sem {user?.semester || 5} • {user?.scheme || '2022'} Scheme
+              </Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -267,50 +326,6 @@ export const HomeScreen: React.FC = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0745E8']} />
         }
       >
-        {/* 1. Header Section */}
-        <View style={styles.headerBackground}>
-          <SafeAreaView edges={['top']}>
-            <View style={styles.headerTopRow}>
-              {/* Left Aligned Greeting & Academic Details Pill */}
-              <View style={styles.greetingWrapper}>
-                <Text style={styles.greetingSub}>{getTimeAwareGreeting()}</Text>
-                <Text style={styles.userName}>{user?.name || 'Fardeen'}</Text>
-                <View style={styles.branchPill}>
-                  <Text style={styles.branchPillText}>
-                    {user?.branch || 'CSE'} • Sem {user?.semester || 5} • {user?.scheme || '2022'} Scheme
-                  </Text>
-                </View>
-              </View>
-
-              {/* Right Aligned Bell & Avatar */}
-              <View style={styles.rightIcons}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  style={styles.iconCircle}
-                  onPress={() => router.push('/notifications' as any)}
-                >
-                  <Feather name="bell" size={18} color="#FFFFFF" />
-                  {unreadCount > 0 && <View style={styles.unreadBadge} />}
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  style={styles.avatarCircle}
-                  onPress={() => router.push('/(tabs)/profile')}
-                >
-                  <Image
-                    source={{
-                      uri:
-                        user?.avatarUrl ||
-                        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
-                    }}
-                    style={styles.avatarImg}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </SafeAreaView>
-        </View>
 
         {/* Error State Banner */}
         {error && (
@@ -339,6 +354,11 @@ export const HomeScreen: React.FC = () => {
 
             {/* 4. Quick Access Grid */}
             <QuickAccessGrid />
+
+            {/* Sponsored Native Banner Slot */}
+            <View style={{ paddingHorizontal: 16 }}>
+              <AdBannerCard placement="HOME_BANNER" />
+            </View>
 
             {/* 5. Upcoming Academic Events */}
             <UpcomingEventsSection events={events} />
@@ -390,41 +410,71 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     backgroundColor: '#FFFFFF',
+    paddingTop: 12,
+    paddingBottom: 36,
   },
   headerBackground: {
     backgroundColor: '#0745E8',
     paddingHorizontal: 20,
     paddingTop: 10,
-    paddingBottom: 24,
+    paddingBottom: 22,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    shadowColor: '#0745E8',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  headerTopRow: {
+  brandRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 6,
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  circularLogoFrame: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.65)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 3,
+    overflow: 'hidden',
+  },
+  headerLogo: {
+    width: '100%',
+    height: '100%',
+  },
+  headerGreetingRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   greetingWrapper: {
     flex: 1,
   },
   greetingSub: {
     color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: '500',
   },
   userName: {
     color: '#FFFFFF',
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     marginTop: 2,
   },
   branchPill: {
-    alignSelf: 'flex-start',
+    alignSelf: 'flex-end',
     backgroundColor: 'rgba(255, 255, 255, 0.18)',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 12,
-    marginTop: 6,
   },
   branchPillText: {
     color: '#FFFFFF',

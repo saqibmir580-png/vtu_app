@@ -14,6 +14,8 @@ import { SavedGoalCard } from '../components/SavedGoalCard';
 import { EmptyState } from '../components/EmptyState';
 import { SetGoalModal } from './SetGoalModal';
 import { SavedGoal } from '../types/goalPlanner.types';
+import { Header } from '@/shared/components/Header';
+import { StatusBar } from 'react-native';
 
 export const SavedGoalsScreen: React.FC = () => {
   const router = useRouter();
@@ -27,22 +29,17 @@ export const SavedGoalsScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>Saved Target Roadmaps</Text>
-            <Text style={styles.headerSub}>Tracked Target CGPA Milestones</Text>
-          </View>
-
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title="Saved Roadmaps"
+        dark={true}
+        showBack={true}
+        rightElement={
           <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.addBtn}>
             <Feather name="plus" size={18} color="#FFFFFF" />
           </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {savedGoals.length === 0 ? (
@@ -106,8 +103,8 @@ const styles = StyleSheet.create({
   addBtn: {
     width: 36,
     height: 36,
-    borderRadius: 12,
-    backgroundColor: '#0745E8',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },

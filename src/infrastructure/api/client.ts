@@ -2,6 +2,10 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
+// Explicit active Wi-Fi LAN IP (verified via ipconfig)
+export const ACTIVE_LAN_IP = '192.168.1.58';
+export const DEFAULT_API_URL = `http://${ACTIVE_LAN_IP}:5000/api/v1`;
+
 // Determine default API base URL dynamically with strict environment isolation
 export const getBaseUrl = (): string => {
   const envUrl = process.env.EXPO_PUBLIC_API_URL;
@@ -31,17 +35,23 @@ export const getBaseUrl = (): string => {
   }
 
   // Development only: Attempt dynamic resolution from Expo Metro bundler host
+  // Exclude virtual WSL/Hyper-V (172.x.x.x) and loopback (127.0.0.1) addresses
   const hostUri = Constants.expoConfig?.hostUri || (Constants as any).manifest2?.extra?.expoGo?.developer;
   if (hostUri) {
     const rawHost = hostUri.split(':')[0];
     const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
-    if (rawHost && ipv4Regex.test(rawHost)) {
+    if (
+      rawHost &&
+      ipv4Regex.test(rawHost) &&
+      !rawHost.startsWith('172.') &&
+      !rawHost.startsWith('127.')
+    ) {
       return `http://${rawHost}:5000/api/v1`;
     }
   }
 
-  // Development fallback
-  return 'http://localhost:5000/api/v1';
+  // Default active Wi-Fi LAN IP from ipconfig
+  return DEFAULT_API_URL;
 };
 
 export const apiClient = axios.create({
@@ -57,6 +67,9 @@ console.log(`[API Client] Initialized Base URL: ${apiClient.defaults.baseURL}`);
 // Request Interceptor: Attach Access Token (Never logs token)
 apiClient.interceptors.request.use(
   async (config) => {
+    if (!config.baseURL) {
+      config.baseURL = getBaseUrl();
+    }
     try {
       const token = await AsyncStorage.getItem('vtu_mobile_access_token');
       if (token && config.headers) {
@@ -171,7 +184,7 @@ apiClient.interceptors.response.use(
     } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
       errorMessage = 'Connection timeout. The server took too long to respond.';
     } else if (error.message === 'Network Error' || !error.response) {
-      errorMessage = `Cannot connect to server at ${apiClient.defaults.baseURL}. Please ensure the backend is running and reachable.`;
+      errorMessage = `Cannot connect to server at ${apiClient.defaults.baseURL || getBaseUrl()}. Please ensure the backend is running and reachable.`;
     }
 
     return Promise.reject(new Error(errorMessage));

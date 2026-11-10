@@ -36,7 +36,7 @@ export const ContributorPreviewScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#7C3AED" />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
 
       <View style={styles.header}>
         <SafeAreaView edges={['top']}>
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   header: {
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#0745E8',
     paddingHorizontal: 16,
     paddingBottom: 14,
   },

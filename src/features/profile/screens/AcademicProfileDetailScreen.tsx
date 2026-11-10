@@ -12,6 +12,8 @@ import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '@/store';
 import { useAcademicRecordStore } from '@/features/calculators';
 import { AcademicInfoCard } from '../components/AcademicInfoCard';
+import { Header } from '@/shared/components/Header';
+import { StatusBar } from 'react-native';
 
 export const AcademicProfileDetailScreen: React.FC = () => {
   const router = useRouter();
@@ -28,27 +30,22 @@ export const AcademicProfileDetailScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      {/* Header Bar */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>Academic Profile</Text>
-            <Text style={styles.headerSub}>Curriculum & Performance Metadata</Text>
-          </View>
-
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title="Academic Profile"
+        dark={true}
+        showBack={true}
+        rightElement={
           <TouchableOpacity
             activeOpacity={0.8}
             style={styles.editHeaderBtn}
             onPress={() => router.push('/profile/edit' as any)}
           >
-            <Feather name="edit-2" size={16} color="#0745E8" />
+            <Feather name="edit-2" size={14} color="#FFFFFF" />
             <Text style={styles.editHeaderBtnText}>Edit</Text>
           </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* College & Institution Card */}
@@ -170,15 +167,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 10,
+    borderRadius: 14,
   },
   editHeaderBtnText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#0745E8',
+    color: '#FFFFFF',
   },
   scrollContent: {
     paddingHorizontal: 20,

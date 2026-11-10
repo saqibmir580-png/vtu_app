@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -14,14 +15,26 @@ import { usePassingPackageStore } from '../store/usePassingPackageStore';
 import { PackageStats } from '../components/PackageStats';
 import { PackageSectionCard } from '../components/PackageSectionCard';
 import { SubjectSelector } from '../components/SubjectSelector';
+import { PaymentCheckoutModal } from '@/features/notes/components/PaymentCheckoutModal';
+import { AdBannerCard } from '@/shared/components/AdBannerCard';
+import { Header } from '@/shared/components/Header';
+import { CustomConfirmationModal } from '@/shared/components/CustomConfirmationModal';
 
 export const PackageOverviewScreen: React.FC = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getPackageById, getPackagesForCurrentStudent } = usePassingPackageStore();
+  const {
+    getPackageById,
+    getPackagesForCurrentStudent,
+    isPackageUnlocked,
+    unlockPackage,
+  } = usePassingPackageStore();
 
   const currentPackages = getPackagesForCurrentStudent();
   const pkg = getPackageById(id || '') || currentPackages[0];
+
+  const [isCheckoutVisible, setIsCheckoutVisible] = useState(false);
+  const [paymentSuccessVisible, setPaymentSuccessVisible] = useState(false);
 
   if (!pkg) {
     return (
@@ -34,37 +47,52 @@ export const PackageOverviewScreen: React.FC = () => {
     );
   }
 
+  const isUnlocked = isPackageUnlocked(pkg.id);
+  const isPaid = Boolean(pkg.isPaid && (pkg.price ?? 49) > 0);
+  const isRestrictedPreview = isPaid && !isUnlocked;
+  const price = pkg.price ?? 49;
+  const originalPrice = pkg.originalPrice ?? 129;
+
+  const payableResource = {
+    id: pkg.id,
+    title: `${pkg.subjectCode} ${pkg.subjectName} Passing Package`,
+    price,
+    subjectCode: pkg.subjectCode,
+    subjectName: pkg.subjectName,
+    totalPages: 24,
+    category: 'PASSING_PACKAGES' as const,
+  };
+
+  const handlePaymentSuccess = () => {
+    unlockPackage(pkg.id);
+    setIsCheckoutVisible(false);
+    setPaymentSuccessVisible(true);
+  };
+
+  const handleLockedSectionPress = (sectionName: string) => {
+    if (isRestrictedPreview) {
+      setIsCheckoutVisible(true);
+    }
+  };
+
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
 
-      {/* Header Bar */}
-      <View style={styles.header}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
-              <Feather name="arrow-left" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-
-            <View style={styles.headerTitleBox}>
-              <View style={styles.codePill}>
-                <Text style={styles.codeText}>{pkg.subjectCode}</Text>
-              </View>
-
-              <Text style={styles.headerSubject} numberOfLines={1}>
-                {pkg.subjectName}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.iconBtn}
-              onPress={() => router.push('/passing-packages/saved' as any)}
-            >
-              <Feather name="bookmark" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </View>
+      {/* Unified Custom Header */}
+      <Header
+        title={`${pkg.subjectCode} Package`}
+        dark={true}
+        showBack={true}
+        rightElement={
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={() => router.push('/passing-packages/saved' as any)}
+          >
+            <Feather name="bookmark" size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+        }
+      />
 
       {/* Subject Switcher Bar */}
       {currentPackages.length > 1 && (
@@ -79,7 +107,7 @@ export const PackageOverviewScreen: React.FC = () => {
         {/* Subject Info Strip */}
         <View style={styles.subjectInfoCard}>
           <View style={styles.subjectInfoTop}>
-            <View>
+            <View style={{ flex: 1, marginRight: 10 }}>
               <Text style={styles.subjectTitle}>{pkg.subjectName}</Text>
               <Text style={styles.subjectMeta}>
                 VTU {pkg.branch} • Sem {pkg.semester} • {pkg.scheme} Scheme
@@ -91,6 +119,55 @@ export const PackageOverviewScreen: React.FC = () => {
             </View>
           </View>
         </View>
+
+        {/* Monetization & Unlock Card */}
+        {isRestrictedPreview ? (
+          <View style={styles.monetizationCard}>
+            <View style={styles.pricingTopRow}>
+              <View>
+                <View style={styles.pricingBadgeRow}>
+                  <Text style={styles.packageCategoryPill}>HIGH-YIELD PASSING PACKAGE</Text>
+                  <View style={styles.discountPill}>
+                    <Text style={styles.discountText}>SAVE 62%</Text>
+                  </View>
+                </View>
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceText}>₹{price}</Text>
+                  <Text style={styles.originalPriceText}>₹{originalPrice}</Text>
+                  <Text style={styles.priceMeta}>One-Time Unlock</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                activeOpacity={0.88}
+                style={styles.unlockBtn}
+                onPress={() => setIsCheckoutVisible(true)}
+              >
+                <Feather name="unlock" size={16} color="#FFFFFF" />
+                <Text style={styles.unlockBtnText}>Unlock Now</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.previewNoticeBox}>
+              <Feather name="lock" size={13} color="#D97706" />
+              <Text style={styles.previewNoticeText}>
+                Preview Mode Active: Practice introductory questions free. Unlock to access 1-Night-Before Exam Sequence, 5-Year Repeated Questions & Offline PDF solutions.
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.unlockedBanner}>
+            <View style={styles.unlockedIconCircle}>
+              <Feather name="check-circle" size={18} color="#059669" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.unlockedTitle}>Full Package Unlocked</Text>
+              <Text style={styles.unlockedSub}>
+                Lifetime access to all 5 units, 1-night revision guides, and offline PDFs.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Package Statistics */}
         <PackageStats pkg={pkg} />
@@ -106,11 +183,17 @@ export const PackageOverviewScreen: React.FC = () => {
             iconName="moon"
             iconColor="#F472B6"
             iconBg="rgba(244, 114, 182, 0.15)"
-            badgeCount="RECOMMENDED"
-            badgeColor="#7C3AED"
-            badgeTextColor="#FFFFFF"
+            badgeCount={isRestrictedPreview ? 'LOCKED' : 'RECOMMENDED'}
+            badgeColor={isRestrictedPreview ? '#FEE2E2' : '#0745E8'}
+            badgeTextColor={isRestrictedPreview ? '#DC2626' : '#FFFFFF'}
             isSpecial
-            onPress={() => router.push(`/passing-packages/night-before/${pkg.id}` as any)}
+            onPress={() => {
+              if (isRestrictedPreview) {
+                handleLockedSectionPress('1-Night-Before-Exam Mode');
+              } else {
+                router.push(`/passing-packages/night-before/${pkg.id}` as any);
+              }
+            }}
           />
 
           {/* 2. Important Questions */}
@@ -120,7 +203,9 @@ export const PackageOverviewScreen: React.FC = () => {
             iconName="help-circle"
             iconColor="#0745E8"
             iconBg="#EEF2FF"
-            badgeCount={pkg.importantQuestionsCount}
+            badgeCount={isRestrictedPreview ? 'PREVIEW (FREE)' : pkg.importantQuestionsCount}
+            badgeColor="#EEF2FF"
+            badgeTextColor="#0745E8"
             onPress={() => router.push(`/passing-packages/important-questions/${pkg.id}` as any)}
           />
 
@@ -129,12 +214,18 @@ export const PackageOverviewScreen: React.FC = () => {
             title="Repeated Questions"
             subtitle="Sorted by frequency of appearance across past 5 VTU exam cycles"
             iconName="repeat"
-            iconColor="#7C3AED"
-            iconBg="#F3E8FF"
-            badgeCount={pkg.repeatedQuestionsCount}
-            badgeColor="#F3E8FF"
-            badgeTextColor="#7C3AED"
-            onPress={() => router.push(`/passing-packages/repeated-questions/${pkg.id}` as any)}
+            iconColor="#0745E8"
+            iconBg="#EEF2FF"
+            badgeCount={isRestrictedPreview ? 'LOCKED' : pkg.repeatedQuestionsCount}
+            badgeColor={isRestrictedPreview ? '#FEE2E2' : '#EEF2FF'}
+            badgeTextColor={isRestrictedPreview ? '#DC2626' : '#0745E8'}
+            onPress={() => {
+              if (isRestrictedPreview) {
+                handleLockedSectionPress('Repeated Questions');
+              } else {
+                router.push(`/passing-packages/repeated-questions/${pkg.id}` as any);
+              }
+            }}
           />
 
           {/* 4. Most Expected Questions */}
@@ -170,21 +261,52 @@ export const PackageOverviewScreen: React.FC = () => {
             iconName="file-text"
             iconColor="#D97706"
             iconBg="#FEF3C7"
-            badgeCount={pkg.revisionResourceCount}
-            badgeColor="#FEF3C7"
-            badgeTextColor="#D97706"
-            onPress={() => router.push(`/passing-packages/revision/${pkg.id}` as any)}
+            badgeCount={isRestrictedPreview ? 'LOCKED (PDF)' : pkg.revisionResourceCount}
+            badgeColor={isRestrictedPreview ? '#FEE2E2' : '#FEF3C7'}
+            badgeTextColor={isRestrictedPreview ? '#DC2626' : '#D97706'}
+            onPress={() => {
+              if (isRestrictedPreview) {
+                handleLockedSectionPress('Last-Minute Revision PDFs');
+              } else {
+                router.push(`/passing-packages/revision/${pkg.id}` as any);
+              }
+            }}
           />
+        </View>
+
+        {/* Sponsored Banner Slot */}
+        <View style={{ paddingHorizontal: 16 }}>
+          <AdBannerCard placement="PASSING_PACKAGE_BOTTOM" />
         </View>
 
         {/* Disclaimer Bar */}
         <View style={styles.disclaimerBox}>
           <Feather name="info" size={14} color="#64748B" />
           <Text style={styles.disclaimerText}>
-            Passing packages are exam preparation tools based on historical VTU question patterns and syllabus weightage. Questions are not guaranteed to appear.
+            Passing packages are exam preparation tools curated by VTU toppers based on historical exam patterns. Questions are designed for high probability passing outcomes.
           </Text>
         </View>
       </ScrollView>
+
+      {/* Universal In-App Payment Checkout Modal */}
+      <PaymentCheckoutModal
+        visible={isCheckoutVisible}
+        onClose={() => setIsCheckoutVisible(false)}
+        resource={payableResource}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
+
+      {/* Custom Confirmation Modal for Payment Success */}
+      <CustomConfirmationModal
+        visible={paymentSuccessVisible}
+        onClose={() => setPaymentSuccessVisible(false)}
+        title="Passing Package Unlocked!"
+        message="You now have complete access to the 1-Night-Before Exam Sequence, Repeated Exam Questions, Model Answers, and PDF Downloads."
+        confirmText="Start Studying"
+        type="success"
+        icon="check-circle"
+        showCancel={false}
+      />
     </View>
   );
 };
@@ -252,7 +374,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   scrollContent: {
-    paddingBottom: 30,
+    paddingBottom: 36,
   },
   subjectInfoCard: {
     backgroundColor: '#FFFFFF',
@@ -260,7 +382,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginHorizontal: 16,
     marginTop: 12,
-    marginBottom: 14,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
@@ -293,6 +415,136 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#059669',
+  },
+  monetizationCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 14,
+    borderWidth: 1.5,
+    borderColor: '#0745E8',
+    shadowColor: '#0745E8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  pricingTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pricingBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  packageCategoryPill: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#0745E8',
+    letterSpacing: 0.5,
+  },
+  discountPill: {
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+  },
+  discountText: {
+    color: '#059669',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+  },
+  priceText: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  originalPriceText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#94A3B8',
+    textDecorationLine: 'line-through',
+  },
+  priceMeta: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  unlockBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#0745E8',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 14,
+    shadowColor: '#0745E8',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  unlockBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  previewNoticeBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#FFFBEB',
+    borderRadius: 12,
+    padding: 10,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#FEF3C7',
+  },
+  previewNoticeText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#92400E',
+    lineHeight: 16,
+    fontWeight: '500',
+  },
+  unlockedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#ECFDF5',
+    borderRadius: 16,
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  unlockedIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#D1FAE5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unlockedTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#065F46',
+  },
+  unlockedSub: {
+    fontSize: 11,
+    color: '#047857',
+    marginTop: 2,
   },
   sectionsContainer: {
     paddingHorizontal: 16,

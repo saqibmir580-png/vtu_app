@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { Contributor } from '../types/community.types';
 
@@ -11,26 +11,32 @@ export const ContributorAvatar: React.FC<ContributorAvatarProps> = ({
   contributor,
   size = 36,
 }) => {
-  const initials = contributor.name
+  const [imageError, setImageError] = useState(false);
+
+  const initials = contributor?.name
     ? contributor.name
         .split(' ')
+        .filter(Boolean)
         .map((n) => n[0])
         .join('')
         .slice(0, 2)
+        .toUpperCase()
     : 'U';
 
-  const isTopContributor = contributor.reputationBadge === 'VTU Top Contributor';
+  const isTopContributor = contributor?.reputationBadge === 'VTU Top Contributor';
+  const showImage = Boolean(contributor?.avatarUrl && !imageError);
 
   return (
     <View style={[styles.wrapper, { width: size, height: size }]}>
-      {contributor.avatarUrl ? (
+      {showImage ? (
         <Image
           source={{ uri: contributor.avatarUrl }}
           style={[styles.image, { width: size, height: size, borderRadius: size / 2 }]}
+          onError={() => setImageError(true)}
         />
       ) : (
         <View style={[styles.fallback, { width: size, height: size, borderRadius: size / 2 }]}>
-          <Text style={[styles.initials, { fontSize: size * 0.4 }]}>{initials}</Text>
+          <Text style={[styles.initials, { fontSize: Math.max(10, size * 0.38) }]}>{initials}</Text>
         </View>
       )}
 

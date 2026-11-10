@@ -76,6 +76,10 @@ export const mapBackendToPassingPackage = (item: any): PassingPackage => {
     expectedQuestions: mockMatch.expectedQuestions,
     revisionResources: mockMatch.revisionResources,
     nightBeforeSequence: mappedQuestions.length > 0 ? mappedQuestions.slice(0, 5) : mockMatch.nightBeforeSequence,
+    isPaid: Boolean(item.isPremium ?? true),
+    price: item.priceINR !== undefined ? item.priceINR : 49,
+    originalPrice: item.originalPriceINR || 129,
+    freePreviewQuestionsCount: item.freePreviewCount || 3,
   };
 };
 

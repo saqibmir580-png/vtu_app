@@ -16,10 +16,13 @@ import { usePassingPackageStore } from '../store/usePassingPackageStore';
 import { PassingPackageHero } from '../components/PassingPackageHero';
 import { PackageSubjectCard } from '../components/PackageSubjectCard';
 import { PackageEmptyState } from '../components/PackageEmptyState';
+import { Header } from '@/shared/components/Header';
+import { useNotificationsStore } from '@/features/notifications/store/useNotificationsStore';
 
 export const PassingPackagesHomeScreen: React.FC = () => {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const unreadCount = useNotificationsStore((state) => state.getUnreadCount());
 
   const {
     activeBranch,
@@ -46,34 +49,32 @@ export const PassingPackagesHomeScreen: React.FC = () => {
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
-      
-      {/* Top Header */}
-      <View style={styles.topHeader}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerRow}>
+
+      {/* Unified Custom Header */}
+      <Header
+        title="Passing Packages"
+        dark={true}
+        showBack={true}
+        rightElement={
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <TouchableOpacity
               activeOpacity={0.8}
-              style={styles.backBtn}
-              onPress={() => router.back()}
+              style={styles.headerIconBtn}
+              onPress={() => router.push('/notifications' as any)}
             >
-              <Feather name="arrow-left" size={20} color="#FFFFFF" />
+              <Feather name="bell" size={18} color="#FFFFFF" />
+              {unreadCount > 0 && <View style={styles.unreadBadge} />}
             </TouchableOpacity>
-
-            <View style={styles.headerTitleWrapper}>
-              <Text style={styles.headerTitle}>Passing Packages</Text>
-              <Text style={styles.headerSub}>Exam Focus & Revision Hub</Text>
-            </View>
-
             <TouchableOpacity
               activeOpacity={0.8}
               style={styles.headerIconBtn}
               onPress={() => router.push('/passing-packages/saved' as any)}
             >
-              <Feather name="bookmark" size={20} color="#FFFFFF" />
+              <Feather name="bookmark" size={18} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
-        </SafeAreaView>
-      </View>
+        }
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -185,6 +186,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
   },
   scrollContent: {
     paddingBottom: 30,

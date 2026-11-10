@@ -69,11 +69,11 @@ export const SplashScreen: React.FC = () => {
       <View style={styles.topBackgroundCircle} />
       <View style={styles.bottomBackgroundCircle} />
 
-      {/* Center VTU Logo & Tagline */}
+      {/* Center VTU Ultima Logo & Tagline */}
       <View style={styles.centerContent}>
         <Animated.View style={[styles.logoWrapper, animatedLogoStyle]}>
           <Image
-            source={require('@/../assets/vtu_logo.png')}
+            source={require('../../../../assets/vtu_ultima_logo.png')}
             style={styles.logoImage}
             contentFit="contain"
             priority="high"
@@ -134,11 +134,13 @@ const styles = StyleSheet.create({
   logoWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
+    width: 260,
+    height: 110,
   },
   logoImage: {
-    width: 220,
-    height: 220,
+    width: '100%',
+    height: '100%',
   },
   tagline: {
     color: '#FFFFFF',

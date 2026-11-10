@@ -90,7 +90,7 @@ export const fetchNotesFromApi = async (params: QueryNotesParams = {}): Promise<
     }
 
     if (rawNotes.length === 0) {
-      return MOCK_RESOURCES;
+      return [];
     }
 
     return rawNotes.map((note: any): NoteResource => {
@@ -124,8 +124,8 @@ export const fetchNotesFromApi = async (params: QueryNotesParams = {}): Promise<
       };
     });
   } catch (error: any) {
-    console.warn('[fetchNotesFromApi Fallback]:', error?.message || error);
-    return MOCK_RESOURCES;
+    console.warn('[fetchNotesFromApi error]:', error?.message || error);
+    return [];
   }
 };
 
@@ -227,10 +227,17 @@ export const purchaseNoteFromApi = async (noteId: string, amount?: number): Prom
   }
 };
 
-export const createRazorpayOrderFromApi = async (noteId: string, userId?: string) => {
+export const createRazorpayOrderFromApi = async (
+  noteId: string,
+  userId?: string,
+  category: 'NOTES' | 'PAPERS' | 'PASSING_PACKAGES' = 'NOTES'
+) => {
   try {
     const response: any = await apiClient.post('/orders/razorpay/create-order', {
       noteId,
+      resourceId: noteId,
+      packageId: category === 'PASSING_PACKAGES' ? noteId : undefined,
+      category,
       userId,
     });
     const body = response.data || response;
@@ -256,11 +263,21 @@ export const verifyRazorpayPaymentFromApi = async (data: {
   razorpayOrderId: string;
   razorpayPaymentId: string;
   razorpaySignature?: string;
-  noteId: string;
+  noteId?: string;
+  packageId?: string;
+  resourceId?: string;
+  category?: 'NOTES' | 'PAPERS' | 'PASSING_PACKAGES';
   userId?: string;
 }) => {
   try {
-    const response: any = await apiClient.post('/orders/razorpay/verify', data);
+    const targetId = data.noteId || data.resourceId || data.packageId || '';
+    const payload = {
+      ...data,
+      noteId: targetId,
+      resourceId: targetId,
+      packageId: data.packageId || (data.category === 'PASSING_PACKAGES' ? targetId : undefined),
+    };
+    const response: any = await apiClient.post('/orders/razorpay/verify', payload);
     const body = response.data || response;
     const verifyData = body.data || body;
     return {
@@ -288,12 +305,12 @@ export const fetchSubjectsFromApi = async (params: { semester?: number; branchCo
     return rawCourses.map((course: any, idx: number): Subject => ({
       id: course.id || `c-${idx}`,
       code: course.subjectCode || course.code || '21CS51',
-      name: course.name || course.subjectName || course.title || 'Academic Course',
-      semester: course.semester || params.semester || 5,
-      branch: course.branchCode || params.branchCode || 'CSE',
+      name: course.title || course.name || course.subjectName || 'Academic Course',
+      semester: course.semester?.number || course.semester || params.semester || 5,
+      branch: course.branch?.code || course.branchCode || params.branchCode || 'CSE',
       unitCount: 5,
-      resourceCount: course.notesCount || course._count?.notes || 12,
-      progress: Math.floor(Math.random() * 40) + 40,
+      resourceCount: course.notesCount || course._count?.notes || 0,
+      progress: 0,
       iconName: 'book-open',
       iconBg: '#EEF2FF',
       iconColor: '#0745E8',

@@ -59,35 +59,41 @@ export const saveStudentProfileApiFunction = async (payload: OnboardingPayload):
 // ==========================================
 export const forgotPasswordApiFunction = async (email: string): Promise<any> => {
   try {
-    const response: any = await apiClient.post('/auth/forgot-password', { email });
+    const response: any = await apiClient.post('/auth/forgot-password', {
+      email: email.trim().toLowerCase(),
+    });
     return response.data || response;
   } catch (err: any) {
-    return {
-      success: true,
-      message: 'Password reset OTP dispatched to registered email.',
-    };
+    const msg = err.response?.data?.message || err.message;
+    throw new Error(Array.isArray(msg) ? msg.join('. ') : msg || 'Failed to dispatch password reset OTP.');
   }
 };
 
 export const verifyOtpApiFunction = async (email: string, otp: string): Promise<any> => {
   try {
-    const response: any = await apiClient.post('/auth/verify-otp', { email, otp });
+    const response: any = await apiClient.post('/auth/verify-otp', {
+      email: email.trim().toLowerCase(),
+      otp: otp.trim(),
+      purpose: 'PASSWORD_RESET',
+    });
     return response.data || response;
-  } catch {
-    // Demo fallback for testing
-    if (otp === '123456' || otp.length === 6) {
-      return { success: true, message: 'OTP verified successfully' };
-    }
-    throw new Error('Invalid OTP code. Please enter valid 6-digit code.');
+  } catch (err: any) {
+    const msg = err.response?.data?.message || err.message;
+    throw new Error(Array.isArray(msg) ? msg.join('. ') : msg || 'Invalid OTP code.');
   }
 };
 
 export const resetPasswordApiFunction = async (email: string, otp: string, newPassword: string): Promise<any> => {
   try {
-    const response: any = await apiClient.post('/auth/reset-password', { email, otp, newPassword });
+    const response: any = await apiClient.post('/auth/reset-password', {
+      email: email.trim().toLowerCase(),
+      otp: otp.trim(),
+      newPassword,
+    });
     return response.data || response;
-  } catch {
-    return { success: true, message: 'Password reset successfully' };
+  } catch (err: any) {
+    const msg = err.response?.data?.message || err.message;
+    throw new Error(Array.isArray(msg) ? msg.join('. ') : msg || 'Failed to reset password.');
   }
 };
 
@@ -155,6 +161,20 @@ export const getSchemesApiFunction = async (): Promise<any[]> => {
 export const getSemestersApiFunction = async (): Promise<any[]> => {
   try {
     const response: any = await apiClient.get('/academics/semesters');
+    const data = response.data || response;
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+};
+
+export const getCoursesApiFunction = async (params?: {
+  semester?: number;
+  branchCode?: string;
+  schemeYear?: string;
+}): Promise<any[]> => {
+  try {
+    const response: any = await apiClient.get('/academics/courses', { params });
     const data = response.data || response;
     return Array.isArray(data) ? data : [];
   } catch {

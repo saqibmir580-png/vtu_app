@@ -14,7 +14,7 @@ export const CommunityHeroCard: React.FC<CommunityHeroCardProps> = ({
 }) => {
   return (
     <LinearGradient
-      colors={['#7C3AED', '#6D28D9', '#4C1D95']}
+      colors={['#0745E8', '#1D4ED8', '#0A2540']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
@@ -24,9 +24,9 @@ export const CommunityHeroCard: React.FC<CommunityHeroCardProps> = ({
         <Text style={styles.topBadgeText}>VTU STUDENT COMMUNITY</Text>
       </View>
 
-      <Text style={styles.title}>Learn from students.{'\n'}Share what you know.</Text>
+      <Text style={styles.title}>Learn together.{'\n'}Share your notes.</Text>
       <Text style={styles.subtitle}>
-        Access 1,000+ handwritten notes, module summaries & formula sheets contributed by top VTU engineering peers.
+        Access verified handwritten notes, module summaries, and solved papers contributed by VTU engineering peers.
       </Text>
 
       <View style={styles.btnRow}>
@@ -35,7 +35,7 @@ export const CommunityHeroCard: React.FC<CommunityHeroCardProps> = ({
           style={styles.primaryBtn}
           onPress={onPressUpload}
         >
-          <Feather name="upload-cloud" size={16} color="#4C1D95" />
+          <Feather name="upload-cloud" size={16} color="#0A2540" />
           <Text style={styles.primaryBtnText}>Upload Notes</Text>
         </TouchableOpacity>
 
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginHorizontal: 16,
     marginVertical: 12,
-    shadowColor: '#7C3AED',
+    shadowColor: '#0745E8',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 10,
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   primaryBtnText: {
-    color: '#4C1D95',
+    color: '#0A2540',
     fontSize: 13,
     fontWeight: '800',
   },

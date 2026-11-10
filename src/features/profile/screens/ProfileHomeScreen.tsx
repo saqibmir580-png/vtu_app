@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, StatusBar, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, StatusBar, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -7,20 +7,22 @@ import { useAuthStore } from '@/store';
 import { useAcademicRecordStore } from '@/features/calculators';
 import { useSavedStore } from '@/features/saved/store/useSavedStore';
 import { StudentProfileHeader } from '../components/StudentProfileHeader';
-import { AcademicIdentityCard } from '../components/AcademicIdentityCard';
 import { SectionHeader } from '../components/SectionHeader';
 import { ProfileMenuRow } from '../components/ProfileMenuRow';
-import { AvatarUploadModal } from '../components/AvatarUploadModal';
+import { EditProfileModal } from '../components/EditProfileModal';
 import { ChangePasswordModal } from '../components/ChangePasswordModal';
+import { Header } from '@/shared/components/Header';
+import { CustomConfirmationModal } from '@/shared/components/CustomConfirmationModal';
 
 export const ProfileHomeScreen: React.FC = () => {
   const router = useRouter();
   const { user, logout } = useAuthStore();
-  const { currentCgpa, totalCreditsEarned, loadAcademicRecords } = useAcademicRecordStore();
+  const { loadAcademicRecords } = useAcademicRecordStore();
   const { items } = useSavedStore();
 
-  const [avatarModalVisible, setAvatarModalVisible] = useState(false);
+  const [editProfileVisible, setEditProfileVisible] = useState(false);
   const [changePasswordVisible, setChangePasswordVisible] = useState(false);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [activeSavedTab, setActiveSavedTab] = useState<'BOOKMARKS' | 'DOWNLOADS'>('BOOKMARKS');
 
   useEffect(() => {
@@ -29,54 +31,33 @@ export const ProfileHomeScreen: React.FC = () => {
 
   if (!user) return null;
 
-  const effectiveCgpa = (user?.currentCgpa && user.currentCgpa > 0) ? user.currentCgpa : (currentCgpa || 8.74);
   const bookmarkedItems = items.filter((i) => i.isBookmarked);
   const downloadedItems = items.filter((i) => i.isDownloaded);
 
   const displayedSavedItems = activeSavedTab === 'BOOKMARKS' ? bookmarkedItems.slice(0, 3) : downloadedItems.slice(0, 3);
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout Confirmation',
-      'Are you sure you want to sign out of your VTU Student Account?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: () => {
-            logout();
-            router.replace('/(auth)/login' as any);
-          },
-        },
-      ]
-    );
+  const handleConfirmLogout = () => {
+    setLogoutModalVisible(false);
+    logout();
+    router.replace('/(auth)/login' as any);
   };
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title="Student Profile"
+        dark={true}
+        showBack={true}
+      />
 
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <StudentProfileHeader
-          user={user}
-          onEditPress={() => setAvatarModalVisible(true)}
-        />
-      </SafeAreaView>
+      <StudentProfileHeader
+        user={user}
+        hideTopBar={true}
+        onEditPress={() => setEditProfileVisible(true)}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Academic Snapshot Card with Synchronized CGPA & Quick Badges */}
-        <AcademicIdentityCard
-          semester={user.semester || 5}
-          cgpa={effectiveCgpa}
-          scheme={user.scheme || '2022'}
-          bookmarksCount={bookmarkedItems.length}
-          downloadsCount={downloadedItems.length}
-          onPressBookmarks={() => setActiveSavedTab('BOOKMARKS')}
-          onPressDownloads={() => setActiveSavedTab('DOWNLOADS')}
-          onPressEdit={() => router.push('/profile/edit' as any)}
-        />
-
         {/* Section: My In-App Library & DRM Vault */}
         <View style={styles.vaultSection}>
           <View style={styles.vaultHeaderRow}>
@@ -205,92 +186,51 @@ export const ProfileHomeScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Section 1: Academic */}
-        <SectionHeader title="Academic" />
-        <ProfileMenuRow
-          title="Academic Profile"
-          subtitle="View Branch, Semester, Scheme & CGPA"
-          badge={`${user.branch || 'CSE'} • Sem ${user.semester || 5}`}
-          iconName="award"
-          iconBg="#EEF2FF"
-          iconColor="#0745E8"
-          onPress={() => router.push('/profile/academic' as any)}
-        />
-
-        {/* Section 2: Study */}
-        <SectionHeader title="Study & Downloads" />
-        <ProfileMenuRow
-          title="Saved & Offline Library"
-          subtitle="Manage downloaded notes & bookmarked papers"
-          badge={`${items.length} items`}
-          iconName="download-cloud"
-          iconBg="#D1FAE5"
-          iconColor="#059669"
-          onPress={() => router.push('/saved' as any)}
-        />
-        <ProfileMenuRow
-          title="Notifications & Circulars"
-          subtitle="VTU exam timetables & test alerts"
-          iconName="bell"
-          iconBg="#FEF3C7"
-          iconColor="#D97706"
-          onPress={() => router.push('/(tabs)/community' as any)}
-        />
-
-        {/* Section 3: Information & Account */}
-        <SectionHeader title="Information & Security" />
-        <ProfileMenuRow
-          title="About VTU Super App"
-          subtitle="Version v1.0.0, University disclaimer & Help"
-          iconName="info"
-          iconBg="#E0F2FE"
-          iconColor="#0284C7"
-          onPress={() => router.push('/profile/about' as any)}
-        />
-        <ProfileMenuRow
-          title="Privacy Policy"
-          subtitle="How we protect your academic data"
-          iconName="shield"
-          iconBg="#F1F5F9"
-          iconColor="#475569"
-          onPress={() => router.push('/profile/about' as any)}
-        />
-        <ProfileMenuRow
-          title="Terms of Service"
-          subtitle="Usage guidelines for engineering students"
-          iconName="file-text"
-          iconBg="#F1F5F9"
-          iconColor="#475569"
-          onPress={() => router.push('/profile/about' as any)}
-        />
+        {/* Security & Authentication */}
+        <SectionHeader title="Security & Authentication" />
         <ProfileMenuRow
           title="Security & Change Password"
-          subtitle="Update account password & security options"
+          subtitle="Update account password & security credentials"
           iconName="lock"
           iconBg="#EEF2FF"
           iconColor="#0745E8"
           onPress={() => setChangePasswordVisible(true)}
         />
-        <ProfileMenuRow
-          title="Sign Out of Account"
-          subtitle="Log out from VTU Student Super App"
-          iconName="log-out"
-          iconBg="#FEE2E2"
-          iconColor="#DC2626"
-          onPress={handleLogout}
-        />
+
+        {/* Prominent Log Out Button */}
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.logoutBtn}
+          onPress={() => setLogoutModalVisible(true)}
+        >
+          <Feather name="log-out" size={18} color="#DC2626" />
+          <Text style={styles.logoutBtnText}>Log Out</Text>
+        </TouchableOpacity>
       </ScrollView>
 
-      {/* Avatar Upload Modal */}
-      <AvatarUploadModal
-        visible={avatarModalVisible}
-        onClose={() => setAvatarModalVisible(false)}
+      {/* Comprehensive Student Profile Editor Modal */}
+      <EditProfileModal
+        visible={editProfileVisible}
+        onClose={() => setEditProfileVisible(false)}
       />
 
       {/* Change Password Modal */}
       <ChangePasswordModal
         visible={changePasswordVisible}
         onClose={() => setChangePasswordVisible(false)}
+      />
+
+      {/* Custom Confirmation Dialog for Logout */}
+      <CustomConfirmationModal
+        visible={logoutModalVisible}
+        onClose={() => setLogoutModalVisible(false)}
+        onConfirm={handleConfirmLogout}
+        title="Log Out Confirmation"
+        message="Are you sure you want to log out of your VTU Ultima account? You will need to sign in again to access your student profile and offline resources."
+        confirmText="Log Out"
+        cancelText="Cancel"
+        type="danger"
+        icon="log-out"
       />
     </View>
   );
@@ -300,6 +240,14 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  headerNotificationBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerSafeArea: {
     backgroundColor: '#FFFFFF',
@@ -447,5 +395,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
     lineHeight: 16,
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 40,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#FEE2E2',
+  },
+  logoutBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#DC2626',
   },
 });

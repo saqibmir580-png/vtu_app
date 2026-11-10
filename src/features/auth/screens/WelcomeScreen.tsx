@@ -1,84 +1,157 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Container, Button } from '@/shared/components';
-import { colors } from '@/core/theme';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export const WelcomeScreen: React.FC = () => {
   const router = useRouter();
 
   return (
-    <Container style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.logoBadge}>
-          <Text style={styles.logoText}>VTU</Text>
-        </View>
-        <Text style={styles.title}>Student Super App</Text>
-        <Text style={styles.subtitle}>
-          Your all-in-one companion for notes, past question papers, SGPA/CGPA calculators & VTU community.
-        </Text>
-      </View>
+    <LinearGradient
+      colors={['#0848EA', '#0732BA', '#031970']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.gradientContainer}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="#0848EA" />
 
-      <View style={styles.actions}>
-        <Button
-          title="Get Started"
-          variant="primary"
-          onPress={() => router.push('/(auth)/register')}
-          style={styles.button}
-        />
-        <Button
-          title="I already have an account"
-          variant="outline"
-          onPress={() => router.push('/(auth)/login')}
-          style={styles.button}
-        />
-      </View>
-    </Container>
+      {/* Background Decorative Soft Circles */}
+      <View style={styles.topBackgroundCircle} />
+      <View style={styles.bottomBackgroundCircle} />
+
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <View style={styles.content}>
+          {/* VTU Ultima Branding Logo */}
+          <View style={styles.logoWrapper}>
+            <Image
+              source={require('../../../../assets/vtu_ultima_logo.png')}
+              style={styles.logoImage}
+              contentFit="contain"
+              priority="high"
+            />
+          </View>
+          <Text style={styles.subtitle}>
+            Your all-in-one companion for notes, past question papers, SGPA/CGPA calculators & VTU community.
+          </Text>
+        </View>
+
+        <View style={styles.actions}>
+          {/* Primary CTA: Get Started */}
+          <TouchableOpacity
+            activeOpacity={0.88}
+            style={styles.primaryButton}
+            onPress={() => router.push('/(auth)/register')}
+          >
+            <Text style={styles.primaryButtonText}>Get Started</Text>
+          </TouchableOpacity>
+
+          {/* Secondary CTA: I already have an account */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.secondaryButton}
+            onPress={() => router.push('/(auth)/login')}
+          >
+            <Text style={styles.secondaryButtonText}>I already have an account</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  gradientContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  topBackgroundCircle: {
+    position: 'absolute',
+    top: -60,
+    right: -60,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  bottomBackgroundCircle: {
+    position: 'absolute',
+    bottom: 80,
+    left: -80,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  safeArea: {
+    flex: 1,
     justifyContent: 'space-between',
-    paddingVertical: 32,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 28,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: colors.primary[500],
+  logoWrapper: {
+    width: 280,
+    height: 120,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  logoText: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: '800',
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: colors.text.darkPrimary,
-    textAlign: 'center',
-    marginBottom: 12,
+  logoImage: {
+    width: '100%',
+    height: '100%',
   },
   subtitle: {
     fontSize: 16,
-    color: colors.text.darkSecondary,
+    color: '#DBEAFE',
     textAlign: 'center',
     lineHeight: 24,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
+    maxWidth: 340,
   },
   actions: {
     gap: 12,
-  },
-  button: {
     width: '100%',
+  },
+  primaryButton: {
+    width: '100%',
+    height: 54,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  primaryButtonText: {
+    color: '#0745E8',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  secondaryButton: {
+    width: '100%',
+    height: 54,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.1,
   },
 });

@@ -28,7 +28,7 @@ export const CommunityBadge: React.FC<CommunityBadgeProps> = ({
 
   return (
     <View style={[styles.badge, styles.communityBadge, isSmall && styles.badgeSmall]}>
-      <Feather name="users" size={isSmall ? 10 : 12} color="#7C3AED" />
+      <Feather name="users" size={isSmall ? 10 : 12} color="#0745E8" />
       <Text style={[styles.text, styles.communityText, isSmall && styles.textSmall]}>
         STUDENT COMMUNITY {isVerified ? '• VERIFIED' : ''}
       </Text>
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3E8FF',
   },
   communityText: {
-    color: '#7C3AED',
+    color: '#0745E8',
   },
   text: {
     fontSize: 11,

@@ -60,7 +60,7 @@ export const CommunityHeader: React.FC<CommunityHeaderProps> = ({
 
 const styles = StyleSheet.create({
   headerBackground: {
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#0745E8',
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomLeftRadius: 20,

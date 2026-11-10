@@ -140,8 +140,8 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
 
       {/* App Footprint Footer */}
       <View style={styles.appFooter}>
-        <Text style={styles.appVersionText}>VTU Student Super App v1.0.0</Text>
-        <Text style={styles.appSubText}>Crafted for Visvesvaraya Technological University</Text>
+        <Text style={styles.appVersionText}>VTU Ultima v1.0.0</Text>
+        <Text style={styles.appSubText}>VTU Ultima • Engineering Academic Suite</Text>
       </View>
     </View>
   );

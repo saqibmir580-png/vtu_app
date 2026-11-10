@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { CommunityResource } from '../types/community.types';
 import { ResourceTypeBadge } from './ResourceTypeBadge';
+import { ContributorAvatar } from './ContributorAvatar';
 
 interface TrendingResourceCardProps {
   resource: CommunityResource;
@@ -31,9 +32,12 @@ export const TrendingResourceCard: React.FC<TrendingResourceCardProps> = ({
           {resource.title}
         </Text>
 
-        <Text style={styles.author}>
-          By {resource.contributor.name} • {resource.usefulCount} Useful Votes
-        </Text>
+        <View style={styles.authorRow}>
+          <ContributorAvatar contributor={resource.contributor} size={18} />
+          <Text style={styles.author} numberOfLines={1}>
+            By {resource.contributor.name} • {resource.usefulCount} Useful Votes
+          </Text>
+        </View>
       </View>
 
       <Feather name="trending-up" size={18} color="#059669" />
@@ -85,9 +89,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0F172A',
   },
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
   author: {
     fontSize: 11,
     color: '#64748B',
-    marginTop: 2,
+    flex: 1,
   },
 });

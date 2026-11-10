@@ -45,14 +45,14 @@ export const SubjectCommunityScreen: React.FC = () => {
             style={styles.uploadIconBtn}
             onPress={() => router.push('/community/upload' as any)}
           >
-            <Feather name="plus" size={18} color="#7C3AED" />
+            <Feather name="plus" size={18} color="#0745E8" />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.infoBanner}>
-          <Feather name="users" size={18} color="#7C3AED" />
+          <Feather name="users" size={18} color="#0745E8" />
           <Text style={styles.infoBannerText}>
             Community Notes contributed by VTU students for {subjectCode}
           </Text>
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   infoBannerText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#6D28D9',
+    color: '#1D4ED8',
     flex: 1,
   },
 });

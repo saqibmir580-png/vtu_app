@@ -1,25 +1,52 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useCommunityStore } from '../store/useCommunityStore';
 
-export const CommunityStats: React.FC = () => {
+interface CommunityStatsProps {
+  notesCount?: number;
+  upvotesCount?: number;
+  contributorsCount?: number;
+}
+
+export const CommunityStats: React.FC<CommunityStatsProps> = ({
+  notesCount,
+  upvotesCount,
+  contributorsCount,
+}) => {
+  const { resources, contributors } = useCommunityStore();
+
+  const totalNotes = notesCount !== undefined ? notesCount : resources.length;
+  const totalUpvotes =
+    upvotesCount !== undefined
+      ? upvotesCount
+      : resources.reduce((acc, curr) => acc + (curr.usefulCount || 0), 0);
+  const totalContributors =
+    contributorsCount !== undefined ? contributorsCount : contributors.length;
+
   return (
     <View style={styles.container}>
       <View style={styles.tile}>
-        <Feather name="file-text" size={18} color="#7C3AED" />
-        <Text style={styles.number}>1,420+</Text>
+        <View style={[styles.iconBox, { backgroundColor: '#EEF2FF' }]}>
+          <Feather name="file-text" size={16} color="#0745E8" />
+        </View>
+        <Text style={styles.number}>{totalNotes}</Text>
         <Text style={styles.label}>Notes Shared</Text>
       </View>
 
       <View style={styles.tile}>
-        <Feather name="thumbs-up" size={18} color="#059669" />
-        <Text style={styles.number}>18.4k</Text>
-        <Text style={styles.label}>Useful Votes</Text>
+        <View style={[styles.iconBox, { backgroundColor: '#D1FAE5' }]}>
+          <Feather name="thumbs-up" size={16} color="#059669" />
+        </View>
+        <Text style={styles.number}>{totalUpvotes.toLocaleString()}</Text>
+        <Text style={styles.label}>Helpful Votes</Text>
       </View>
 
       <View style={styles.tile}>
-        <Feather name="award" size={18} color="#0745E8" />
-        <Text style={styles.number}>380+</Text>
+        <View style={[styles.iconBox, { backgroundColor: '#DBEAFE' }]}>
+          <Feather name="award" size={16} color="#0284C7" />
+        </View>
+        <Text style={styles.number}>{totalContributors}</Text>
         <Text style={styles.label}>Contributors</Text>
       </View>
     </View>
@@ -48,16 +75,23 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
+  iconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
   number: {
     fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
-    marginTop: 4,
   },
   label: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#64748B',
     fontWeight: '600',
-    marginTop: 1,
+    marginTop: 2,
   },
 });

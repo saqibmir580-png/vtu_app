@@ -6,10 +6,11 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { Header } from '@/shared/components/Header';
 import { MOCK_RESOURCES } from '../api/notesData';
 
 export const NotesSearchScreen: React.FC = () => {
@@ -30,12 +31,12 @@ export const NotesSearchScreen: React.FC = () => {
   });
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* Top Search Bar with Back Arrow */}
-      <View style={styles.topHeader}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Feather name="chevron-left" size={22} color="#0745E8" />
-        </TouchableOpacity>
+    <View style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header title="Search Resources" dark={true} showBack={true} />
+
+      {/* Top Search Bar */}
+      <View style={styles.searchBarContainer}>
         <View style={styles.inputWrapper}>
           <Feather name="search" size={18} color="#64748B" style={styles.searchIcon} />
           <TextInput
@@ -146,7 +147,7 @@ export const NotesSearchScreen: React.FC = () => {
           </View>
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -155,22 +156,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  topHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  searchBarContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
-    gap: 10,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#EEF2FF',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   inputWrapper: {
     flex: 1,

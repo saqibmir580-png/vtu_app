@@ -12,6 +12,8 @@ import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '@/store';
 import { SectionHeader } from '../components/SectionHeader';
+import { Header } from '@/shared/components/Header';
+import { StatusBar } from 'react-native';
 
 export const PreferencesScreen: React.FC = () => {
   const router = useRouter();
@@ -25,18 +27,8 @@ export const PreferencesScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.headerTitle}>Preferences</Text>
-            <Text style={styles.headerSub}>App Settings & Notifications</Text>
-          </View>
-        </View>
-      </SafeAreaView>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header title="Preferences" dark={true} showBack={true} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Section 1: Appearance */}

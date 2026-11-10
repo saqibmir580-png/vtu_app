@@ -25,7 +25,7 @@ export const ResourceTypeBadge: React.FC<ResourceTypeBadgeProps> = ({
       break;
     case 'Solved Question Bank':
       bgColor = '#F3E8FF';
-      textColor = '#6D28D9';
+      textColor = '#1D4ED8';
       break;
     case 'Typed PDF':
       bgColor = '#E0F2FE';

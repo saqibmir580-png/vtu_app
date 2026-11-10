@@ -20,11 +20,21 @@ import {
   verifyRazorpayPaymentFromApi,
 } from '../api/notesApi';
 
+export interface GenericPayableResource {
+  id: string;
+  title: string;
+  price?: number;
+  subjectCode?: string;
+  subjectName?: string;
+  totalPages?: number;
+  category?: 'NOTES' | 'PAPERS' | 'PASSING_PACKAGES';
+}
+
 interface PaymentCheckoutModalProps {
   visible: boolean;
   onClose: () => void;
-  resource: NoteResource | null;
-  onPaymentSuccess: (resource: NoteResource) => void;
+  resource: NoteResource | GenericPayableResource | any;
+  onPaymentSuccess: (resource: any) => void;
 }
 
 const { width, height } = Dimensions.get('window');
@@ -68,7 +78,8 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
     setErrorMessage(null);
 
     try {
-      const orderRes = await createRazorpayOrderFromApi(resource.id, user?.id);
+      const resCat = (resource as any).category || (resource.id?.startsWith('pkg-') ? 'PASSING_PACKAGES' : 'NOTES');
+      const orderRes = await createRazorpayOrderFromApi(resource.id, user?.id, resCat);
 
       if (!orderRes || !orderRes.success) {
         throw new Error(orderRes?.message || 'Could not initiate payment order.');
@@ -110,11 +121,14 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
         const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = message.data;
 
         // Verify with backend
+        const resCat = (resource as any).category || (resource.id?.startsWith('pkg-') ? 'PASSING_PACKAGES' : 'NOTES');
         const verifyRes = await verifyRazorpayPaymentFromApi({
           razorpayOrderId: razorpayOrderId || razorpayOrder.orderId,
           razorpayPaymentId,
           razorpaySignature,
           noteId: resource.id,
+          resourceId: resource.id,
+          category: resCat,
           userId: user?.id,
         });
 

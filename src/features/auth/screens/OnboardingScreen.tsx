@@ -201,7 +201,7 @@ export const OnboardingScreen: React.FC = () => {
           >
             <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
               <View style={styles.headerTitleRow}>
-                <Image source={require('@/../assets/vtu_logo.png')} style={styles.logoImage} contentFit="contain" />
+                <Image source={require('../../../../assets/vtu_ultima_logo.png')} style={styles.logoImage} contentFit="contain" />
                 <View>
                   <Text style={styles.headerTitle}>Academic Profile Setup</Text>
                   <Text style={styles.headerSubtitle}>Customize your VTU learning experience</Text>

@@ -10,6 +10,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { Header } from '@/shared/components';
+import { StatusBar } from 'react-native';
 import { MOCK_RESOURCES } from '../api/notesData';
 import { fetchNoteByIdFromApi } from '../api/notesApi';
 import { NoteResource } from '../types/notes.types';
@@ -66,7 +67,8 @@ export const ResourceDetailScreen: React.FC = () => {
 
   return (
     <View style={styles.rootContainer}>
-      <Header title="Resource Details" showBack />
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header title="Resource Details" dark={true} showBack={true} />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Resource Preview Header Card */}
         <View style={styles.previewCard}>

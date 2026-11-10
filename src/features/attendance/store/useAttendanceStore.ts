@@ -37,69 +37,9 @@ interface AttendanceStoreState {
   };
 }
 
-const INITIAL_SUBJECTS: SubjectAttendance[] = [
-  {
-    id: 'att-cn',
-    subjectName: 'Computer Networks',
-    subjectCode: '21CS52',
-    attendedClasses: 28,
-    conductedClasses: 32,
-    targetAttendance: 85,
-    iconName: 'wifi',
-    iconBg: '#EEF2FF',
-  },
-  {
-    id: 'att-dbms',
-    subjectName: 'Database Management Systems',
-    subjectCode: '21CS53',
-    attendedClasses: 32,
-    conductedClasses: 36,
-    targetAttendance: 85,
-    iconName: 'database',
-    iconBg: '#F0FDF4',
-  },
-  {
-    id: 'att-atc',
-    subjectName: 'Automata Theory & Computability',
-    subjectCode: '21CS51',
-    attendedClasses: 20,
-    conductedClasses: 28,
-    targetAttendance: 85,
-    iconName: 'cpu',
-    iconBg: '#FAF5FF',
-  },
-  {
-    id: 'att-se',
-    subjectName: 'Software Engineering & Project Mgmt',
-    subjectCode: '21CS54',
-    attendedClasses: 26,
-    conductedClasses: 28,
-    targetAttendance: 85,
-    iconName: 'code',
-    iconBg: '#FFF7ED',
-  },
-];
+const INITIAL_SUBJECTS: SubjectAttendance[] = [];
 
-const INITIAL_HISTORY: AttendanceHistoryLog[] = [
-  {
-    id: 'log-1',
-    subjectId: 'att-cn',
-    subjectName: 'Computer Networks',
-    subjectCode: '21CS52',
-    type: 'ATTENDED',
-    classesCount: 2,
-    timestamp: 'Today, 10:30 AM',
-  },
-  {
-    id: 'log-2',
-    subjectId: 'att-atc',
-    subjectName: 'Automata Theory & Computability',
-    subjectCode: '21CS51',
-    type: 'MISSED',
-    classesCount: 1,
-    timestamp: 'Yesterday, 02:00 PM',
-  },
-];
+const INITIAL_HISTORY: AttendanceHistoryLog[] = [];
 
 export const calculateStatus = (percentage: number, target: number): AttendanceStatus => {
   if (percentage >= target) return 'Safe';
@@ -110,7 +50,7 @@ export const calculateStatus = (percentage: number, target: number): AttendanceS
 export const useAttendanceStore = create<AttendanceStoreState>((set, get) => ({
   subjects: INITIAL_SUBJECTS,
   historyLogs: INITIAL_HISTORY,
-  selectedSubjectId: 'att-cn',
+  selectedSubjectId: null,
   globalTarget: 85,
 
   setSelectedSubjectId: (id) => set({ selectedSubjectId: id }),

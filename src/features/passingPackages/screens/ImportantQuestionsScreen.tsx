@@ -13,6 +13,7 @@ import { Feather } from '@expo/vector-icons';
 import { usePassingPackageStore } from '../store/usePassingPackageStore';
 import { ImportantQuestionCard } from '../components/ImportantQuestionCard';
 import { PackageFilterSheet } from '../components/PackageFilterSheet';
+import { Header } from '@/shared/components/Header';
 import { PackageFilterOptions } from '../types/passingPackages.types';
 
 export const ImportantQuestionsScreen: React.FC = () => {
@@ -56,25 +57,22 @@ export const ImportantQuestionsScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Feather name="arrow-left" size={20} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleBox}>
-            <Text style={styles.headerTitle}>Important Questions</Text>
-            <Text style={styles.headerSub}>{pkg.subjectCode} • {pkg.importantQuestionsCount} Questions</Text>
-          </View>
+      <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+      <Header
+        title="Important Questions"
+        dark={true}
+        showBack={true}
+        rightElement={
           <TouchableOpacity
             style={styles.filterBtn}
             onPress={() => setFilterSheetVisible(true)}
           >
-            <Feather name="sliders" size={18} color="#0745E8" />
+            <Feather name="sliders" size={18} color="#FFFFFF" />
           </TouchableOpacity>
-        </View>
+        }
+      />
 
+      <View style={styles.unitPillsWrapper}>
         {/* Unit Filter Quick Pills */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.unitPillsRow}>
           {['All', 1, 2, 3, 4, 5].map((u) => {
@@ -93,7 +91,7 @@ export const ImportantQuestionsScreen: React.FC = () => {
             );
           })}
         </ScrollView>
-      </SafeAreaView>
+      </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {filteredQuestions.length === 0 ? (
@@ -181,9 +179,15 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  unitPillsWrapper: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingTop: 10,
   },
   unitPillsRow: {
     paddingHorizontal: 16,

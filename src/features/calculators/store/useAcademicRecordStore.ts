@@ -5,13 +5,13 @@ import { useAuthStore } from '@/store';
 
 const ACADEMIC_STORAGE_KEY = 'vtu_mobile_academic_record_data';
 
-// Default VTU NEP 2020 / 2022 Scheme Credit Distributions
+// Default VTU NEP 2020 / 2022 Scheme Credit Distributions (Initially uncompleted for clean student state)
 const DEFAULT_SEMESTERS: SemesterRecord[] = [
-  { semester: 1, sgpa: 8.50, credits: 20, isCompleted: true },
-  { semester: 2, sgpa: 8.60, credits: 20, isCompleted: true },
-  { semester: 3, sgpa: 8.80, credits: 24, isCompleted: true },
-  { semester: 4, sgpa: 8.95, credits: 24, isCompleted: true },
-  { semester: 5, sgpa: 8.70, credits: 25, isCompleted: false },
+  { semester: 1, sgpa: 0.00, credits: 20, isCompleted: false },
+  { semester: 2, sgpa: 0.00, credits: 20, isCompleted: false },
+  { semester: 3, sgpa: 0.00, credits: 24, isCompleted: false },
+  { semester: 4, sgpa: 0.00, credits: 24, isCompleted: false },
+  { semester: 5, sgpa: 0.00, credits: 25, isCompleted: false },
   { semester: 6, sgpa: 0.00, credits: 24, isCompleted: false },
   { semester: 7, sgpa: 0.00, credits: 20, isCompleted: false },
   { semester: 8, sgpa: 0.00, credits: 18, isCompleted: false },

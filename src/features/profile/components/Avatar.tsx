@@ -21,7 +21,12 @@ export const Avatar: React.FC<AvatarProps> = ({
   const fontSize = Math.round(size * 0.4);
 
   return (
-    <View style={[styles.wrapper, { width: size, height: size }]}>
+    <TouchableOpacity
+      activeOpacity={onPressEdit ? 0.85 : 1}
+      onPress={onPressEdit}
+      disabled={!onPressEdit}
+      style={[styles.wrapper, { width: size, height: size }]}
+    >
       {avatarUrl ? (
         <Image
           source={{ uri: avatarUrl }}
@@ -42,15 +47,11 @@ export const Avatar: React.FC<AvatarProps> = ({
       )}
 
       {showEditBadge && (
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={styles.editBadge}
-          onPress={onPressEdit}
-        >
-          <Feather name="camera" size={12} color="#FFFFFF" />
-        </TouchableOpacity>
+        <View style={styles.editBadge}>
+          <Feather name="edit-2" size={12} color="#FFFFFF" />
+        </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 };
 

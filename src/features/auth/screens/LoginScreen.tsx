@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -31,6 +32,34 @@ export const LoginScreen: React.FC = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [forgotPasswordVisible, setForgotPasswordVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      const height = e.endCoordinates ? e.endCoordinates.height : 280;
+      setKeyboardHeight(height);
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleInputFocus = (offset: number) => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: offset, animated: true });
+    }, 120);
+  };
 
   const {
     control,
@@ -86,10 +115,17 @@ export const LoginScreen: React.FC = () => {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          ref={scrollViewRef}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 140 : 100 },
+          ]}
           bounces={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
           {/* Top Royal Blue Header */}
@@ -109,12 +145,13 @@ export const LoginScreen: React.FC = () => {
                 <Feather name="chevron-left" size={22} color="#FFFFFF" />
               </TouchableOpacity>
 
-              {/* Logo Badge */}
+              {/* VTU Ultima Logo Badge */}
               <View style={styles.logoWrapper}>
                 <Image
-                  source={require('@/../assets/vtu_logo.png')}
+                  source={require('../../../../assets/vtu_ultima_logo.png')}
                   style={styles.logoImage}
                   contentFit="contain"
+                  priority="high"
                 />
               </View>
 
@@ -150,6 +187,7 @@ export const LoginScreen: React.FC = () => {
                         onChangeText={onChange}
                         keyboardType="email-address"
                         autoCapitalize="none"
+                        onFocus={() => handleInputFocus(120)}
                       />
                     </View>
                   )}
@@ -173,6 +211,7 @@ export const LoginScreen: React.FC = () => {
                         value={value}
                         onChangeText={onChange}
                         secureTextEntry={!showPassword}
+                        onFocus={() => handleInputFocus(190)}
                       />
                       <TouchableOpacity
                         activeOpacity={0.7}
@@ -280,8 +319,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   logoWrapper: {
-    width: 86,
-    height: 86,
+    width: 180,
+    height: 56,
     marginBottom: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -303,7 +342,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   whiteSheet: {
-    flex: 1,
+    flexGrow: 1,
+    minHeight: 480,
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,

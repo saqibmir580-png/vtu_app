@@ -16,11 +16,18 @@ import { UploadPreviewCard } from '../components/UploadPreviewCard';
 export const UploadPreviewScreen: React.FC = () => {
   const router = useRouter();
   const { uploadDraft, startUploadProcess } = useCommunityStore();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const handleSubmit = () => {
-    startUploadProcess((newId) => {
-      router.replace(`/community/upload/status/${newId}` as any);
-    });
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await startUploadProcess((newId) => {
+        router.replace(`/community/upload/status/${newId}` as any);
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -123,7 +130,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#0745E8',
     textAlign: 'center',
     lineHeight: 26,
     fontSize: 12,
@@ -131,7 +138,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   stepLabel: { fontSize: 10, color: '#64748B', marginTop: 2 },
-  stepLabelActive: { fontSize: 10, fontWeight: '800', color: '#7C3AED', marginTop: 2 },
+  stepLabelActive: { fontSize: 10, fontWeight: '800', color: '#0745E8', marginTop: 2 },
   stepLine: { width: 30, height: 2, backgroundColor: '#E2E8F0' },
   stepLineDone: { backgroundColor: '#059669' },
   title: { fontSize: 18, fontWeight: '800', color: '#0F172A', marginBottom: 4 },

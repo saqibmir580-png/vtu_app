@@ -7,6 +7,7 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -25,6 +26,8 @@ import { MOCK_RESOURCES } from '../api/notesData';
 import { useStudyActivityStore } from '@/features/home';
 import { useAuthStore } from '@/store';
 import { PaymentCheckoutModal } from '../components/PaymentCheckoutModal';
+import { AdBannerCard } from '@/shared/components/AdBannerCard';
+import { apiClient } from '@/infrastructure/api/client';
 
 import * as ScreenCapture from 'expo-screen-capture';
 
@@ -203,6 +206,17 @@ export const NoteReaderScreen: React.FC = () => {
     rawUrl = rawUrl.replace('http://', 'https://');
   }
 
+  const isImage = Boolean(
+    rawUrl.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) ||
+    (resource.fileFormat as string) === 'IMAGE' ||
+    (resource as any).format === 'IMAGE'
+  );
+  const isOfficeDoc = Boolean(
+    rawUrl.match(/\.(doc|docx|ppt|pptx|xls|xlsx|txt|rtf)($|\?)/i) ||
+    resource.fileFormat === 'PPTX' ||
+    (resource as any).format === 'PPT'
+  );
+
   // Note fields resolution
   const isPaidNote = Boolean(resource.isPaid && (resource.price && resource.price > 0));
   const notePrice = resource.price || 19;
@@ -349,10 +363,21 @@ export const NoteReaderScreen: React.FC = () => {
       handleUnlockPurchase();
     } else {
       setIsOfflineSaved(true);
+      if (resource?.id) {
+        apiClient.post(`/notes/${resource.id}/download`).catch(() => {});
+      }
       Alert.alert(
         'Saved for In-App Offline Access',
         'Note file is securely saved inside VTU App sandbox. (External exports & screenshots blocked).'
       );
+    }
+  };
+
+  const handleToggleBookmark = () => {
+    const nextVal = !isBookmarked;
+    setIsBookmarked(nextVal);
+    if (nextVal && resource?.id) {
+      apiClient.post(`/notes/${resource.id}/upvote`).catch(() => {});
     }
   };
 
@@ -424,7 +449,7 @@ export const NoteReaderScreen: React.FC = () => {
           <TouchableOpacity style={styles.iconBtn} onPress={handleOpenExternalDocument}>
             <Feather name="external-link" size={18} color="#0745E8" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => setIsBookmarked(!isBookmarked)}>
+          <TouchableOpacity style={styles.iconBtn} onPress={handleToggleBookmark}>
             <Feather
               name="bookmark"
               size={18}
@@ -494,9 +519,17 @@ export const NoteReaderScreen: React.FC = () => {
             </Text>
           </View>
         ) : (
-          /* Single-Page PDF.js HTML Canvas Engine or Cloud Document Viewer */
+          /* Single-Page PDF.js HTML Canvas Engine, Image Viewer, or Cloud Document Viewer */
           <View style={styles.webViewContainer}>
-            {useCloudViewer ? (
+            {isImage ? (
+              <View style={styles.imageViewerBox}>
+                <Image
+                  source={{ uri: rawUrl }}
+                  style={styles.imageViewer}
+                  resizeMode="contain"
+                />
+              </View>
+            ) : useCloudViewer || isOfficeDoc ? (
               <WebView
                 ref={webViewRef}
                 key={`cloud-viewer-${rawUrl}`}
@@ -545,6 +578,15 @@ export const NoteReaderScreen: React.FC = () => {
           </View>
         )}
       </View>
+
+      {/* Sponsored Sticky Bottom Banner (Auto-hidden if user purchased note) */}
+      {!isPurchased && (
+        <AdBannerCard
+          placement="NOTES_READER_BOTTOM"
+          compact
+          visible={!isPurchased}
+        />
+      )}
 
       {/* Bottom Reader Controls */}
       <View style={styles.readerFooter}>
@@ -720,6 +762,18 @@ const styles = StyleSheet.create({
   webView: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  imageViewerBox: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  imageViewer: {
+    width: '100%',
+    height: '100%',
   },
   previewFloatingBanner: {
     position: 'absolute',
