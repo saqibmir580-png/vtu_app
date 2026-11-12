@@ -8,12 +8,14 @@ import {
   getCurrentUserApiFunction,
 } from '../features/auth/apifunction/apiFunction';
 import { UserProfile, RegisterPayload } from '../features/auth/types/type';
+import { setAuthFailureHandler } from '../infrastructure/api/client';
 
 export type { UserProfile };
 
 interface AuthState {
   user: UserProfile | null;
   isAuthenticated: boolean;
+  isInitialized: boolean;
   isOnboarded: boolean;
   token: string | null;
   isLoading: boolean;
@@ -32,12 +34,17 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
+  isInitialized: false,
   isOnboarded: false,
   token: null,
   isLoading: false,
   error: null,
 
-  setAuth: (user, token) => set({ user, token, isAuthenticated: true }),
+  setAuth: (user, token) => {
+    AsyncStorage.setItem('vtu_mobile_access_token', token).catch(() => {});
+    AsyncStorage.setItem('vtu_mobile_user', JSON.stringify(user)).catch(() => {});
+    set({ user, token, isAuthenticated: true, isOnboarded: true, isInitialized: true });
+  },
 
   login: async (email, password) => {
     set({ isLoading: true, error: null });
@@ -214,12 +221,12 @@ export const useAuthStore = create<AuthState>((set) => ({
         await AsyncStorage.removeItem('vtu_mobile_access_token');
         await AsyncStorage.removeItem('vtu_mobile_refresh_token');
         await AsyncStorage.removeItem('vtu_mobile_user');
-        set({ isAuthenticated: false, user: null, token: null, isOnboarded: false });
+        set({ isAuthenticated: false, user: null, token: null, isOnboarded: false, isInitialized: true });
         return;
       }
 
       let storedUser = storedUserStr ? JSON.parse(storedUserStr) : null;
-      set({ token, user: storedUser, isAuthenticated: true, isOnboarded: true });
+      set({ token, user: storedUser, isAuthenticated: true, isOnboarded: true, isInitialized: true });
 
       try {
         const user = await getCurrentUserApiFunction();
@@ -237,18 +244,20 @@ export const useAuthStore = create<AuthState>((set) => ({
         };
 
         await AsyncStorage.setItem('vtu_mobile_user', JSON.stringify(profile));
-        set({ user: profile, isAuthenticated: true, isOnboarded: true });
+        set({ user: profile, isAuthenticated: true, isOnboarded: true, isInitialized: true });
       } catch {
         // Keep stored user if backend is temporarily unreachable
         if (storedUser) {
-          set({ user: storedUser, isAuthenticated: true, isOnboarded: true });
+          set({ user: storedUser, isAuthenticated: true, isOnboarded: true, isInitialized: true });
         }
       }
     } catch {
       await AsyncStorage.removeItem('vtu_mobile_access_token');
       await AsyncStorage.removeItem('vtu_mobile_refresh_token');
       await AsyncStorage.removeItem('vtu_mobile_user');
-      set({ user: null, token: null, isAuthenticated: false, isOnboarded: false });
+      set({ user: null, token: null, isAuthenticated: false, isOnboarded: false, isInitialized: true });
+    } finally {
+      set({ isInitialized: true });
     }
   },
 
@@ -279,3 +288,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   clearError: () => set({ error: null }),
 }));
+
+// Wire API client auth failure to clear in-memory store state synchronously
+setAuthFailureHandler(() => {
+  useAuthStore.setState({ user: null, token: null, isAuthenticated: false, isOnboarded: false, error: null });
+});

@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { storageService } from '@/infrastructure/storage/storage.service';
 import { useAuth } from '../hooks/useAuth';
 import {
   getCollegesApiFunction,
@@ -179,6 +180,7 @@ export const OnboardingScreen: React.FC = () => {
         isOnboarded: true,
       });
 
+      await storageService.setItem('vtu_onboarded', true);
       router.replace('/(tabs)/home');
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to save student profile. Please try again.');

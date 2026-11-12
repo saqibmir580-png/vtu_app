@@ -64,7 +64,13 @@ export const apiClient = axios.create({
 
 console.log(`[API Client] Initialized Base URL: ${apiClient.defaults.baseURL}`);
 
-// Request Interceptor: Attach Access Token (Never logs token)
+// Callback hook for notifying auth store when session expires or refresh fails
+let authFailureHandler: (() => void) | null = null;
+export const setAuthFailureHandler = (handler: () => void) => {
+  authFailureHandler = handler;
+};
+
+// Request Interceptor: Attach Access Token (Never logs token) and format multipart
 apiClient.interceptors.request.use(
   async (config) => {
     if (!config.baseURL) {
@@ -78,6 +84,13 @@ apiClient.interceptors.request.use(
     } catch {
       // Ignore storage errors
     }
+
+    // Auto-detect FormData and remove explicit Content-Type so React Native / Axios
+    // injects the multipart/form-data boundary parameter automatically
+    if (config.data instanceof FormData && config.headers) {
+      delete config.headers['Content-Type'];
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -163,6 +176,9 @@ apiClient.interceptors.response.use(
         await AsyncStorage.removeItem('vtu_mobile_access_token');
         await AsyncStorage.removeItem('vtu_mobile_refresh_token');
         await AsyncStorage.removeItem('vtu_mobile_user');
+        if (authFailureHandler) {
+          authFailureHandler();
+        }
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;

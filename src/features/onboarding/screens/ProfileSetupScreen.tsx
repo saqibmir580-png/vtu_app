@@ -18,6 +18,7 @@ import {
   fetchEngineeringBranches,
   fetchAcademicSemesters,
   fetchVTUColleges,
+  updateStudentProfileApiFunction,
   AcademicScheme,
   EngineeringBranch,
   SemesterMaster,
@@ -26,7 +27,8 @@ import {
 
 export const ProfileSetupScreen: React.FC = () => {
   const router = useRouter();
-  const { user, setAuth } = useAuthStore();
+  const { user, updateProfile } = useAuthStore();
+  const [saving, setSaving] = useState(false);
 
   const [usn, setUsn] = useState('');
   const [selectedCollege, setSelectedCollege] = useState<string>('');
@@ -76,20 +78,39 @@ export const ProfileSetupScreen: React.FC = () => {
   }, []);
 
   const handleSaveProfile = async () => {
-    const updatedUser = {
-      id: user?.id || '1',
-      name: user?.name || 'VTU Student',
-      email: user?.email || 'student@vtu.ac.in',
-      usn: usn.trim() || '1RV21CS001',
+    setSaving(true);
+    const cleanedUsn = usn.trim().toUpperCase() || '1RV21CS001';
+    const parsedTargetCgpa = parseFloat(targetCgpa) || 8.5;
+
+    try {
+      await updateStudentProfileApiFunction({
+        usn: cleanedUsn,
+        collegeCode: selectedCollege,
+        branchCode: selectedBranch,
+        schemeYear: selectedScheme,
+        semester: selectedSemester,
+        targetCgpa: parsedTargetCgpa,
+      });
+    } catch (apiErr) {
+      console.warn('[ProfileSetupScreen] Backend sync note:', apiErr);
+    }
+
+    const updatedProfileFields = {
+      usn: cleanedUsn,
       college: selectedCollege,
+      collegeCode: selectedCollege,
       branch: selectedBranch,
+      branchCode: selectedBranch,
       scheme: selectedScheme,
+      schemeYear: selectedScheme,
       semester: selectedSemester,
-      targetCgpa: parseFloat(targetCgpa) || 8.5,
+      targetCgpa: parsedTargetCgpa,
+      isOnboarded: true,
     };
 
-    await storageService.setItem('vtu_user_profile', updatedUser);
-    setAuth(updatedUser, 'token_123');
+    updateProfile(updatedProfileFields);
+    await storageService.setItem('vtu_onboarded', true);
+    setSaving(false);
     router.replace('/(tabs)/home');
   };
 
@@ -245,8 +266,10 @@ export const ProfileSetupScreen: React.FC = () => {
             </View>
 
             <Button
-              title="Save Profile & Launch App"
+              title={saving ? 'Saving Profile...' : 'Save Profile & Launch App'}
               onPress={handleSaveProfile}
+              loading={saving}
+              disabled={saving}
               style={styles.submitBtn}
             />
           </>

@@ -82,3 +82,15 @@ export const fetchVTUColleges = async (): Promise<VTUCollege[]> => {
     ];
   }
 };
+
+export const updateStudentProfileApiFunction = async (payload: {
+  usn: string;
+  collegeCode: string;
+  branchCode: string;
+  schemeYear: string;
+  semester: number;
+  targetCgpa?: number;
+}): Promise<any> => {
+  const res: any = await apiClient.post('/users/student-profile', payload);
+  return res.data || res;
+};
