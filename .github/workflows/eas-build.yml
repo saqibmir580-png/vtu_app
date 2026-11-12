@@ -17,12 +17,13 @@ on:
       profile:
         description: 'EAS Build Profile to execute'
         required: true
-        default: 'preview'
+        default: 'production-apk'
         type: choice
         options:
-          - development
-          - preview
+          - production-apk
           - production
+          - preview
+          - development
 
 concurrency:
   group: mobile-build-${{ github.workflow }}-${{ github.ref }}
@@ -100,15 +101,16 @@ jobs:
           elif [ "${{ github.ref }}" = "refs/heads/staging" ]; then
             echo "profile=preview" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref }}" = "refs/heads/main" ] || [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
-            echo "profile=production" >> $GITHUB_OUTPUT
+            echo "profile=production-apk" >> $GITHUB_OUTPUT
           else
-            echo "profile=preview" >> $GITHUB_OUTPUT
+            echo "profile=production-apk" >> $GITHUB_OUTPUT
           fi
 
       - name: Trigger EAS Build
         env:
           EAS_BUILD_NO_EXPO_GO_WARNING: "true"
         run: |
+          echo "Triggering EAS Android build with profile: ${{ steps.select-profile.outputs.profile }}"
           eas build \
             --platform android \
             --profile ${{ steps.select-profile.outputs.profile }} \

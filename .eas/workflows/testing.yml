@@ -19,7 +19,7 @@ jobs:
         run: npm test
 
       - name: TypeScript Compilation Gate
-        run: npm run tsc
+        run: npm run typecheck
 
   build_preview_apk:
     name: Build QA Staging APK
