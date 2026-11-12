@@ -66,12 +66,12 @@ interface CalendarStoreState {
 }
 
 export const useCalendarStore = create<CalendarStoreState>((set, get) => ({
-  events: MOCK_ACADEMIC_EVENTS,
+  events: [],
   isLoading: false,
   selectedDate: '2026-09-16',
   activeMonthYear: { year: 2026, month: 8 }, // September 2026
   activeCategory: 'All',
-  remindersMap: { 'evt-ia1': true },
+  remindersMap: {},
 
   fetchAcademicEvents: async () => {
     set({ isLoading: true });
@@ -99,10 +99,9 @@ export const useCalendarStore = create<CalendarStoreState>((set, get) => ({
         set({ events: mapped, isLoading: false });
         return;
       }
-      set({ isLoading: false });
+      set({ events: [], isLoading: false });
     } catch (e) {
-      // Keep mock events as graceful offline fallback
-      set({ isLoading: false });
+      set({ events: [], isLoading: false });
     }
   },
 

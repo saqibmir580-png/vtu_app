@@ -1,7 +1,5 @@
 import { create } from 'zustand';
 import { SavedItem, SavedTab, StorageSummary } from '../types/saved.types';
-import { MOCK_RESOURCES } from '@/features/notes/api/notesData';
-import { MOCK_PAPERS } from '@/features/papers/api/mockPapers';
 
 interface SavedStoreState {
   items: SavedItem[];
@@ -23,50 +21,8 @@ interface SavedStoreState {
   getStorageSummary: () => StorageSummary;
 }
 
-// Convert MOCK_RESOURCES & MOCK_PAPERS into unified SavedItem format
-const INITIAL_SAVED_ITEMS: SavedItem[] = [
-  ...MOCK_RESOURCES.map((r) => ({
-    id: `note-${r.id}`,
-    title: r.title,
-    subjectCode: r.subjectCode,
-    subjectName: r.subjectCode === '21CS52' ? 'Computer Networks' : 'DBMS',
-    scheme: '2022',
-    branch: 'CSE',
-    semester: 5,
-    type: 'Note' as const,
-    subType: r.type,
-    fileSize: r.fileSize,
-    fileSizeBytes: parseFloat(r.fileSize) * 1024 * 1024 || 2500000,
-    pageCount: r.totalPages || 12,
-    isDownloaded: r.isDownloaded,
-    isBookmarked: r.isBookmarked,
-    downloadedAt: r.isDownloaded ? '2 days ago' : undefined,
-    bookmarkedAt: r.isBookmarked ? 'Yesterday' : undefined,
-    thumbnailBg: '#EEF2FF',
-  })),
-  ...MOCK_PAPERS.map((p) => ({
-    id: `paper-${p.id}`,
-    title: `${p.subjectName} (${p.year} ${p.paperType})`,
-    subjectCode: p.subjectCode,
-    subjectName: p.subjectName,
-    scheme: p.scheme,
-    branch: p.branch,
-    semester: p.semester,
-    type: 'QuestionPaper' as const,
-    subType: p.paperType,
-    fileSize: p.fileSize,
-    fileSizeBytes: parseFloat(p.fileSize) * 1024 * 1024 || 2400000,
-    pageCount: p.pageCount,
-    isDownloaded: p.id === 'pyq-cn-2024-reg',
-    isBookmarked: p.id === 'pyq-cn-2024-reg' || p.id === 'pyq-atc-2023-model',
-    downloadedAt: p.id === 'pyq-cn-2024-reg' ? '3 hours ago' : undefined,
-    bookmarkedAt: 'Just now',
-    thumbnailBg: p.thumbnailBg,
-  })),
-];
-
 export const useSavedStore = create<SavedStoreState>((set, get) => ({
-  items: INITIAL_SAVED_ITEMS,
+  items: [],
   activeTab: 'All',
   activeCategory: 'All',
   searchQuery: '',

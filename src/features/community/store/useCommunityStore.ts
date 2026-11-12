@@ -66,9 +66,9 @@ const INITIAL_DRAFT: UploadFormData = {
 };
 
 export const useCommunityStore = create<CommunityState>((set, get) => ({
-  resources: MOCK_COMMUNITY_RESOURCES,
+  resources: [],
   myUploads: [],
-  contributors: MOCK_CONTRIBUTORS,
+  contributors: [],
   isLoading: false,
   filterOptions: {
     searchQuery: '',
