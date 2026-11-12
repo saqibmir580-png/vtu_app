@@ -20,12 +20,12 @@ jobs:
         run: npm test
 
       - name: TypeScript Compilation Gate (Strict 0-Error Check)
-        run: npm run tsc
+        run: npm run typecheck
 
-  build_production_aab:
-    name: Build Signed Android App Bundle (AAB)
+  build_production_apk:
+    name: Build Production Android APK
     needs: [quality_gates]
     type: build
     params:
       platform: android
-      profile: production
+      profile: production-apk
