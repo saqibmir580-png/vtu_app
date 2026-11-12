@@ -37,7 +37,7 @@ interface PassingPackageStoreState {
 }
 
 export const usePassingPackageStore = create<PassingPackageStoreState>((set, get) => ({
-  packages: MOCK_PASSING_PACKAGES,
+  packages: [],
   isLoading: false,
   activeBranch: 'CSE',
   activeSemester: 5,
@@ -48,7 +48,7 @@ export const usePassingPackageStore = create<PassingPackageStoreState>((set, get
     selectedMarks: 'All',
     searchQuery: '',
   },
-  bookmarkedQuestionIds: ['iq-cn-1', 'iq-cn-2', 'rq-cn-1'],
+  bookmarkedQuestionIds: [],
   unlockedPackageIds: [],
 
   loadPackagesFromBackend: async () => {

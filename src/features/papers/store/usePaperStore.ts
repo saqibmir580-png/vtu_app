@@ -50,7 +50,7 @@ const DEFAULT_FILTERS: PaperFilterState = {
 };
 
 export const usePaperStore = create<PaperStoreState>((set, get) => ({
-  papers: MOCK_PAPERS,
+  papers: [],
   isLoading: false,
 
   // Master Data Initial Defaults (Will be updated dynamically from backend)
@@ -60,8 +60,8 @@ export const usePaperStore = create<PaperStoreState>((set, get) => ({
   yearsList: ['All', '2026', '2025', '2024', '2023', '2022'],
   paperTypesList: ['All', 'SEE_THEORY', 'Regular', 'Makeup', 'Model', 'IA_1', 'IA_2'],
 
-  bookmarkedIds: ['pyq-se-2025-reg', 'pyq-cn-2024-reg'],
-  downloadedIds: ['pyq-se-2025-reg'],
+  bookmarkedIds: [],
+  downloadedIds: [],
   downloadProgressMap: {},
   activeFilters: DEFAULT_FILTERS,
   activeTab: 'All',

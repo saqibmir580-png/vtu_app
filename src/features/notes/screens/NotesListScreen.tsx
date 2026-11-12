@@ -36,7 +36,7 @@ export const NotesListScreen: React.FC = () => {
   const { showToast } = useToast();
 
   const [notes, setNotes] = useState<NoteResource[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>(MOCK_SUBJECTS);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -77,16 +77,16 @@ export const NotesListScreen: React.FC = () => {
         }),
       ]);
 
-      setNotes(fetchedNotes);
-      setSubjects(fetchedSubjects.length > 0 ? fetchedSubjects : MOCK_SUBJECTS);
+      setNotes(fetchedNotes || []);
+      setSubjects(fetchedSubjects || []);
       if (isManualRefresh) {
         showToast('Library resources synced with server', 'success');
       }
     } catch {
-      setNotes(MOCK_RESOURCES);
-      setSubjects(MOCK_SUBJECTS);
+      setNotes([]);
+      setSubjects([]);
       if (isManualRefresh) {
-        showToast('Offline mode: Using cached notes', 'info');
+        showToast('Offline mode', 'info');
       }
     } finally {
       setIsLoading(false);

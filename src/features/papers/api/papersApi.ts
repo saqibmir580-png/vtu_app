@@ -81,10 +81,10 @@ export const fetchQuestionPapersApi = async (params?: QueryPapersParams): Promis
     if (rawList && rawList.length > 0) {
       return rawList.map(mapBackendToQuestionPaper);
     }
-    return MOCK_PAPERS;
+    return [];
   } catch (error) {
-    console.warn('[QuestionPapers API]: Backend offline or unreachable. Using cached/mock papers dataset.');
-    return MOCK_PAPERS;
+    console.warn('[QuestionPapers API]: Backend offline or unreachable.');
+    return [];
   }
 };
 
@@ -95,9 +95,9 @@ export const fetchQuestionPaperByIdApi = async (id: string): Promise<QuestionPap
     if (rawData && rawData.id) {
       return mapBackendToQuestionPaper(rawData);
     }
-    return MOCK_PAPERS.find((p) => p.id === id) || null;
+    return null;
   } catch (error) {
-    return MOCK_PAPERS.find((p) => p.id === id) || null;
+    return null;
   }
 };
 

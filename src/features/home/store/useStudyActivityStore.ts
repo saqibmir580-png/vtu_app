@@ -23,15 +23,7 @@ interface StudyActivityStoreState {
 }
 
 export const useStudyActivityStore = create<StudyActivityStoreState>((set, get) => ({
-  recentActivity: {
-    id: '1',
-    subject: 'Data Structures & Algorithms',
-    unit: 'Unit 3',
-    resourceTitle: 'Stacks & Queues Notes',
-    progress: 68,
-    lastOpenedTime: 'Recently',
-    resourceId: '1',
-  },
+  recentActivity: null,
   historyList: [],
   isLoaded: false,
 
