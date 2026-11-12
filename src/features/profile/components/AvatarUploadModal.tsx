@@ -117,9 +117,7 @@ export const AvatarUploadModal: React.FC<AvatarUploadModalProps> = ({
           formData.append('userId', user.id);
         }
 
-        const res: any = await apiClient.post('/users/avatar', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        const res: any = await apiClient.post('/users/avatar', formData);
 
         const serverUrl = res.data?.data?.avatarUrl || res.data?.avatarUrl || selectedUri;
         updateProfile({ avatarUrl: serverUrl });

@@ -181,11 +181,7 @@ export const uploadCommunityNoteApi = async (
   formData.append('status', 'PENDING_REVIEW');
   formData.append('format', draft.resourceType === 'Handwritten Notes' ? 'HANDWRITTEN' : 'PDF');
 
-  const res: any = await apiClient.post('/notes/upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+  const res: any = await apiClient.post('/notes/upload', formData);
 
   const created = res.data?.data || res.data || res;
   return mapBackendNoteToCommunityResource(created);

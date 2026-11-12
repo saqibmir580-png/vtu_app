@@ -61,6 +61,7 @@ const generateSinglePagePdfHtml = (pdfUrl: string, pageNum: number): string => {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
@@ -559,6 +560,9 @@ export const NoteReaderScreen: React.FC = () => {
                 originWhitelist={['*']}
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
+                allowFileAccess={true}
+                allowFileAccessFromFileURLs={true}
+                allowUniversalAccessFromFileURLs={true}
               />
             )}
 
