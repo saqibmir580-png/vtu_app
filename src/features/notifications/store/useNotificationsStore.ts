@@ -40,7 +40,7 @@ function mapCategory(rawCat?: string, rawType?: string): NotificationCategory {
 }
 
 export const useNotificationsStore = create<NotificationsStoreState>((set, get) => ({
-  notifications: MOCK_NOTIFICATIONS,
+  notifications: [],
   readIds: [],
   activeCategory: 'All',
   permissionGranted: false,
@@ -90,9 +90,12 @@ export const useNotificationsStore = create<NotificationsStoreState>((set, get) 
         }));
 
         set({ notifications: mapped });
+      } else {
+        set({ notifications: [] });
       }
     } catch (err) {
-      console.warn('Could not fetch notifications from API, retaining cached state:', err);
+      console.warn('Could not fetch notifications from API:', err);
+      set({ notifications: [] });
     } finally {
       set({ isLoading: false });
     }

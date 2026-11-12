@@ -299,7 +299,7 @@ export const fetchSubjectsFromApi = async (params: { semester?: number; branchCo
     const rawCourses = Array.isArray(payload) ? payload : payload.items || payload.data || [];
 
     if (!Array.isArray(rawCourses) || rawCourses.length === 0) {
-      return MOCK_SUBJECTS;
+      return [];
     }
 
     return rawCourses.map((course: any, idx: number): Subject => ({
@@ -317,7 +317,7 @@ export const fetchSubjectsFromApi = async (params: { semester?: number; branchCo
     }));
   } catch (error: any) {
     console.warn('[fetchSubjectsFromApi Fallback]:', error?.message || error);
-    return MOCK_SUBJECTS;
+    return [];
   }
 };
 

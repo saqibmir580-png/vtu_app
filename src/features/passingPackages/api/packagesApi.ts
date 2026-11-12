@@ -101,9 +101,9 @@ export const fetchPassingPackagesFromApi = async (
       return rawList.map(mapBackendToPassingPackage);
     }
 
-    return MOCK_PASSING_PACKAGES;
+    return [];
   } catch (error: any) {
     console.warn('[fetchPassingPackagesFromApi Fallback]:', error?.message || error);
-    return MOCK_PASSING_PACKAGES;
+    return [];
   }
 };
