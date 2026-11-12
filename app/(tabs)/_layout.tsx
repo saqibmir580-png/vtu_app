@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface CenterHomeButtonProps {
   onPress?: (e: any) => void;
@@ -33,6 +34,18 @@ const CenterHomeButton: React.FC<CenterHomeButtonProps> = ({
 };
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+
+  // Dynamically adapt to Android 3-Button Navigation (insets.bottom ~48dp)
+  // vs Gesture Navigation (insets.bottom ~16-24dp) vs iOS Home Bar
+  const bottomPadding = Platform.select({
+    ios: insets.bottom > 0 ? insets.bottom : 12,
+    android: insets.bottom > 0 ? insets.bottom + 4 : 8,
+    default: 8,
+  });
+
+  const tabHeight = 58 + bottomPadding;
+
   return (
     <Tabs
       initialRouteName="home"
@@ -44,9 +57,9 @@ export default function TabsLayout() {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#E2E8F0',
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 84 : 64,
-          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
-          paddingTop: 6,
+          height: tabHeight,
+          paddingBottom: bottomPadding,
+          paddingTop: 8,
         },
         tabBarLabelStyle: {
           fontSize: 11,

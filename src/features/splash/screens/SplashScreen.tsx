@@ -17,7 +17,6 @@ const { width } = Dimensions.get('window');
 
 export const SplashScreen: React.FC = () => {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
 
   const logoScale = useSharedValue(0.85);
   const progressWidth = useSharedValue(0);
@@ -33,22 +32,48 @@ export const SplashScreen: React.FC = () => {
       easing: Easing.out(Easing.quad),
     });
 
-    const checkNavigation = async () => {
-      // Clear persistent onboarded flag during development testing if needed
-      const onboarded = await storageService.getItem<boolean>('vtu_onboarded');
-      
-      setTimeout(() => {
-        if (isAuthenticated) {
-          router.replace('/(tabs)/home');
-        } else {
-          // Navigate unauthenticated user to welcome screen
-          router.replace('/(auth)/welcome');
-        }
-      }, 2000);
+    let isNavigated = false;
+    let unsubscribe: (() => void) | null = null;
+
+    const navigateWhenReady = () => {
+      if (isNavigated) return;
+      const state = useAuthStore.getState();
+      if (!state.isInitialized) {
+        // Wait for initAuth to finish hydrating
+        unsubscribe = useAuthStore.subscribe((nextState) => {
+          if (nextState.isInitialized && !isNavigated) {
+            isNavigated = true;
+            if (unsubscribe) {
+              unsubscribe();
+              unsubscribe = null;
+            }
+            if (nextState.isAuthenticated) {
+              router.replace('/(tabs)/home');
+            } else {
+              router.replace('/(auth)/welcome');
+            }
+          }
+        });
+        return;
+      }
+
+      isNavigated = true;
+      if (state.isAuthenticated) {
+        router.replace('/(tabs)/home');
+      } else {
+        router.replace('/(auth)/welcome');
+      }
     };
 
-    checkNavigation();
-  }, []);
+    const timer = setTimeout(navigateWhenReady, 1800);
+
+    return () => {
+      clearTimeout(timer);
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [router]);
 
   const animatedLogoStyle = useAnimatedStyle(() => ({
     transform: [{ scale: logoScale.value }],
