@@ -49,8 +49,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      const payload = await loginApiFunction({ email, password });
-      const { user, accessToken, refreshToken } = payload;
+      const res: any = await loginApiFunction({ email, password });
+      const payload = res?.data || res;
+      const user = payload?.user || res?.user;
+      const accessToken = payload?.accessToken || res?.accessToken;
+      const refreshToken = payload?.refreshToken || res?.refreshToken;
 
       const uAny = user as any;
       const sProf = uAny?.studentProfile;
@@ -117,8 +120,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   register: async (payload) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await registerApiFunction(payload);
-      const { user, accessToken, refreshToken } = data || {};
+      const res: any = await registerApiFunction(payload);
+      const data = res?.data || res;
+      const user = data?.user || res?.user;
+      const accessToken = data?.accessToken || res?.accessToken;
+      const refreshToken = data?.refreshToken || res?.refreshToken;
 
       if (!user) {
         throw new Error('Registration failed: Invalid response from server.');
@@ -167,8 +173,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   loginWithGoogle: async (idToken) => {
     set({ isLoading: true, error: null });
     try {
-      const payload = await googleLoginApiFunction({ idToken });
-      const { user, accessToken, refreshToken } = payload;
+      const res: any = await googleLoginApiFunction({ idToken });
+      const payload = res?.data || res;
+      const user = payload?.user || res?.user;
+      const accessToken = payload?.accessToken || res?.accessToken;
+      const refreshToken = payload?.refreshToken || res?.refreshToken;
 
       const profile: UserProfile = {
         id: user.id,
