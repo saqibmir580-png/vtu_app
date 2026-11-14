@@ -3,7 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SemesterRecord, SubjectGrade, VTU_GRADE_SCALE } from '../types/calculator.types';
 import { useAuthStore } from '@/store';
 
-const ACADEMIC_STORAGE_KEY = 'vtu_mobile_academic_record_data';
+const getAcademicStorageKey = (userId?: string) =>
+  `vtu_mobile_academic_record_data_${userId || 'guest'}`;
 
 // Default VTU NEP 2020 / 2022 Scheme Credit Distributions (Initially uncompleted for clean student state)
 const DEFAULT_SEMESTERS: SemesterRecord[] = [
@@ -120,17 +121,19 @@ export const useAcademicRecordStore = create<AcademicRecordState>((set, get) => 
 
   saveToStudentProfile: () => {
     const { currentCgpa, targetCgpa, totalCreditsEarned, semesters } = get();
+    const user = useAuthStore.getState().user;
 
     // 1. Update active Auth Profile store so Dashboard and Profile screens react immediately
     useAuthStore.getState().updateProfile({
-      currentCgpa,
+      currentCgpa: currentCgpa > 0 ? currentCgpa : undefined,
       targetCgpa,
       earnedCredits: totalCreditsEarned,
     });
 
-    // 2. Persist breakdown to local storage
+    // 2. Persist breakdown to user-scoped local storage
+    const storageKey = getAcademicStorageKey(user?.id);
     AsyncStorage.setItem(
-      ACADEMIC_STORAGE_KEY,
+      storageKey,
       JSON.stringify({
         semesters,
         currentCgpa,
@@ -142,14 +145,17 @@ export const useAcademicRecordStore = create<AcademicRecordState>((set, get) => 
 
   loadAcademicRecords: async () => {
     try {
-      const stored = await AsyncStorage.getItem(ACADEMIC_STORAGE_KEY);
       const user = useAuthStore.getState().user;
+      const storageKey = getAcademicStorageKey(user?.id);
+      const stored = await AsyncStorage.getItem(storageKey);
 
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed && Array.isArray(parsed.semesters)) {
-          const effectiveCgpa = user?.currentCgpa ?? parsed.currentCgpa;
-          const effectiveTarget = user?.targetCgpa ?? parsed.targetCgpa ?? 9.0;
+          const effectiveCgpa = (user?.currentCgpa && user.currentCgpa > 0)
+            ? user.currentCgpa
+            : (parsed.currentCgpa || 0);
+          const effectiveTarget = user?.targetCgpa || parsed.targetCgpa || 9.0;
           set({
             semesters: parsed.semesters,
             currentCgpa: effectiveCgpa,
@@ -161,28 +167,27 @@ export const useAcademicRecordStore = create<AcademicRecordState>((set, get) => 
         }
       }
 
-      // If user profile already has a CGPA, honor it
-      if (user && user.currentCgpa) {
-        set({
-          currentCgpa: user.currentCgpa,
-          targetCgpa: user.targetCgpa || 9.0,
-          isLoaded: true,
-        });
-        return;
-      }
+      // Fresh registered student (no saved records yet)
+      const userCgpa = (user?.currentCgpa && user.currentCgpa > 0) ? user.currentCgpa : 0;
+      set({
+        semesters: DEFAULT_SEMESTERS,
+        currentCgpa: userCgpa,
+        targetCgpa: user?.targetCgpa || 9.0,
+        totalCreditsEarned: 0,
+        isLoaded: true,
+      });
     } catch (e) {
       console.warn('[useAcademicRecordStore] Error loading academic records', e);
+      set({ isLoaded: true });
     }
-    set({ isLoaded: true });
   },
 
   resetToDefaults: () => {
-    const { cgpa, totalCredits } = computeCgpaFromRecords(DEFAULT_SEMESTERS);
     set({
       semesters: DEFAULT_SEMESTERS,
-      currentCgpa: cgpa,
-      totalCreditsEarned: totalCredits,
+      currentCgpa: 0,
+      totalCreditsEarned: 0,
+      isLoaded: true,
     });
-    get().saveToStudentProfile();
   },
 }));

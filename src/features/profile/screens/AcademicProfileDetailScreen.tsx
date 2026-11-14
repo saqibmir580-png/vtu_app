@@ -26,7 +26,12 @@ export const AcademicProfileDetailScreen: React.FC = () => {
 
   if (!user) return null;
 
-  const effectiveCgpa = (user.currentCgpa && user.currentCgpa > 0) ? user.currentCgpa : (currentCgpa || 8.74);
+  const effectiveCgpa =
+    user.currentCgpa && user.currentCgpa > 0
+      ? user.currentCgpa
+      : currentCgpa > 0
+      ? currentCgpa
+      : 0;
 
   return (
     <View style={styles.root}>
@@ -51,8 +56,12 @@ export const AcademicProfileDetailScreen: React.FC = () => {
         {/* College & Institution Card */}
         <AcademicInfoCard
           label="COLLEGE & INSTITUTION"
-          value={user.college || 'Sai Vidya Institute of Technology'}
-          subText={`Location: ${user.collegeCity || 'Bengaluru'} • VTU Affiliated`}
+          value={user.college || 'Institution Not Specified'}
+          subText={
+            user.collegeCity
+              ? `Location: ${user.collegeCity} • VTU Affiliated`
+              : 'VTU Affiliated Institution'
+          }
           iconName="map-pin"
           iconBg="#E0F2FE"
           iconColor="#0284C7"
@@ -61,8 +70,8 @@ export const AcademicProfileDetailScreen: React.FC = () => {
         {/* Branch Card */}
         <AcademicInfoCard
           label="ENGINEERING BRANCH"
-          value={user.branch || 'CSE'}
-          subText="Computer Science & Engineering"
+          value={user.branch || 'Branch Not Specified'}
+          subText={user.branchCode || 'VTU Degree Course'}
           iconName="cpu"
           iconBg="#EEF2FF"
           iconColor="#0745E8"
@@ -71,8 +80,8 @@ export const AcademicProfileDetailScreen: React.FC = () => {
         {/* Semester Card */}
         <AcademicInfoCard
           label="CURRENT SEMESTER"
-          value={`Semester ${user.semester || 5}`}
-          subText="Third Year B.E. Degree Course"
+          value={user.semester ? `Semester ${user.semester}` : 'Semester 1'}
+          subText="B.E. Degree Course"
           iconName="book"
           iconBg="#D1FAE5"
           iconColor="#059669"
@@ -81,8 +90,8 @@ export const AcademicProfileDetailScreen: React.FC = () => {
         {/* Scheme Card */}
         <AcademicInfoCard
           label="CURRICULUM SCHEME"
-          value={`${user.scheme || '2022'} Scheme`}
-          subText="NEP 2020 Aligned Credit System"
+          value={user.scheme ? `${user.scheme}` : '2022 Scheme'}
+          subText="VTU Credit System"
           iconName="layers"
           iconBg="#FEF3C7"
           iconColor="#D97706"
@@ -91,8 +100,12 @@ export const AcademicProfileDetailScreen: React.FC = () => {
         {/* CGPA Card */}
         <AcademicInfoCard
           label="CUMULATIVE GRADE POINT AVERAGE"
-          value={effectiveCgpa.toFixed(2)}
-          subText={`Target CGPA Goal: ${(user.targetCgpa || 9.20).toFixed(2)}`}
+          value={effectiveCgpa > 0 ? effectiveCgpa.toFixed(2) : '—'}
+          subText={
+            effectiveCgpa > 0
+              ? `Target CGPA Goal: ${(user.targetCgpa || 9.0).toFixed(2)}`
+              : 'Tap edit to record your current CGPA'
+          }
           iconName="trending-up"
           iconBg="#F3E8FF"
           iconColor="#9333EA"
