@@ -37,6 +37,10 @@ export default function RootLayout() {
         <Stack.Screen name="community" options={{ headerShown: false }} />
         <Stack.Screen name="calculators" options={{ headerShown: false }} />
         <Stack.Screen name="videos" options={{ headerShown: false }} />
+        <Stack.Screen name="calendar" options={{ headerShown: false }} />
+        <Stack.Screen name="notifications" options={{ headerShown: false }} />
+        <Stack.Screen name="profile" options={{ headerShown: false }} />
+        <Stack.Screen name="saved" options={{ headerShown: false }} />
       </Stack>
     </AppProvider>
   );
