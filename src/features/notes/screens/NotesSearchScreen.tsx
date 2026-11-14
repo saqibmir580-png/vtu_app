@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,28 +7,46 @@ import {
   TouchableOpacity,
   FlatList,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { Header } from '@/shared/components/Header';
-import { MOCK_RESOURCES } from '../api/notesData';
+import { fetchNotesFromApi } from '../api/notesApi';
+import { NoteResource } from '../types/notes.types';
 
 export const NotesSearchScreen: React.FC = () => {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState(['21CS52', 'Computer Networks', 'Subnetting', 'Normalization']);
   const suggestedSearches = ['Data Structures', '21CS53', 'Handwritten Notes', 'Question Papers'];
+  const [searchResults, setSearchResults] = useState<NoteResource[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const filteredResults = MOCK_RESOURCES.filter((res) => {
-    if (!query.trim()) return false;
-    const q = query.toLowerCase();
-    return (
-      res.title.toLowerCase().includes(q) ||
-      res.subjectName.toLowerCase().includes(q) ||
-      res.subjectCode.toLowerCase().includes(q) ||
-      res.unitTitle.toLowerCase().includes(q)
-    );
-  });
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const results = await fetchNotesFromApi({ search: trimmed });
+        setSearchResults(results || []);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const filteredResults = searchResults;
 
   return (
     <View style={styles.safeArea}>

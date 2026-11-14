@@ -37,7 +37,7 @@ export interface NoteResource {
   unitNumber: number;
   unitTitle: string;
   type: ResourceType;
-  fileFormat: 'PDF' | 'PPTX' | 'ZIP';
+  fileFormat: 'PDF' | 'PPTX' | 'PPT' | 'ZIP' | 'DOCX' | 'DOC' | 'IMAGE' | string;
   fileSize: string;
   author: string;
   downloadsCount: number;

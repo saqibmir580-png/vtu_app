@@ -1,22 +1,103 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { Header } from '@/shared/components';
 import { StatusBar } from 'react-native';
-import { MOCK_SUBJECTS, MOCK_UNITS } from '../api/notesData';
+import { fetchSubjectsFromApi, fetchNotesFromApi } from '../api/notesApi';
+import { Subject } from '../types/notes.types';
+import { useAuthStore } from '@/store';
 
 export const SubjectOverviewScreen: React.FC = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const user = useAuthStore((state) => state.user);
 
-  const subject = MOCK_SUBJECTS.find((s) => s.id === id) || MOCK_SUBJECTS[1];
+  const [subject, setSubject] = useState<Subject | null>(null);
+  const [unitCounts, setUnitCounts] = useState<Record<number, number>>({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadSubjectData = async () => {
+      try {
+        const subjects = await fetchSubjectsFromApi({
+          semester: user?.semester,
+          branchCode: user?.branch,
+          schemeYear: user?.scheme,
+        });
+
+        const found = subjects.find((s) => s.id === id || s.code === id) || subjects[0] || null;
+        if (isMounted) {
+          setSubject(found);
+        }
+
+        if (found) {
+          const notes = await fetchNotesFromApi({ subjectCode: found.code });
+          const counts: Record<number, number> = {};
+          notes.forEach((n) => {
+            const u = n.unitNumber || 1;
+            counts[u] = (counts[u] || 0) + 1;
+          });
+          if (isMounted) {
+            setUnitCounts(counts);
+          }
+        }
+      } catch (err) {
+        console.warn('[SubjectOverviewScreen] Error loading subject:', err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadSubjectData();
+    return () => {
+      isMounted = false;
+    };
+  }, [id, user?.semester, user?.branch, user?.scheme]);
+
+  if (isLoading) {
+    return (
+      <View style={styles.centerContainer}>
+        <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+        <Header title="Subject Overview" dark={true} showBack={true} />
+        <ActivityIndicator size="large" color="#0745E8" />
+        <Text style={styles.loadingText}>Loading subject syllabus...</Text>
+      </View>
+    );
+  }
+
+  if (!subject) {
+    return (
+      <View style={styles.centerContainer}>
+        <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+        <Header title="Subject Overview" dark={true} showBack={true} />
+        <Feather name="book-open" size={40} color="#CBD5E1" />
+        <Text style={styles.emptyTitle}>Subject Not Found</Text>
+        <Text style={styles.emptySub}>
+          This subject is not currently assigned to your branch or semester master data.
+        </Text>
+      </View>
+    );
+  }
+
+  const standardUnits = [1, 2, 3, 4, 5].map((u) => ({
+    id: `unit-${u}`,
+    unitNumber: u,
+    title: `Module ${u}: Core Syllabus Unit`,
+    resourceCount: unitCounts[u] || 0,
+  }));
+
+  const totalResources = Object.values(unitCounts).reduce((a, b) => a + b, 0);
 
   return (
     <View style={styles.rootContainer}>
@@ -30,8 +111,8 @@ export const SubjectOverviewScreen: React.FC = () => {
         {/* Subject Header Card */}
         <View style={styles.subjectCard}>
           <View style={styles.topRow}>
-            <View style={[styles.iconBox, { backgroundColor: subject.iconBg }]}>
-              <Feather name={subject.iconName as any} size={24} color={subject.iconColor} />
+            <View style={[styles.iconBox, { backgroundColor: subject.iconBg || '#EEF2FF' }]}>
+              <Feather name="book" size={24} color={subject.iconColor || '#0745E8'} />
             </View>
             <View style={styles.badgeRow}>
               <View style={styles.codeBadge}>
@@ -48,57 +129,53 @@ export const SubjectOverviewScreen: React.FC = () => {
           {/* Quick Stats Grid */}
           <View style={styles.statsGrid}>
             <View style={styles.statBox}>
-              <Text style={styles.statVal}>{subject.unitCount}</Text>
+              <Text style={styles.statVal}>5</Text>
               <Text style={styles.statLbl}>Units</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statVal}>{subject.resourceCount}</Text>
+              <Text style={styles.statVal}>{totalResources}</Text>
               <Text style={styles.statLbl}>Resources</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statVal}>{subject.progress}%</Text>
-              <Text style={styles.statLbl}>Completed</Text>
+              <Text style={styles.statVal}>{subject.branch}</Text>
+              <Text style={styles.statLbl}>Branch</Text>
             </View>
-          </View>
-
-          {/* Overall Progress Bar */}
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${subject.progress}%` }]} />
           </View>
         </View>
 
         {/* Units List Section */}
-        <Text style={styles.sectionTitle}>Syllabus Units ({MOCK_UNITS.length})</Text>
+        <Text style={styles.sectionTitle}>Syllabus Units (5 Modules)</Text>
 
         <View style={styles.unitsList}>
-          {MOCK_UNITS.map((unit) => (
+          {standardUnits.map((unit) => (
             <TouchableOpacity
               key={unit.id}
               activeOpacity={0.8}
               style={styles.unitCard}
-              onPress={() => router.push(`/notes/unit/${unit.id}?subjectId=${subject.id}` as any)}
+              onPress={() =>
+                router.push(
+                  `/notes/unit/${unit.unitNumber}?subjectId=${subject.id}&subjectCode=${subject.code}&subjectName=${encodeURIComponent(
+                    subject.name
+                  )}` as any
+                )
+              }
             >
               <View style={styles.unitHeader}>
                 <View style={styles.unitNumberCircle}>
                   <Text style={styles.unitNumberText}>{unit.unitNumber}</Text>
                 </View>
                 <View style={styles.unitInfo}>
-                  <Text style={styles.unitTitle}>Unit {unit.unitNumber}</Text>
-                  <Text style={styles.unitResourceCount}>{unit.resourceCount} Notes & PDFs</Text>
+                  <Text style={styles.unitTitle}>Module {unit.unitNumber}</Text>
+                  <Text style={styles.unitResourceCount}>
+                    {unit.resourceCount} {unit.resourceCount === 1 ? 'Resource' : 'Resources'} uploaded
+                  </Text>
                 </View>
                 <Feather name="chevron-right" size={20} color="#94A3B8" />
               </View>
 
               <Text style={styles.unitSubtitle}>{unit.title}</Text>
-
-              <View style={styles.unitProgressRow}>
-                <View style={styles.unitProgressTrack}>
-                  <View style={[styles.unitProgressFill, { width: `${unit.progress}%` }]} />
-                </View>
-                <Text style={styles.unitProgressText}>{unit.progress}%</Text>
-              </View>
             </TouchableOpacity>
           ))}
         </View>
@@ -111,6 +188,31 @@ const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  emptyTitle: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  emptySub: {
+    marginTop: 6,
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -134,9 +236,9 @@ const styles = StyleSheet.create({
   iconBox: {
     width: 48,
     height: 48,
-    borderRadius: 16,
-    alignItems: 'center',
+    borderRadius: 14,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   badgeRow: {
     flexDirection: 'row',
@@ -144,46 +246,44 @@ const styles = StyleSheet.create({
   },
   codeBadge: {
     backgroundColor: '#EEF2FF',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   codeBadgeText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#0745E8',
   },
   semBadge: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   semBadgeText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#64748B',
+    fontWeight: '600',
+    color: '#475569',
   },
   subjectName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     color: '#0F172A',
     marginBottom: 16,
-    lineHeight: 26,
   },
   statsGrid: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'space-around',
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 12,
     paddingVertical: 12,
-    marginBottom: 16,
-    borderColor: '#F1F5F9',
-    borderWidth: 1,
+    paddingHorizontal: 16,
   },
   statBox: {
     alignItems: 'center',
+    flex: 1,
   },
   statVal: {
     fontSize: 16,
@@ -200,19 +300,8 @@ const styles = StyleSheet.create({
     height: 24,
     backgroundColor: '#E2E8F0',
   },
-  progressTrack: {
-    height: 6,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#0745E8',
-    borderRadius: 3,
-  },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
     marginBottom: 14,
@@ -221,74 +310,46 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   unitCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
     borderColor: '#E2E8F0',
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: 16,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 2,
   },
   unitHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    gap: 12,
   },
   unitNumberCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#0745E8',
-    alignItems: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EEF2FF',
     justifyContent: 'center',
-    marginRight: 12,
+    alignItems: 'center',
   },
   unitNumberText: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#0745E8',
   },
   unitInfo: {
     flex: 1,
   },
   unitTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
   },
   unitResourceCount: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
+    marginTop: 2,
   },
   unitSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#475569',
-    lineHeight: 18,
-    marginBottom: 12,
-  },
-  unitProgressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  unitProgressTrack: {
-    flex: 1,
-    height: 5,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 2.5,
-    overflow: 'hidden',
-  },
-  unitProgressFill: {
-    height: '100%',
-    backgroundColor: '#0745E8',
-    borderRadius: 2.5,
-  },
-  unitProgressText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#64748B',
+    marginTop: 8,
   },
 });

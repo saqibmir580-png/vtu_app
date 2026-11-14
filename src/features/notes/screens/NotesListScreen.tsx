@@ -19,7 +19,6 @@ import { Feather } from '@expo/vector-icons';
 import { Header } from '@/shared/components/Header';
 import { useAuthStore } from '@/store';
 import { useToast } from '@/core/providers/ToastProvider';
-import { MOCK_SUBJECTS, MOCK_RESOURCES } from '../api/notesData';
 import {
   fetchNotesFromApi,
   fetchSubjectsFromApi,

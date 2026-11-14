@@ -14,20 +14,16 @@ import { useAuthStore } from '@/store';
 
 export const SemesterSelectScreen: React.FC = () => {
   const router = useRouter();
-  const { user, setAuth } = useAuthStore();
+  const { user, updateProfile } = useAuthStore();
   const currentSem = user?.semester || 5;
 
   const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
 
   const handleSelectSemester = (sem: number) => {
     if (user) {
-      setAuth(
-        {
-          ...user,
-          semester: sem,
-        },
-        'mock_token_123'
-      );
+      updateProfile({
+        semester: sem,
+      });
     }
     router.back();
   };

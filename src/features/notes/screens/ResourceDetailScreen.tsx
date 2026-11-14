@@ -11,43 +11,20 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { Header } from '@/shared/components';
 import { StatusBar } from 'react-native';
-import { MOCK_RESOURCES } from '../api/notesData';
 import { fetchNoteByIdFromApi } from '../api/notesApi';
 import { NoteResource } from '../types/notes.types';
 import { useAuthStore } from '@/store';
-
-const FALLBACK_RESOURCE: NoteResource = {
-  id: 'empty-res',
-  title: 'Resource Details',
-  subjectId: '',
-  subjectName: '',
-  subjectCode: '',
-  unitNumber: 1,
-  unitTitle: '',
-  type: 'Handwritten Notes',
-  fileFormat: 'PDF',
-  fileSize: '0 MB',
-  author: '',
-  downloadsCount: 0,
-  isBookmarked: false,
-  isDownloaded: false,
-  description: '',
-  totalPages: 1,
-  fileUrl: '',
-};
 
 export const ResourceDetailScreen: React.FC = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
 
-  const [resource, setResource] = useState<NoteResource>(
-    () => MOCK_RESOURCES.find((r) => r.id === id) || FALLBACK_RESOURCE
-  );
+  const [resource, setResource] = useState<NoteResource | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [isBookmarked, setIsBookmarked] = useState(resource.isBookmarked);
-  const [isDownloaded, setIsDownloaded] = useState(resource.isDownloaded);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isDownloaded, setIsDownloaded] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
 
@@ -55,12 +32,16 @@ export const ResourceDetailScreen: React.FC = () => {
     let isMounted = true;
     if (id) {
       fetchNoteByIdFromApi(id as string, user?.id).then((res) => {
-        if (isMounted && res) {
+        if (isMounted) {
           setResource(res);
-          setIsBookmarked(res.isBookmarked);
-          setIsDownloaded(res.isDownloaded);
+          if (res) {
+            setIsBookmarked(res.isBookmarked);
+            setIsDownloaded(res.isDownloaded);
+          }
         }
         setIsLoading(false);
+      }).catch(() => {
+        if (isMounted) setIsLoading(false);
       });
     } else {
       setIsLoading(false);
@@ -84,6 +65,35 @@ export const ResourceDetailScreen: React.FC = () => {
       }
     }, 400);
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.centerContainer}>
+        <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+        <Header title="Resource Details" dark={true} showBack={true} />
+        <ActivityIndicator size="large" color="#0745E8" />
+        <Text style={styles.loadingText}>Loading document details...</Text>
+      </View>
+    );
+  }
+
+  if (!resource) {
+    return (
+      <View style={styles.centerContainer}>
+        <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
+        <Header title="Resource Details" dark={true} showBack={true} />
+        <Feather name="file-text" size={44} color="#CBD5E1" />
+        <Text style={styles.emptyTitle}>Resource Not Found</Text>
+        <Text style={styles.emptySub}>
+          This document could not be found on the server.
+        </Text>
+        <TouchableOpacity style={styles.backBtnOutline} onPress={() => router.back()}>
+          <Feather name="arrow-left" size={16} color="#0745E8" />
+          <Text style={styles.backBtnOutlineText}>Back to Library</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.rootContainer}>
@@ -413,5 +423,46 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#334155',
     fontWeight: '500',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  emptyTitle: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  emptySub: {
+    marginTop: 8,
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+  backBtnOutline: {
+    marginTop: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#0745E8',
+  },
+  backBtnOutlineText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0745E8',
   },
 });

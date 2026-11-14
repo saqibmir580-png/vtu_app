@@ -16,7 +16,7 @@ import { StorageSummaryCard } from '../components/StorageSummaryCard';
 import { SavedItemCard } from '../components/SavedItemCard';
 import { SavedItem, SavedTab } from '../types/saved.types';
 import { PaperPreviewModal } from '@/features/papers/components/PaperPreviewModal';
-import { MOCK_PAPERS } from '@/features/papers/api/mockPapers';
+import { usePaperStore } from '@/features/papers/store/usePaperStore';
 import { Header } from '@/shared/components/Header';
 
 export const SavedLibraryScreen: React.FC = () => {
@@ -49,13 +49,13 @@ export const SavedLibraryScreen: React.FC = () => {
     if (item.type === 'QuestionPaper') {
       setSelectedItemForPreview(item);
     } else {
-      router.push(`/notes/r1?view=reader` as any);
+      router.push(`/notes/${item.id}?view=reader` as any);
     }
   };
 
-  // Resolve question paper structure for preview modal
+  const papers = usePaperStore((state) => state.papers);
   const activePaperData = selectedItemForPreview
-    ? MOCK_PAPERS.find((p) => p.id === selectedItemForPreview.id.replace('paper-', '')) || null
+    ? papers.find((p) => p.id === selectedItemForPreview.id.replace('paper-', '')) || null
     : null;
 
   return (

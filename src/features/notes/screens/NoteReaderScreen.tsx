@@ -8,7 +8,6 @@ import {
   Alert,
   ActivityIndicator,
   Image,
-  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -23,7 +22,6 @@ import {
   checkNoteAccessFromApi,
 } from '../api/notesApi';
 import { NoteResource } from '../types/notes.types';
-import { MOCK_RESOURCES } from '../api/notesData';
 import { useStudyActivityStore } from '@/features/home';
 import { useAuthStore } from '@/store';
 import { PaymentCheckoutModal } from '../components/PaymentCheckoutModal';
@@ -33,7 +31,7 @@ import { apiClient } from '@/infrastructure/api/client';
 const { width } = Dimensions.get('window');
 
 /**
- * Single Source of Truth for Page-by-Page Entitlement Access
+ * Access calculation decision helper (Single Source of Truth)
  */
 export const canAccessPage = (
   pageNumber: number,
@@ -50,7 +48,7 @@ export const canAccessPage = (
 };
 
 /**
- * Resolve a secure and reachable URL without breaking local/LAN IPs
+ * Resolve reachable URL without breaking local/LAN IPs
  */
 export const resolveSafeUrl = (url?: string): string => {
   if (!url) return '';
@@ -229,7 +227,7 @@ const generateSinglePagePdfHtml = (
 
     function initPdf() {
       if (typeof pdfjsLib === 'undefined') {
-        postToReactNative({ type: 'DOC_ERROR', error: 'PDF engine not loaded' });
+        postToReactNative({ type: 'DOC_ERROR', error: 'PDF engine could not be loaded' });
         return;
       }
 
@@ -288,35 +286,13 @@ const generateSinglePagePdfHtml = (
   `;
 };
 
-const FALLBACK_NOTE_RESOURCE: NoteResource = {
-  id: 'empty-note',
-  title: 'VTU Study Document',
-  subjectId: '',
-  subjectName: 'VTU Engineering',
-  subjectCode: 'VTU',
-  unitNumber: 1,
-  unitTitle: 'Module Notes',
-  type: 'Handwritten Notes',
-  fileFormat: 'PDF',
-  fileSize: '1.2 MB',
-  author: 'VTU Faculty Panel',
-  downloadsCount: 0,
-  isBookmarked: false,
-  isDownloaded: false,
-  description: '',
-  totalPages: 10,
-  fileUrl: '',
-};
-
 export const NoteReaderScreen: React.FC = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const webViewRef = useRef<any>(null);
 
   const user = useAuthStore((state) => state.user);
-  const [resource, setResource] = useState<NoteResource>(
-    () => MOCK_RESOURCES.find((r) => r.id === id) || FALLBACK_NOTE_RESOURCE
-  );
+  const [resource, setResource] = useState<NoteResource | null>(null);
 
   const [isLoadingDoc, setIsLoadingDoc] = useState(true);
   const [detectedPages, setDetectedPages] = useState<number | null>(null);
@@ -330,36 +306,15 @@ export const NoteReaderScreen: React.FC = () => {
   const [isPageLocked, setIsPageLocked] = useState(false);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
 
-  // PDF Data Fetching States
+  // PDF Binary Fetching States
   const [pdfBase64, setPdfBase64] = useState<string | null>(null);
   const [isFetchingBytes, setIsFetchingBytes] = useState(false);
-  const [viewerMode, setViewerMode] = useState<'loading' | 'pdf' | 'sheet' | 'image'>('loading');
+  const [fetchErrorMessage, setFetchErrorMessage] = useState<string | null>(null);
 
-  // Resolved safe URL
-  const resolvedUrl = resolveSafeUrl(
-    resource.fileUrl ||
-    resource.secureUrl ||
-    'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
-  );
-
-  const isImage = Boolean(
-    resolvedUrl.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) ||
-    (resource.fileFormat as string) === 'IMAGE' ||
-    (resource as any).format === 'IMAGE'
-  );
-
-  // Note fields resolution
-  const isPaidNote = Boolean(resource.isPaid && resource.price && resource.price > 0);
-  const notePrice = resource.price || 19;
-  const freePreviewLimit = resource.freePreviewPages ?? 2;
-  const maxPagesFromDoc = detectedPages || (resource.totalPages && resource.totalPages > 1 ? resource.totalPages : 12);
-
-  const isPreviewMode = isPaidNote && !isPurchased;
-  const accessibleMaxPage = isPreviewMode ? Math.min(freePreviewLimit, maxPagesFromDoc) : maxPagesFromDoc;
-
-  // Load Note Details & Entitlement Check
+  // Load Note Details & Entitlement Check from API
   const loadNoteAndAccess = useCallback(async () => {
     setIsLoadingDoc(true);
+    setFetchErrorMessage(null);
     try {
       if (id) {
         const fetched = await fetchNoteByIdFromApi(id as string, user?.id);
@@ -376,10 +331,13 @@ export const NoteReaderScreen: React.FC = () => {
               setIsPurchased(true);
             }
           }
+        } else {
+          setResource(null);
         }
       }
-    } catch (err) {
-      console.warn('[NoteReaderScreen] Load Error:', err);
+    } catch (err: any) {
+      console.warn('[NoteReaderScreen] API Load Error:', err);
+      setResource(null);
     } finally {
       setIsLoadingDoc(false);
     }
@@ -389,72 +347,98 @@ export const NoteReaderScreen: React.FC = () => {
     loadNoteAndAccess();
   }, [loadNoteAndAccess]);
 
-  // Fetch binary PDF bytes using React Native native fetch layer
-  useEffect(() => {
-    let isCancelled = false;
+  // Determine formats directly from what admin uploaded
+  const rawUrl = resource?.fileUrl || resource?.secureUrl || '';
+  const resolvedUrl = resolveSafeUrl(rawUrl);
 
-    if (isImage) {
-      setViewerMode('image');
-      return;
-    }
+  const isImage = Boolean(
+    resolvedUrl.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) ||
+    resource?.fileFormat === 'IMAGE' ||
+    (resource as any)?.format === 'IMAGE'
+  );
 
-    if (!resolvedUrl) {
-      setViewerMode('sheet');
-      return;
-    }
+  const isDocx = Boolean(
+    resolvedUrl.match(/\.(doc|docx)($|\?)/i) ||
+    resource?.fileFormat === 'DOCX' ||
+    (resource as any)?.format === 'DOCX' ||
+    (resource as any)?.format === 'DOC'
+  );
 
-    const downloadBytes = async () => {
-      setIsFetchingBytes(true);
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+  const isPpt = Boolean(
+    resolvedUrl.match(/\.(ppt|pptx)($|\?)/i) ||
+    resource?.fileFormat === 'PPT' ||
+    (resource as any)?.format === 'PPT'
+  );
 
-        const response = await fetch(resolvedUrl, {
-          signal: controller.signal,
-          headers: { Accept: 'application/pdf,*/*' },
-        });
-        clearTimeout(timeoutId);
+  const isPdf = Boolean(
+    !isImage &&
+    !isDocx &&
+    !isPpt &&
+    (resolvedUrl.match(/\.pdf($|\?)/i) ||
+      resource?.fileFormat === 'PDF' ||
+      resource?.type === 'Handwritten Notes' ||
+      resource?.type === 'Typed Notes' ||
+      resolvedUrl.length > 0)
+  );
 
-        if (!response.ok) {
-          throw new Error(`Server returned HTTP ${response.status}`);
-        }
+  const hasNoFile = !resolvedUrl || resolvedUrl.trim().length === 0;
 
-        const arrayBuffer = await response.arrayBuffer();
-        if (!arrayBuffer || arrayBuffer.byteLength < 50) {
-          throw new Error('Received empty or corrupt document bytes');
-        }
+  // Note fields resolution
+  const isPaidNote = Boolean(resource?.isPaid && resource?.price && resource.price > 0);
+  const notePrice = resource?.price || 19;
+  const freePreviewLimit = resource?.freePreviewPages ?? 2;
+  const maxPagesFromDoc =
+    detectedPages ||
+    (resource?.totalPages && resource.totalPages > 1 ? resource.totalPages : 1);
 
-        if (!isCancelled) {
-          const b64 = Buffer.from(arrayBuffer).toString('base64');
-          setPdfBase64(b64);
-          setViewerMode('pdf');
-        }
-      } catch (err: any) {
-        if (!isCancelled) {
-          console.warn('[NoteReaderScreen] Binary fetch fallback to Study Sheet:', err?.message || err);
-          // Graceful fallback to rich Study Sheet (never blank screen)
-          setViewerMode('sheet');
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsFetchingBytes(false);
-        }
+  const isPreviewMode = isPaidNote && !isPurchased;
+  const accessibleMaxPage = isPreviewMode ? Math.min(freePreviewLimit, maxPagesFromDoc) : maxPagesFromDoc;
+
+  // Fetch binary PDF bytes using native fetch (Bypasses browser CORS completely)
+  const downloadPdfBytes = useCallback(async (url: string) => {
+    setIsFetchingBytes(true);
+    setFetchErrorMessage(null);
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: { Accept: 'application/pdf,*/*' },
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Server returned HTTP ${response.status}`);
       }
-    };
 
-    downloadBytes();
+      const arrayBuffer = await response.arrayBuffer();
+      if (!arrayBuffer || arrayBuffer.byteLength < 50) {
+        throw new Error('Received empty or corrupt document bytes');
+      }
 
-    return () => {
-      isCancelled = true;
-    };
-  }, [resolvedUrl, isImage]);
+      const b64 = Buffer.from(arrayBuffer).toString('base64');
+      setPdfBase64(b64);
+    } catch (err: any) {
+      console.warn('[NoteReaderScreen] Binary fetch error:', err?.message || err);
+      setFetchErrorMessage(err?.message || 'Unable to download document from storage');
+    } finally {
+      setIsFetchingBytes(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isPdf && resolvedUrl) {
+      downloadPdfBytes(resolvedUrl);
+    }
+  }, [isPdf, resolvedUrl, downloadPdfBytes]);
 
   const recordActivity = useStudyActivityStore((state) => state.recordActivity);
 
   // Capture recent study activity
   useEffect(() => {
     if (resource && resource.id) {
-      const totalP = maxPagesFromDoc > 0 ? maxPagesFromDoc : 12;
+      const totalP = maxPagesFromDoc > 0 ? maxPagesFromDoc : 1;
       const progressPct = Math.min(100, Math.max(5, Math.round((currentPage / totalP) * 100)));
       recordActivity({
         resourceId: String(resource.id),
@@ -465,7 +449,7 @@ export const NoteReaderScreen: React.FC = () => {
         lastOpenedTime: 'Just now',
       });
     }
-  }, [resource?.id, resource?.title, currentPage, maxPagesFromDoc, recordActivity]);
+  }, [resource, currentPage, maxPagesFromDoc, recordActivity]);
 
   // DRM Screen Capture Protection
   useEffect(() => {
@@ -495,7 +479,6 @@ export const NoteReaderScreen: React.FC = () => {
    */
   const handlePrevPage = () => {
     if (isPageLocked) {
-      // Return immediately to the last accessible free preview page
       const backPage = Math.min(currentPage - 1, freePreviewLimit);
       const safePage = Math.max(1, backPage);
       setCurrentPage(safePage);
@@ -536,14 +519,14 @@ export const NoteReaderScreen: React.FC = () => {
         JSON.stringify({ type: 'GOTO_PAGE', pageNumber: nextPage })
       );
     } else {
-      // Restrict navigation: Lock page and display Paywall Card
+      // Free preview reached: lock page
       setCurrentPage(nextPage);
       setIsPageLocked(true);
     }
   };
 
   /**
-   * Handle Zoom change with message dispatch to WebView
+   * Zoom change with message dispatch to WebView
    */
   const handleZoomChange = (newZoom: number) => {
     const clamped = Math.max(75, Math.min(150, newZoom));
@@ -553,19 +536,17 @@ export const NoteReaderScreen: React.FC = () => {
     );
   };
 
-  // Open Razorpay payment checkout sheet
   const handleUnlockPurchase = () => {
     setPaymentModalVisible(true);
   };
 
-  // Called when Razorpay checkout succeeds
   const handlePaymentSuccess = (unlockedResource: NoteResource) => {
     setIsPurchased(true);
     setIsPageLocked(false);
     setIsOfflineSaved(true);
     Alert.alert(
       'Document Unlocked!',
-      `You now have complete, unrestricted access to all ${maxPagesFromDoc} pages.`
+      `You now have complete access to all pages of this resource.`
     );
     webViewRef.current?.postMessage(
       JSON.stringify({ type: 'GOTO_PAGE', pageNumber: currentPage })
@@ -581,7 +562,7 @@ export const NoteReaderScreen: React.FC = () => {
       try {
         await WebBrowser.openBrowserAsync(resolvedUrl);
       } catch (e) {
-        Alert.alert('Open Document', `File URL: ${resolvedUrl}`);
+        Alert.alert('Document URL', resolvedUrl);
       }
     }
   };
@@ -614,22 +595,45 @@ export const NoteReaderScreen: React.FC = () => {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'DOC_LOADED' && data.totalPages) {
         const parsedTotal = parseInt(data.totalPages, 10);
-        if (parsedTotal > 1 && parsedTotal !== detectedPages) {
+        if (parsedTotal >= 1 && parsedTotal !== detectedPages) {
           setDetectedPages(parsedTotal);
         }
       } else if (data.type === 'DOC_ERROR') {
-        console.warn('[NoteReaderScreen] PDF.js doc error, falling back to Study Sheet:', data.error);
-        setViewerMode('sheet');
+        console.warn('[NoteReaderScreen] PDF.js error:', data.error);
+        setFetchErrorMessage(data.error || 'Failed to render document canvas');
       }
-    } catch (e) {
-      // Ignore non-JSON messages
-    }
+    } catch (e) {}
   };
 
   const isNextDisabled =
-    currentPage >= maxPagesFromDoc && !isPageLocked;
+    (currentPage >= maxPagesFromDoc && !isPageLocked) || maxPagesFromDoc <= 1;
 
-  const isPrevDisabled = currentPage <= 1 && !isPageLocked;
+  const isPrevDisabled = (currentPage <= 1 && !isPageLocked) || maxPagesFromDoc <= 1;
+
+  if (isLoadingDoc) {
+    return (
+      <SafeAreaView style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#0745E8" />
+        <Text style={styles.centerLoadingText}>Loading document details from server...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!resource) {
+    return (
+      <SafeAreaView style={styles.centerContainer}>
+        <Feather name="file-text" size={48} color="#CBD5E1" />
+        <Text style={styles.emptyTitle}>Document Not Found</Text>
+        <Text style={styles.emptySub}>
+          The requested document could not be retrieved from the server.
+        </Text>
+        <TouchableOpacity style={styles.backButtonOutline} onPress={() => router.back()}>
+          <Feather name="arrow-left" size={16} color="#0745E8" />
+          <Text style={styles.backButtonOutlineText}>Back to Library</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -670,9 +674,11 @@ export const NoteReaderScreen: React.FC = () => {
         </View>
 
         <View style={styles.headerRightActions}>
-          <TouchableOpacity style={styles.iconBtn} onPress={handleOpenExternalDocument}>
-            <Feather name="external-link" size={18} color="#0745E8" />
-          </TouchableOpacity>
+          {Boolean(resolvedUrl) && (
+            <TouchableOpacity style={styles.iconBtn} onPress={handleOpenExternalDocument}>
+              <Feather name="external-link" size={18} color="#0745E8" />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.iconBtn} onPress={handleToggleBookmark}>
             <Feather
               name="bookmark"
@@ -680,17 +686,19 @@ export const NoteReaderScreen: React.FC = () => {
               color={isBookmarked ? '#0745E8' : '#64748B'}
             />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={handleOfflineSave}>
-            <Feather
-              name="download-cloud"
-              size={18}
-              color={isOfflineSaved ? '#10B981' : '#64748B'}
-            />
-          </TouchableOpacity>
+          {Boolean(resolvedUrl) && (
+            <TouchableOpacity style={styles.iconBtn} onPress={handleOfflineSave}>
+              <Feather
+                name="download-cloud"
+                size={18}
+                color={isOfflineSaved ? '#10B981' : '#64748B'}
+              />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      {/* Main Document Viewport (Strict Series & Non-Scrollable Layout) */}
+      {/* Main Document Viewport */}
       <View style={styles.canvasContainer}>
         {isPageLocked ? (
           /* LOCKED PAYWALL CARD SLIDE (Strict restriction after free preview) */
@@ -709,25 +717,21 @@ export const NoteReaderScreen: React.FC = () => {
             </Text>
 
             <Text style={styles.paywallBody}>
-              You have completed your free {freePreviewLimit}-page preview for '{resource.title}'. Unlock the full verified document to access all {maxPagesFromDoc} pages, examination formulas, and in-app offline saving.
+              You have completed your free {freePreviewLimit}-page preview for '{resource.title}'. Purchase this resource to unlock all {maxPagesFromDoc} pages and in-app offline reading.
             </Text>
 
             <View style={styles.featuresList}>
               <View style={styles.featureItem}>
                 <Feather name="check-circle" size={15} color="#10B981" />
-                <Text style={styles.featureText}>Complete {maxPagesFromDoc} Pages with Verified Answers</Text>
+                <Text style={styles.featureText}>Full {maxPagesFromDoc} Pages with Verified Syllabus Coverage</Text>
               </View>
               <View style={styles.featureItem}>
                 <Feather name="check-circle" size={15} color="#10B981" />
-                <Text style={styles.featureText}>High-Yield Formulas & Exam Block Diagrams</Text>
+                <Text style={styles.featureText}>High-Resolution Diagrams & Solved Numerical Steps</Text>
               </View>
               <View style={styles.featureItem}>
                 <Feather name="check-circle" size={15} color="#10B981" />
                 <Text style={styles.featureText}>In-App Offline Study Mode</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Feather name="shield" size={15} color="#0745E8" />
-                <Text style={styles.featureText}>Verified VTU Syllabus & Scheme Coverage</Text>
               </View>
             </View>
 
@@ -753,20 +757,90 @@ export const NoteReaderScreen: React.FC = () => {
               </Text>
             </TouchableOpacity>
           </View>
+        ) : hasNoFile ? (
+          /* NO FILE UPLOADED YET BY ADMIN (Authentic empty state, zero mock data) */
+          <View style={styles.noFileCard}>
+            <View style={styles.emptyIconCircle}>
+              <Feather name="file-text" size={40} color="#94A3B8" />
+            </View>
+
+            <Text style={styles.noFileTitle}>Document File Pending Upload</Text>
+            <Text style={styles.noFileSub}>
+              This document entry has been published by the faculty in the academic catalog, but the file (PDF / DOCX / Image) has not been uploaded to the server yet.
+            </Text>
+
+            <View style={styles.metadataCard}>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Subject:</Text>
+                <Text style={styles.metaVal}>{resource.subjectCode} - {resource.subjectName}</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Module / Unit:</Text>
+                <Text style={styles.metaVal}>Module {resource.unitNumber || 1}</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Format:</Text>
+                <Text style={styles.metaVal}>{resource.fileFormat || resource.type}</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Author:</Text>
+                <Text style={styles.metaVal}>{resource.author || 'VTU Faculty'}</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.refreshActionBtn}
+              onPress={() => loadNoteAndAccess()}
+            >
+              <Feather name="refresh-cw" size={16} color="#0745E8" />
+              <Text style={styles.refreshActionText}>Check for Uploaded File</Text>
+            </TouchableOpacity>
+          </View>
+        ) : fetchErrorMessage ? (
+          /* FILE DOWNLOAD OR NETWORK ERROR */
+          <View style={styles.noFileCard}>
+            <View style={[styles.emptyIconCircle, { backgroundColor: '#FEE2E2' }]}>
+              <Feather name="alert-triangle" size={36} color="#EF4444" />
+            </View>
+
+            <Text style={styles.noFileTitle}>Unable to Open Document File</Text>
+            <Text style={styles.noFileSub}>
+              The document server could not be reached or returned an invalid response.
+            </Text>
+
+            <View style={styles.errorDetailsBox}>
+              <Text style={styles.errorDetailsText}>{fetchErrorMessage}</Text>
+            </View>
+
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={styles.refreshActionBtn}
+                onPress={() => downloadPdfBytes(resolvedUrl)}
+              >
+                <Feather name="refresh-cw" size={16} color="#0745E8" />
+                <Text style={styles.refreshActionText}>Retry Download</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.secondaryActionBtn}
+                onPress={handleOpenExternalDocument}
+              >
+                <Feather name="external-link" size={16} color="#475569" />
+                <Text style={styles.secondaryActionText}>Open in Browser</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         ) : (
-          /* ACTIVE PAGE VIEWER (Series Single-Page Canvas, Image, or Study Sheet) */
+          /* ACTIVE DOCUMENT VIEWER */
           <View style={styles.webViewContainer}>
-            {viewerMode === 'loading' || isFetchingBytes ? (
+            {isFetchingBytes ? (
               <View style={styles.centerLoading}>
                 <ActivityIndicator size="large" color="#0745E8" />
-                <Text style={styles.centerLoadingText}>
-                  Preparing page {currentPage} in series...
-                </Text>
-                <Text style={styles.centerLoadingSub}>
-                  Loading secure document reader
-                </Text>
+                <Text style={styles.centerLoadingText}>Downloading document bytes...</Text>
+                <Text style={styles.centerLoadingSub}>Rendering page {currentPage} in series</Text>
               </View>
-            ) : viewerMode === 'image' ? (
+            ) : isImage ? (
+              /* Image / Scanned Handwritten Note Viewer */
               <View style={styles.imageViewerBox}>
                 <Image
                   source={{ uri: resolvedUrl }}
@@ -774,10 +848,63 @@ export const NoteReaderScreen: React.FC = () => {
                   resizeMode="contain"
                 />
               </View>
-            ) : viewerMode === 'pdf' && pdfBase64 ? (
+            ) : isDocx ? (
+              /* Word Document Viewer Card (.docx / .doc) */
+              <View style={styles.officeCard}>
+                <View style={styles.docxIconCircle}>
+                  <Feather name="file-text" size={44} color="#2563EB" />
+                </View>
+
+                <Text style={styles.officeTitle}>{resource.title}</Text>
+                <Text style={styles.officeFormatBadge}>Microsoft Word Document (.docx)</Text>
+                <Text style={styles.officeSub}>
+                  {resource.subjectCode} - {resource.subjectName} • {resource.fileSize}
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.openOfficeBtn}
+                  onPress={handleOpenExternalDocument}
+                >
+                  <Feather name="external-link" size={18} color="#FFFFFF" />
+                  <Text style={styles.openOfficeBtnText}>Open Document</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.secondaryOfficeBtn}
+                  onPress={handleOfflineSave}
+                >
+                  <Feather name="download-cloud" size={16} color="#475569" />
+                  <Text style={styles.secondaryOfficeBtnText}>Save Offline</Text>
+                </TouchableOpacity>
+              </View>
+            ) : isPpt ? (
+              /* PowerPoint Presentation Viewer Card (.pptx / .ppt) */
+              <View style={styles.officeCard}>
+                <View style={[styles.docxIconCircle, { backgroundColor: '#FFEDD5' }]}>
+                  <Feather name="airplay" size={44} color="#EA580C" />
+                </View>
+
+                <Text style={styles.officeTitle}>{resource.title}</Text>
+                <Text style={[styles.officeFormatBadge, { color: '#EA580C', backgroundColor: '#FFEDD5' }]}>
+                  PowerPoint Presentation (.pptx)
+                </Text>
+                <Text style={styles.officeSub}>
+                  {resource.subjectCode} - {resource.subjectName} • {resource.fileSize}
+                </Text>
+
+                <TouchableOpacity
+                  style={[styles.openOfficeBtn, { backgroundColor: '#EA580C' }]}
+                  onPress={handleOpenExternalDocument}
+                >
+                  <Feather name="external-link" size={18} color="#FFFFFF" />
+                  <Text style={styles.openOfficeBtnText}>Open Presentation</Text>
+                </TouchableOpacity>
+              </View>
+            ) : isPdf && pdfBase64 ? (
+              /* In-Memory PDF.js Canvas Series Engine (Zero Scroll, Page-by-Page) */
               <WebView
                 ref={webViewRef}
-                key={`pdf-single-page-engine`}
+                key={`pdf-engine-base64`}
                 source={{
                   html: generateSinglePagePdfHtml(pdfBase64, currentPage, zoomLevel),
                 }}
@@ -794,100 +921,14 @@ export const NoteReaderScreen: React.FC = () => {
                 allowUniversalAccessFromFileURLs={true}
               />
             ) : (
-              /* High-Fidelity Native Study Sheet (Guarantees zero blank screen) */
-              <ScrollView
-                style={styles.sheetContainer}
-                contentContainerStyle={styles.sheetContent}
-                showsVerticalScrollIndicator={false}
-              >
-                <View style={styles.sheetHeaderBadge}>
-                  <Text style={styles.sheetHeaderBadgeText}>
-                    VTU ACADEMIC STUDY SHEET • PAGE {currentPage}
-                  </Text>
-                </View>
-
-                <Text style={styles.sheetDocTitle}>{resource.title}</Text>
-                <Text style={styles.sheetDocMeta}>
-                  {resource.subjectCode} - {resource.subjectName} • Module {resource.unitNumber || 1}
-                </Text>
-
-                <View style={styles.sheetDivider} />
-
-                {currentPage === 1 ? (
-                  <View style={styles.sheetPageSection}>
-                    <Text style={styles.sheetSectionTitle}>1. Module Syllabus & Exam Overview</Text>
-                    <View style={styles.sheetCard}>
-                      <Text style={styles.sheetCardHeading}>High-Yield Examination Objectives</Text>
-                      <Text style={styles.sheetCardBody}>
-                        • Covers all essential syllabus definitions, mathematical formulations, and block architectures according to VTU regulations.{'\n'}
-                        • Emphasizes 6 to 10 marks repeatedly asked semester examination topics.{'\n'}
-                        • Clean point-by-point structuring ready for direct examination reproduction.
-                      </Text>
-                    </View>
-
-                    <View style={styles.sheetCard}>
-                      <Text style={styles.sheetCardHeading}>Exam Marks Weightage</Text>
-                      <Text style={styles.sheetCardBody}>
-                        • Total Module Weightage: 20 Marks (2 Questions with internal choice).{'\n'}
-                        • Theory Weightage: 60% | Numerical/Diagram Weightage: 40%.
-                      </Text>
-                    </View>
-                  </View>
-                ) : currentPage === 2 ? (
-                  <View style={styles.sheetPageSection}>
-                    <Text style={styles.sheetSectionTitle}>2. Core Conceptual Theory & Principles</Text>
-                    <View style={styles.sheetCard}>
-                      <Text style={styles.sheetCardHeading}>Key Theoretical Definitions</Text>
-                      <Text style={styles.sheetCardBody}>
-                        • Fundamental state transitions and protocol interactions.{'\n'}
-                        • Architectural building blocks and boundary condition handling.{'\n'}
-                        • Step-by-step reasoning with standard VTU textbook conventions.
-                      </Text>
-                    </View>
-
-                    <View style={styles.sheetCard}>
-                      <Text style={styles.sheetCardHeading}>Important Working Principles</Text>
-                      <Text style={styles.sheetCardBody}>
-                        • Principle 1: Parameter initialization & baseline verification.{'\n'}
-                        • Principle 2: Feedback loop execution and throughput optimization.{'\n'}
-                        • Principle 3: Error correction and boundary termination.
-                      </Text>
-                    </View>
-                  </View>
-                ) : (
-                  <View style={styles.sheetPageSection}>
-                    <Text style={styles.sheetSectionTitle}>
-                      {currentPage}. Examination Formulae & Solved Problems
-                    </Text>
-                    <View style={styles.sheetCard}>
-                      <Text style={styles.sheetCardHeading}>Formula Reference Sheet</Text>
-                      <Text style={styles.sheetCardBody}>
-                        • Standard governing equations & parameter conversion constants.{'\n'}
-                        • Step marks allocation criteria (Formula: 2M, Substitution: 2M, Final Result: 2M).
-                      </Text>
-                    </View>
-
-                    <View style={styles.sheetCard}>
-                      <Text style={styles.sheetCardHeading}>Solved Model Examination Problem</Text>
-                      <Text style={styles.sheetCardBody}>
-                        • Step 1: Write given input parameters with standard metric units.{'\n'}
-                        • Step 2: Apply the governing system formulation.{'\n'}
-                        • Step 3: Compute final numerical output and enclose answer in a rectangular box.
-                      </Text>
-                    </View>
-                  </View>
-                )}
-
-                <View style={styles.sheetFooter}>
-                  <Text style={styles.sheetFooterText}>
-                    Page {currentPage} of {maxPagesFromDoc}
-                  </Text>
-                </View>
-              </ScrollView>
+              <View style={styles.centerLoading}>
+                <ActivityIndicator size="large" color="#0745E8" />
+                <Text style={styles.centerLoadingText}>Preparing document viewer...</Text>
+              </View>
             )}
 
             {/* Floating Preview Banner for Unpurchased Notes */}
-            {isPreviewMode && (
+            {isPreviewMode && !hasNoFile && (
               <View style={styles.previewFloatingBanner}>
                 <View style={styles.previewBannerLeft}>
                   <Feather name="lock" size={15} color="#F59E0B" />
@@ -920,7 +961,7 @@ export const NoteReaderScreen: React.FC = () => {
           <View
             style={[
               styles.progressFill,
-              { width: `${Math.min(100, (currentPage / maxPagesFromDoc) * 100)}%` },
+              { width: `${Math.min(100, (currentPage / Math.max(1, maxPagesFromDoc)) * 100)}%` },
             ]}
           />
         </View>
@@ -1003,6 +1044,43 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F1F5F9',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+  },
+  emptyTitle: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  emptySub: {
+    marginTop: 8,
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 19,
+    paddingHorizontal: 20,
+  },
+  backButtonOutline: {
+    marginTop: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#0745E8',
+  },
+  backButtonOutlineText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0745E8',
   },
   readerHeader: {
     height: 56,
@@ -1135,78 +1213,177 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  sheetContainer: {
+  officeCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  sheetContent: {
-    padding: 20,
-    paddingBottom: 40,
+  docxIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
-  sheetHeaderBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#EEF2FF',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginBottom: 10,
-  },
-  sheetHeaderBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#0745E8',
-    letterSpacing: 0.5,
-  },
-  sheetDocTitle: {
+  officeTitle: {
     fontSize: 17,
     fontWeight: '800',
     color: '#0F172A',
-    lineHeight: 23,
+    textAlign: 'center',
+    marginBottom: 8,
   },
-  sheetDocMeta: {
+  officeFormatBadge: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#2563EB',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  officeSub: {
     fontSize: 12,
     color: '#64748B',
-    marginTop: 4,
+    textAlign: 'center',
+    marginBottom: 24,
   },
-  sheetDivider: {
-    height: 1,
-    backgroundColor: '#E2E8F0',
-    marginVertical: 14,
+  openOfficeBtn: {
+    width: '100%',
+    maxWidth: 280,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#2563EB',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 12,
   },
-  sheetPageSection: {
-    gap: 12,
-  },
-  sheetSectionTitle: {
-    fontSize: 14,
+  openOfficeBtnText: {
+    fontSize: 15,
     fontWeight: '800',
-    color: '#0745E8',
+    color: '#FFFFFF',
   },
-  sheetCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 14,
+  secondaryOfficeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+  },
+  secondaryOfficeBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  noFileCard: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  sheetCardHeading: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1E293B',
+  emptyIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  noFileTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
+    textAlign: 'center',
     marginBottom: 6,
   },
-  sheetCardBody: {
+  noFileSub: {
     fontSize: 12,
-    color: '#475569',
-    lineHeight: 19,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: 12,
+    marginBottom: 20,
   },
-  sheetFooter: {
-    marginTop: 20,
-    alignItems: 'center',
+  metadataCard: {
+    width: '100%',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 8,
+    marginBottom: 20,
   },
-  sheetFooterText: {
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  metaLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  metaVal: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+    maxWidth: '65%',
+    textAlign: 'right',
+  },
+  errorDetailsBox: {
+    backgroundColor: '#FEF2F2',
+    padding: 12,
+    borderRadius: 10,
+    width: '100%',
+    marginBottom: 16,
+  },
+  errorDetailsText: {
     fontSize: 11,
-    color: '#94A3B8',
-    fontWeight: '600',
+    color: '#B91C1C',
+    textAlign: 'center',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  refreshActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#EEF2FF',
+  },
+  refreshActionText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0745E8',
+  },
+  secondaryActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+  },
+  secondaryActionText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569',
   },
   previewFloatingBanner: {
     position: 'absolute',

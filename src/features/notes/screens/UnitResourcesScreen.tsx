@@ -1,26 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { Header } from '@/shared/components';
 import { StatusBar } from 'react-native';
-import { MOCK_UNITS, MOCK_RESOURCES } from '../api/notesData';
+import { fetchNotesFromApi } from '../api/notesApi';
+import { NoteResource } from '../types/notes.types';
 
 export const UnitResourcesScreen: React.FC = () => {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
-  const [activeFilter, setActiveFilter] = useState<string>('All');
-  const [resources, setResources] = useState(MOCK_RESOURCES);
+  const { id, subjectCode, subjectName } = useLocalSearchParams<{
+    id: string;
+    subjectCode?: string;
+    subjectName?: string;
+  }>();
 
-  const unit = MOCK_UNITS.find((u) => u.id === id) || MOCK_UNITS[0];
+  const unitNum = parseInt(id || '1', 10) || 1;
+  const [activeFilter, setActiveFilter] = useState<string>('All');
+  const [resources, setResources] = useState<NoteResource[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const filters = ['All', 'Handwritten Notes', 'Typed Notes', 'Short Notes', 'Revision Notes'];
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadUnitNotes = async () => {
+      try {
+        const fetched = await fetchNotesFromApi({
+          subjectCode: subjectCode || undefined,
+        });
+        const unitNotes = (fetched || []).filter(
+          (n) => (n.unitNumber || 1) === unitNum
+        );
+        if (isMounted) {
+          setResources(unitNotes);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setResources([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadUnitNotes();
+    return () => {
+      isMounted = false;
+    };
+  }, [unitNum, subjectCode]);
 
   const toggleBookmark = (resId: string) => {
     setResources((prev) =>
@@ -36,13 +73,17 @@ export const UnitResourcesScreen: React.FC = () => {
   return (
     <View style={styles.rootContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#0745E8" />
-      <Header title={`Unit ${unit.unitNumber} Resources`} dark={true} showBack={true} />
+      <Header title={`Module ${unitNum} Resources`} dark={true} showBack={true} />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Unit Info Header */}
         <View style={styles.unitHeaderCard}>
-          <Text style={styles.unitTag}>Unit {unit.unitNumber} Syllabus</Text>
-          <Text style={styles.unitTitle}>{unit.title}</Text>
-          <Text style={styles.resourceCountText}>{filteredResources.length} Resources available</Text>
+          <Text style={styles.unitTag}>Module {unitNum} Syllabus</Text>
+          <Text style={styles.unitTitle}>
+            {subjectName ? decodeURIComponent(subjectName) : `Module ${unitNum} Notes`}
+          </Text>
+          <Text style={styles.resourceCountText}>
+            {filteredResources.length} {filteredResources.length === 1 ? 'Resource' : 'Resources'} available
+          </Text>
         </View>
 
         {/* Video Lectures Quick Link */}
@@ -57,7 +98,7 @@ export const UnitResourcesScreen: React.FC = () => {
             </View>
             <View>
               <Text style={styles.videoBannerTitle}>Module Video Lectures</Text>
-              <Text style={styles.videoBannerSub}>Watch YouTube lectures for this subject</Text>
+              <Text style={styles.videoBannerSub}>Watch topic lectures for this module</Text>
             </View>
           </View>
           <Feather name="chevron-right" size={18} color="#94A3B8" />
@@ -83,70 +124,74 @@ export const UnitResourcesScreen: React.FC = () => {
         </ScrollView>
 
         {/* Resource Cards List */}
-        <View style={styles.resourcesList}>
-          {filteredResources.map((res) => (
-            <TouchableOpacity
-              key={res.id}
-              activeOpacity={0.85}
-              style={styles.resourceCard}
-              onPress={() => router.push(`/notes/${res.id}` as any)}
-            >
-              <View style={styles.cardTop}>
-                <View style={styles.iconBox}>
-                  <Feather name="file-text" size={22} color="#0745E8" />
-                </View>
-                <View style={styles.titleWrapper}>
-                  <View style={styles.badgeRow}>
-                    <View style={styles.typeBadge}>
-                      <Text style={styles.typeBadgeText}>{res.type}</Text>
-                    </View>
-                    <Text style={styles.fileFormatText}>{res.fileFormat} • {res.fileSize}</Text>
-                    {res.isPaid && !res.isPurchased ? (
-                      <View style={styles.listPaidBadge}>
-                        <Feather name="lock" size={10} color="#D97706" />
-                        <Text style={styles.listPaidBadgeText}>Paid • ₹{res.price || 19}</Text>
-                      </View>
-                    ) : res.isPurchased ? (
-                      <View style={styles.listFreeBadge}>
-                        <Feather name="check" size={10} color="#059669" />
-                        <Text style={styles.listFreeBadgeText}>Unlocked</Text>
-                      </View>
-                    ) : (
-                      <View style={styles.listFreeBadge}>
-                        <Feather name="gift" size={10} color="#059669" />
-                        <Text style={styles.listFreeBadgeText}>Free</Text>
-                      </View>
-                    )}
+        {isLoading ? (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="large" color="#0745E8" />
+            <Text style={styles.loadingText}>Loading module resources...</Text>
+          </View>
+        ) : filteredResources.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Feather name="file-text" size={40} color="#CBD5E1" />
+            <Text style={styles.emptyTitle}>No Resources Uploaded</Text>
+            <Text style={styles.emptySub}>
+              No study documents have been uploaded for Module {unitNum} yet.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.resourcesList}>
+            {filteredResources.map((res) => (
+              <TouchableOpacity
+                key={res.id}
+                activeOpacity={0.85}
+                style={styles.resourceCard}
+                onPress={() => router.push(`/notes/${res.id}?view=reader` as any)}
+              >
+                <View style={styles.cardTop}>
+                  <View style={styles.iconBox}>
+                    <Feather
+                      name={res.fileFormat === 'IMAGE' ? 'image' : 'file-text'}
+                      size={22}
+                      color="#0745E8"
+                    />
                   </View>
-                  <Text style={styles.resourceTitle}>{res.title}</Text>
+                  <View style={styles.titleWrapper}>
+                    <View style={styles.badgeRow}>
+                      <View style={styles.typeBadge}>
+                        <Text style={styles.typeBadgeText}>{res.type}</Text>
+                      </View>
+                      <Text style={styles.fileSizeText}>
+                        {res.fileFormat} • {res.fileSize}
+                      </Text>
+                    </View>
+                    <Text style={styles.cardTitle} numberOfLines={2}>
+                      {res.title}
+                    </Text>
+                  </View>
                 </View>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  style={styles.bookmarkBtn}
-                  onPress={() => toggleBookmark(res.id)}
-                >
-                  <Feather
-                    name="bookmark"
-                    size={18}
-                    color={res.isBookmarked ? '#0745E8' : '#94A3B8'}
-                  />
-                </TouchableOpacity>
-              </View>
 
-              <Text style={styles.descriptionText} numberOfLines={2}>
-                {res.description}
-              </Text>
+                <View style={styles.cardBottom}>
+                  <View style={styles.authorRow}>
+                    <Feather name="user" size={13} color="#94A3B8" />
+                    <Text style={styles.authorText}>{res.author || 'VTU Faculty'}</Text>
+                  </View>
 
-              <View style={styles.cardFooter}>
-                <Text style={styles.authorText}>By {res.author}</Text>
-                <View style={styles.openLink}>
-                  <Text style={styles.openLinkText}>View Note</Text>
-                  <Feather name="arrow-right" size={14} color="#0745E8" />
+                  <View style={styles.actionBtns}>
+                    <TouchableOpacity
+                      style={styles.bookmarkBtn}
+                      onPress={() => toggleBookmark(res.id)}
+                    >
+                      <Feather
+                        name="bookmark"
+                        size={16}
+                        color={res.isBookmarked ? '#0745E8' : '#94A3B8'}
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -163,12 +208,12 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   unitHeaderCard: {
-    backgroundColor: '#EEF2FF',
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 20,
-    borderColor: '#C7D2FE',
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
     borderWidth: 1,
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 16,
   },
   unitTag: {
     fontSize: 11,
@@ -176,69 +221,123 @@ const styles = StyleSheet.create({
     color: '#0745E8',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    marginBottom: 4,
   },
   unitTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     color: '#0F172A',
-    marginTop: 4,
     marginBottom: 6,
-    lineHeight: 24,
   },
   resourceCountText: {
     fontSize: 12,
-    color: '#475569',
-    fontWeight: '600',
+    color: '#64748B',
+  },
+  videoBanner: {
+    backgroundColor: '#FFF1F2',
+    borderColor: '#FFE4E6',
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  videoBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  videoBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFE4E6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoBannerTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#9F1239',
+  },
+  videoBannerSub: {
+    fontSize: 11,
+    color: '#BE123C',
+    marginTop: 1,
   },
   filterRow: {
+    flexDirection: 'row',
     gap: 8,
-    paddingBottom: 16,
+    marginBottom: 16,
   },
   filterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
     backgroundColor: '#F1F5F9',
   },
   activeFilterChip: {
     backgroundColor: '#0745E8',
   },
   filterChipText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#64748B',
   },
   activeFilterChipText: {
     color: '#FFFFFF',
   },
+  centerContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 13,
+    color: '#64748B',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    marginTop: 12,
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  emptySub: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+  },
   resourcesList: {
-    gap: 14,
+    gap: 12,
   },
   resourceCard: {
     backgroundColor: '#FFFFFF',
     borderColor: '#E2E8F0',
     borderWidth: 1,
-    borderRadius: 20,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 3,
+    borderRadius: 16,
+    padding: 14,
   },
   cardTop: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 10,
+    gap: 12,
+    marginBottom: 12,
   },
   iconBox: {
     width: 42,
     height: 42,
-    borderRadius: 14,
+    borderRadius: 12,
     backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
   titleWrapper: {
     flex: 1,
@@ -250,120 +349,48 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   typeBadge: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   typeBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#0745E8',
-  },
-  fileFormatText: {
-    fontSize: 11,
-    color: '#64748B',
-    fontWeight: '600',
-  },
-  listPaidBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    gap: 3,
-  },
-  listPaidBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#D97706',
+    color: '#475569',
   },
-  listFreeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#D1FAE5',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    gap: 3,
-  },
-  listFreeBadgeText: {
+  fileSizeText: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#059669',
+    color: '#94A3B8',
   },
-  resourceTitle: {
-    fontSize: 15,
+  cardTitle: {
+    fontSize: 13,
     fontWeight: '800',
     color: '#0F172A',
-    lineHeight: 20,
-  },
-  bookmarkBtn: {
-    padding: 4,
-    marginLeft: 8,
-  },
-  descriptionText: {
-    fontSize: 13,
-    color: '#475569',
     lineHeight: 18,
-    marginBottom: 12,
   },
-  cardFooter: {
+  cardBottom: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
-    paddingTop: 10,
+    paddingTop: 8,
+  },
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   authorText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
   },
-  openLink: {
+  actionBtns: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    gap: 8,
   },
-  openLinkText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0745E8',
-  },
-  videoBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFF1F2',
-    borderWidth: 1,
-    borderColor: '#FFE4E6',
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 16,
-  },
-  videoBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  videoBannerIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFE4E6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  videoBannerTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#9F1239',
-  },
-  videoBannerSub: {
-    fontSize: 11,
-    color: '#E11D48',
-    marginTop: 1,
+  bookmarkBtn: {
+    padding: 4,
   },
 });

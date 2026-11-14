@@ -70,7 +70,7 @@ export const mapBackendToQuestionPaper = (item: any): QuestionPaper => {
     pdfUrl: item.pdfUrl || item.fileUrl || item.pdf_url || item.file_url,
     solutionPdfUrl: item.solutionPdfUrl || item.solution_pdf_url,
     thumbnailBg: item.contentType === 'PDF_UPLOAD' ? '#FFF7ED' : '#F3E8FF',
-    modules: modules.length > 0 ? modules : (MOCK_PAPERS[0]?.modules || []),
+    modules: modules.length > 0 ? modules : [],
   };
 };
 
