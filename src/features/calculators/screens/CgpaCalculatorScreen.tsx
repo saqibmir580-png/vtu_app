@@ -36,7 +36,7 @@ export const CgpaCalculatorScreen: React.FC = () => {
 
   const [calcMode, setCalcMode] = useState<'SEMESTER' | 'DIRECT'>('SEMESTER');
   const [directInput, setDirectInput] = useState<string>(
-    currentCgpa ? currentCgpa.toFixed(2) : '8.74'
+    currentCgpa && currentCgpa > 0 ? currentCgpa.toFixed(2) : ''
   );
   const [savedToastVisible, setSavedToastVisible] = useState(false);
   const [showFormulaInfo, setShowFormulaInfo] = useState(false);
@@ -51,8 +51,10 @@ export const CgpaCalculatorScreen: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (currentCgpa) {
+    if (currentCgpa && currentCgpa > 0) {
       setDirectInput(currentCgpa.toFixed(2));
+    } else {
+      setDirectInput('');
     }
   }, [currentCgpa]);
 
@@ -284,7 +286,7 @@ export const CgpaCalculatorScreen: React.FC = () => {
 
             {semesters.map((sem) => {
               const isDone = sem.isCompleted && sem.sgpa > 0;
-              const isCurrent = sem.semester === (user?.semester || 5);
+              const isCurrent = sem.semester === (user?.semester || 1);
 
               return (
                 <View
@@ -373,7 +375,7 @@ export const CgpaCalculatorScreen: React.FC = () => {
                 <TextInput
                   style={styles.directInputField}
                   keyboardType="numeric"
-                  placeholder="8.50"
+                  placeholder="e.g. 8.45"
                   placeholderTextColor="#94A3B8"
                   value={directInput}
                   onChangeText={setDirectInput}
