@@ -22,28 +22,7 @@ interface GoalPlannerStoreState {
   deleteGoal: (id: string) => void;
 }
 
-const INITIAL_SAVED_GOALS: SavedGoal[] = [
-  {
-    id: 'goal-fcd',
-    title: 'First Class with Distinction',
-    targetCgpa: 8.50,
-    startingCgpa: 8.00,
-    completedSemesters: 4,
-    requiredSgpa: 9.00,
-    feasibilityStatus: 'Achievable',
-    createdAt: 'Sep 2026',
-  },
-  {
-    id: 'goal-honors',
-    title: 'VTU Honors Degree Target',
-    targetCgpa: 9.00,
-    startingCgpa: 8.00,
-    completedSemesters: 4,
-    requiredSgpa: 10.00,
-    feasibilityStatus: 'Challenging',
-    createdAt: 'Aug 2026',
-  },
-];
+const INITIAL_SAVED_GOALS: SavedGoal[] = [];
 
 export const calculateFeasibility = (
   requiredSgpa: number,
@@ -151,9 +130,9 @@ export const computeGoalResult = (
 
 export const useGoalPlannerStore = create<GoalPlannerStoreState>((set, get) => ({
   academicData: {
-    currentCgpa: 8.00,
-    completedSemesters: 4,
-    currentSemester: 5,
+    currentCgpa: 0,
+    completedSemesters: 0,
+    currentSemester: 1,
     totalSemesters: 8,
   },
   savedGoals: INITIAL_SAVED_GOALS,
@@ -167,9 +146,9 @@ export const useGoalPlannerStore = create<GoalPlannerStoreState>((set, get) => (
   syncProfileData: () => {
     const user = useAuthStore.getState().user;
     if (user) {
-      const sem = user.semester || 5;
-      const completed = Math.max(1, sem - 1);
-      const cgpa = user.currentCgpa || 8.00;
+      const sem = user.semester || 1;
+      const completed = Math.max(0, sem - 1);
+      const cgpa = (user.currentCgpa && user.currentCgpa > 0) ? user.currentCgpa : 0;
 
       set((state) => ({
         academicData: {

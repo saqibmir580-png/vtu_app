@@ -69,6 +69,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         scheme: sProf?.scheme?.schemeYear || sProf?.schemeYear || uAny?.schemeYear || uAny?.scheme,
         semester: sProf?.semester || uAny?.semester || 1,
         college: sProf?.collegeCode || uAny?.collegeCode,
+        collegeName: uAny?.collegeName || uAny?.college,
+        currentCgpa: uAny?.currentCgpa,
+        targetCgpa: uAny?.targetCgpa,
       };
 
       await AsyncStorage.setItem('vtu_mobile_access_token', accessToken);
@@ -88,6 +91,9 @@ export const useAuthStore = create<AuthState>((set) => ({
             scheme: fullUser.schemeYear || fullUser.studentProfile?.schemeYear || fullUser.scheme || profile.scheme,
             semester: fullUser.semester || fullUser.studentProfile?.semester || profile.semester,
             college: fullUser.collegeCode || fullUser.studentProfile?.collegeCode || profile.college,
+            collegeName: fullUser.collegeName || fullUser.college || profile.collegeName,
+            currentCgpa: fullUser.currentCgpa ?? profile.currentCgpa,
+            targetCgpa: fullUser.targetCgpa ?? profile.targetCgpa,
           };
         }
       } catch {
@@ -247,9 +253,15 @@ export const useAuthStore = create<AuthState>((set) => ({
           avatarUrl: user.avatarUrl || storedUser?.avatarUrl,
           usn: user.studentProfile?.usn || storedUser?.usn,
           branch: user.studentProfile?.branch?.code || storedUser?.branch,
+          branchCode: user.studentProfile?.branchCode || storedUser?.branchCode,
           scheme: user.studentProfile?.scheme?.schemeYear || storedUser?.scheme,
+          schemeYear: user.studentProfile?.schemeYear || storedUser?.schemeYear,
           semester: user.studentProfile?.semester || storedUser?.semester,
           college: user.studentProfile?.collegeCode || storedUser?.college,
+          collegeCode: user.studentProfile?.collegeCode || storedUser?.collegeCode,
+          collegeName: user.collegeName || user.college || storedUser?.collegeName,
+          currentCgpa: user.currentCgpa ?? storedUser?.currentCgpa,
+          targetCgpa: user.targetCgpa ?? storedUser?.targetCgpa,
         };
 
         await AsyncStorage.setItem('vtu_mobile_user', JSON.stringify(profile));
@@ -291,6 +303,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       await AsyncStorage.removeItem('vtu_mobile_access_token');
       await AsyncStorage.removeItem('vtu_mobile_refresh_token');
       await AsyncStorage.removeItem('vtu_mobile_user');
+      await AsyncStorage.removeItem('vtu_onboarded');
       set({ user: null, token: null, isAuthenticated: false, isOnboarded: false, error: null });
     }
   },

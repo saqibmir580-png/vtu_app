@@ -26,12 +26,18 @@ export const EditAcademicProfileScreen: React.FC = () => {
   const { user, updateProfile } = useAuthStore();
   const { currentCgpa, setDirectCgpa, loadAcademicRecords } = useAcademicRecordStore();
 
-  const [college, setCollege] = useState(user?.college || 'Sai Vidya Institute of Technology');
-  const [collegeCity, setCollegeCity] = useState(user?.collegeCity || 'Bengaluru');
-  const [branch, setBranch] = useState(user?.branch || 'CSE');
-  const [semester, setSemester] = useState(user?.semester || 5);
-  const [scheme, setScheme] = useState(user?.scheme || '2022');
-  const [cgpaText, setCgpaText] = useState(user?.currentCgpa ? String(user.currentCgpa) : currentCgpa ? String(currentCgpa) : '8.74');
+  const [college, setCollege] = useState(user?.college || '');
+  const [collegeCity, setCollegeCity] = useState(user?.collegeCity || '');
+  const [branch, setBranch] = useState(user?.branch || '');
+  const [semester, setSemester] = useState(user?.semester || 1);
+  const [scheme, setScheme] = useState(user?.scheme || '');
+  const [cgpaText, setCgpaText] = useState(
+    user?.currentCgpa && user.currentCgpa > 0
+      ? String(user.currentCgpa)
+      : currentCgpa > 0
+      ? String(currentCgpa)
+      : ''
+  );
   const [cgpaError, setCgpaError] = useState<string | null>(null);
 
   // Bottom sheets visibility states
@@ -50,27 +56,35 @@ export const EditAcademicProfileScreen: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      setCollege(user.college || 'Sai Vidya Institute of Technology');
-      setCollegeCity(user.collegeCity || 'Bengaluru');
-      setBranch(user.branch || 'CSE');
-      setSemester(user.semester || 5);
-      setScheme(user.scheme || '2022');
-      const eff = user.currentCgpa || currentCgpa || 8.74;
-      setCgpaText(String(eff));
+      setCollege(user.college || '');
+      setCollegeCity(user.collegeCity || '');
+      setBranch(user.branch || '');
+      setSemester(user.semester || 1);
+      setScheme(user.scheme || '');
+      const eff =
+        user.currentCgpa && user.currentCgpa > 0
+          ? user.currentCgpa
+          : currentCgpa > 0
+          ? currentCgpa
+          : null;
+      setCgpaText(eff !== null ? String(eff) : '');
     }
   }, [user, currentCgpa]);
 
   const handleSave = () => {
-    const val = parseFloat(cgpaText);
-    if (isNaN(val) || val < 0 || val > 10) {
-      setCgpaError('CGPA must be a valid number between 0.00 and 10.00.');
-      return;
+    let rounded: number | undefined = undefined;
+    if (cgpaText && cgpaText.trim() !== '') {
+      const val = parseFloat(cgpaText);
+      if (isNaN(val) || val < 0 || val > 10) {
+        setCgpaError('CGPA must be a valid number between 0.00 and 10.00.');
+        return;
+      }
+      rounded = Math.round(val * 100) / 100;
     }
     setCgpaError(null);
 
     setSaving(true);
     setTimeout(() => {
-      const rounded = Math.round(val * 100) / 100;
       updateProfile({
         college,
         collegeCity,
@@ -79,7 +93,9 @@ export const EditAcademicProfileScreen: React.FC = () => {
         scheme,
         currentCgpa: rounded,
       });
-      setDirectCgpa(rounded);
+      if (rounded !== undefined && rounded > 0) {
+        setDirectCgpa(rounded);
+      }
 
       setSaving(false);
       setToastVisible(true);

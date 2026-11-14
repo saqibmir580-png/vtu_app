@@ -107,7 +107,7 @@ export const SgpaCalculatorScreen: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const { saveSemesterSubjects, semesters } = useAcademicRecordStore();
 
-  const userSem = user?.semester || 5;
+  const userSem = user?.semester || 1;
   const [selectedSemester, setSelectedSemester] = useState<number>(userSem);
 
   const createInitialSubjects = (semNum: number): SubjectGrade[] => {
@@ -125,8 +125,8 @@ export const SgpaCalculatorScreen: React.FC = () => {
       name: item.name,
       code: item.code,
       credits: item.credits,
-      grade: 'A',
-      gradePoint: 8,
+      grade: '',
+      gradePoint: -1,
     }));
   };
 
@@ -153,8 +153,8 @@ export const SgpaCalculatorScreen: React.FC = () => {
 
       setLoadingCourses(true);
       try {
-        const branchCode = (user?.branch === 'CS' ? 'CSE' : user?.branch) || (user as any)?.branchCode || 'CSE';
-        const schemeYear = (user as any)?.scheme || (user as any)?.schemeYear || '2022';
+        const branchCode = user?.branchCode || (user?.branch === 'CS' ? 'CSE' : user?.branch) || 'CSE';
+        const schemeYear = user?.schemeYear || user?.scheme?.replace(/\D/g, '') || '2022';
 
         const remoteCourses = await getCoursesApiFunction({
           semester: selectedSemester,
@@ -168,8 +168,8 @@ export const SgpaCalculatorScreen: React.FC = () => {
             name: c.title || c.subjectName || c.courseName || c.name || `Subject ${idx + 1}`,
             code: c.subjectCode || c.courseCode || c.code || `SUB${idx + 1}`,
             credits: Number(c.credits) || 3,
-            grade: 'A',
-            gradePoint: 8,
+            grade: '',
+            gradePoint: -1,
           }));
           setSubjects(mapped);
           return;
@@ -217,17 +217,19 @@ export const SgpaCalculatorScreen: React.FC = () => {
   };
 
   // Calculations
+  const gradedSubjects = subjects.filter((s) => s.gradePoint >= 0);
+  const gradedCredits = gradedSubjects.reduce((sum, s) => sum + s.credits, 0);
+  const totalPoints = gradedSubjects.reduce((sum, s) => sum + s.credits * s.gradePoint, 0);
   const totalCredits = subjects.reduce((sum, s) => sum + s.credits, 0);
-  const totalPoints = subjects.reduce((sum, s) => sum + s.credits * s.gradePoint, 0);
-  const calculatedSgpa = totalCredits > 0 ? Math.round((totalPoints / totalCredits) * 100) / 100 : 0;
+  const calculatedSgpa = gradedCredits > 0 ? Math.round((totalPoints / gradedCredits) * 100) / 100 : 0;
   const equivalentPercentage =
     calculatedSgpa > 0.75 ? Math.min(100, (calculatedSgpa - 0.75) * 10).toFixed(2) : '0.00';
 
   // Grade Distribution Analysis
-  const topGradesCredits = subjects
+  const topGradesCredits = gradedSubjects
     .filter((s) => s.gradePoint >= 8)
     .reduce((sum, s) => sum + s.credits, 0);
-  const topGradesPercentage = totalCredits > 0 ? Math.round((topGradesCredits / totalCredits) * 100) : 0;
+  const topGradesPercentage = gradedCredits > 0 ? Math.round((topGradesCredits / gradedCredits) * 100) : 0;
 
   // Save to academic profile
   const handleSaveToProfile = () => {
@@ -291,14 +293,20 @@ export const SgpaCalculatorScreen: React.FC = () => {
             <View>
               <Text style={styles.meterSubLabel}>Semester {selectedSemester} SGPA</Text>
               <View style={styles.sgpaNumberRow}>
-                <Text style={styles.meterValue}>{calculatedSgpa.toFixed(2)}</Text>
+                <Text style={styles.meterValue}>
+                  {gradedSubjects.length > 0 ? calculatedSgpa.toFixed(2) : '—'}
+                </Text>
                 <Text style={styles.meterMax}>/ 10.00</Text>
               </View>
             </View>
 
             <View style={styles.equivalentBadge}>
-              <Text style={styles.equivalentText}>{equivalentPercentage}%</Text>
-              <Text style={styles.equivalentSub}>Equivalent</Text>
+              <Text style={styles.equivalentText}>
+                {gradedSubjects.length > 0 ? `${equivalentPercentage}%` : '—'}
+              </Text>
+              <Text style={styles.equivalentSub}>
+                {gradedSubjects.length > 0 ? 'Equivalent' : 'Not Graded'}
+              </Text>
             </View>
           </View>
 
@@ -363,8 +371,8 @@ export const SgpaCalculatorScreen: React.FC = () => {
               </View>
             ) : (
               subjects.map((sub, index) => {
-                const gradeInfo =
-                  VTU_GRADES.find((g) => g.grade === sub.grade) || VTU_GRADES[2];
+                const isGraded = sub.grade && sub.gradePoint >= 0;
+                const gradeInfo = isGraded ? VTU_GRADES.find((g) => g.grade === sub.grade) : null;
 
                 return (
                   <View key={sub.id} style={styles.courseRow}>
@@ -393,14 +401,30 @@ export const SgpaCalculatorScreen: React.FC = () => {
 
                     {/* Right: VTU Grade Badge Dropdown */}
                     <TouchableOpacity
-                      style={[styles.gradeBadgeBtn, { backgroundColor: gradeInfo.bg }]}
+                      style={[
+                        styles.gradeBadgeBtn,
+                        isGraded
+                          ? { backgroundColor: gradeInfo?.bg || '#EFF6FF' }
+                          : styles.unselectedGradeBadgeBtn,
+                      ]}
                       activeOpacity={0.8}
                       onPress={() => setActiveGradeSubjectId(sub.id)}
                     >
-                      <Text style={[styles.gradeBadgeText, { color: gradeInfo.color }]}>
-                        {sub.grade} ({sub.gradePoint})
+                      <Text
+                        style={[
+                          styles.gradeBadgeText,
+                          isGraded
+                            ? { color: gradeInfo?.color || '#0745E8' }
+                            : styles.unselectedGradeBadgeText,
+                        ]}
+                      >
+                        {isGraded ? `${sub.grade} (${sub.gradePoint})` : '+ Grade'}
                       </Text>
-                      <Feather name="chevron-down" size={14} color={gradeInfo.color} />
+                      <Feather
+                        name="chevron-down"
+                        size={14}
+                        color={isGraded ? gradeInfo?.color || '#0745E8' : '#64748B'}
+                      />
                     </TouchableOpacity>
                   </View>
                 );
@@ -411,13 +435,16 @@ export const SgpaCalculatorScreen: React.FC = () => {
 
         {/* Bottom Save CTA Button */}
         <TouchableOpacity
-          style={styles.saveBottomCta}
+          style={[styles.saveBottomCta, gradedSubjects.length === 0 && styles.disabledSaveBtn]}
           activeOpacity={0.85}
           onPress={handleSaveToProfile}
+          disabled={gradedSubjects.length === 0}
         >
           <Feather name="check-circle" size={18} color="#FFFFFF" />
           <Text style={styles.saveBottomCtaText}>
-            Save Semester {selectedSemester} SGPA ({calculatedSgpa.toFixed(2)})
+            {gradedSubjects.length === 0
+              ? 'Select course grades above to calculate & save'
+              : `Save Semester ${selectedSemester} SGPA (${calculatedSgpa.toFixed(2)})`}
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -790,6 +817,17 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 10,
   },
+  unselectedGradeBadgeBtn: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    borderStyle: 'dashed',
+  },
+  unselectedGradeBadgeText: {
+    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   gradeBadgeText: {
     fontSize: 12,
     fontWeight: '800',
@@ -806,6 +844,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 4,
+  },
+  disabledSaveBtn: {
+    backgroundColor: '#94A3B8',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   saveBottomCtaText: {
     color: '#FFFFFF',
