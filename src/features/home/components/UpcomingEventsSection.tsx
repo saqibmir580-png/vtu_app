@@ -29,8 +29,16 @@ export const UpcomingEventsSection: React.FC<UpcomingEventsSectionProps> = ({ ev
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.sectionTitle}>Upcoming Academic Events</Text>
-        <TouchableOpacity onPress={() => {}}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.push('/calendar/upcoming' as any)}
+        >
+          <Text style={styles.sectionTitle}>Upcoming Academic Events</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.push('/calendar/upcoming' as any)}
+        >
           <Text style={styles.viewAllText}>View All</Text>
         </TouchableOpacity>
       </View>
@@ -38,12 +46,25 @@ export const UpcomingEventsSection: React.FC<UpcomingEventsSectionProps> = ({ ev
       <View style={styles.eventsList}>
         {events.map((event) => {
           const style = getTypeStyle(event.type);
+          const handlePress = () => {
+            if (event.targetRoute && !event.targetRoute.includes('/calculators/calendar')) {
+              router.push(event.targetRoute as any);
+            } else if (event.id) {
+              router.push({
+                pathname: '/calendar/detail',
+                params: { id: event.id },
+              } as any);
+            } else {
+              router.push('/calendar/upcoming' as any);
+            }
+          };
+
           return (
             <TouchableOpacity
               key={event.id}
               activeOpacity={0.8}
               style={styles.eventCard}
-              onPress={() => event.targetRoute && router.push(event.targetRoute as any)}
+              onPress={handlePress}
             >
               <View style={[styles.iconBox, { backgroundColor: style.bg }]}>
                 <Feather name={style.icon} size={20} color={style.text} />
