@@ -6,6 +6,7 @@ export interface UserProfile {
   usn?: string;
   college?: string;
   collegeCode?: string;
+  collegeName?: string;
   branch?: string;
   branchCode?: string;
   semester?: number;
@@ -47,11 +48,13 @@ export interface GoogleLoginPayload {
 export interface OnboardingPayload {
   usn: string;
   collegeCode: string;
+  collegeName?: string;
   branchCode: string;
   schemeYear: string;
   semester: number;
   phone?: string;
   dob?: string;
+  currentCgpa?: number;
 }
 
 export interface AuthResponseData {
