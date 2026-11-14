@@ -49,11 +49,13 @@ export const saveStudentProfileApiFunction = async (payload: OnboardingPayload):
       user: {
         usn: payload.usn,
         collegeCode: payload.collegeCode,
+        collegeName: payload.collegeName,
         branchCode: payload.branchCode,
         schemeYear: payload.schemeYear,
         semester: payload.semester,
         phone: payload.phone,
         dob: payload.dob,
+        currentCgpa: payload.currentCgpa,
         isOnboarded: true,
       },
     };
@@ -134,11 +136,18 @@ export const uploadAvatarApiFunction = async (imageUri: string): Promise<string>
 // ==========================================
 // MASTER DATA FETCHING FROM ADMIN PANEL BACKEND
 // ==========================================
+const extractList = (response: any): any[] => {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.data)) return response.data;
+  if (Array.isArray(response?.data?.data)) return response.data.data;
+  if (Array.isArray(response?.items)) return response.items;
+  return [];
+};
+
 export const getCollegesApiFunction = async (): Promise<any[]> => {
   try {
     const response: any = await apiClient.get('/academics/colleges');
-    const data = response.data || response;
-    return Array.isArray(data) ? data : [];
+    return extractList(response);
   } catch {
     return [];
   }
@@ -147,8 +156,7 @@ export const getCollegesApiFunction = async (): Promise<any[]> => {
 export const getBranchesApiFunction = async (): Promise<any[]> => {
   try {
     const response: any = await apiClient.get('/academics/branches');
-    const data = response.data || response;
-    return Array.isArray(data) ? data : [];
+    return extractList(response);
   } catch {
     return [];
   }
@@ -157,8 +165,7 @@ export const getBranchesApiFunction = async (): Promise<any[]> => {
 export const getSchemesApiFunction = async (): Promise<any[]> => {
   try {
     const response: any = await apiClient.get('/academics/schemes');
-    const data = response.data || response;
-    return Array.isArray(data) ? data : [];
+    return extractList(response);
   } catch {
     return [];
   }
@@ -167,8 +174,7 @@ export const getSchemesApiFunction = async (): Promise<any[]> => {
 export const getSemestersApiFunction = async (): Promise<any[]> => {
   try {
     const response: any = await apiClient.get('/academics/semesters');
-    const data = response.data || response;
-    return Array.isArray(data) ? data : [];
+    return extractList(response);
   } catch {
     return [];
   }
