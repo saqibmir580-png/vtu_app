@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '@/store';
@@ -39,6 +39,7 @@ import { useNotificationsStore } from '@/features/notifications';
 
 export const HomeScreen: React.FC = () => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
 
   const { currentCgpa, totalCreditsEarned, loadAcademicRecords } = useAcademicRecordStore();
@@ -195,64 +196,63 @@ export const HomeScreen: React.FC = () => {
         </View>
       )}
 
-      {/* 1. FIXED Header Section (Blue Container - Stays fixed on scroll) */}
-      <View style={styles.headerBackground}>
-        <SafeAreaView edges={['top']}>
-          {/* Top Brand & Actions Bar */}
-          <View style={styles.brandRow}>
-            {/* Circular Framed Brand Logo */}
-            <View style={styles.circularLogoFrame}>
+      {/* 1. FIXED Header Section (Blue Container - Compact fixed size on scroll) */}
+      <View style={[styles.headerBackground, { paddingTop: Math.max(insets.top, 14) + 6 }]}>
+        {/* Top Brand & Actions Bar */}
+        <View style={styles.brandRow}>
+          {/* Circular Framed Brand Logo */}
+          <View style={styles.circularLogoFrame}>
+            <Image
+              source={require('../../../../assets/vtu_ultima_logo.png')}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
+          </View>
+
+          {/* Right Aligned Bell & Avatar */}
+          <View style={styles.rightIcons}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={styles.iconCircle}
+              onPress={() => router.push('/notifications' as any)}
+            >
+              <Feather name="bell" size={18} color="#FFFFFF" />
+              {unreadCount > 0 && <View style={styles.unreadBadge} />}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.avatarCircle}
+              onPress={() => router.push('/(tabs)/profile')}
+            >
               <Image
-                source={require('../../../../assets/vtu_ultima_logo.png')}
-                style={styles.headerLogo}
-                resizeMode="contain"
+                source={{
+                  uri:
+                    user?.avatarUrl ||
+                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
+                }}
+                style={styles.avatarImg}
               />
-            </View>
-
-            {/* Right Aligned Bell & Avatar */}
-            <View style={styles.rightIcons}>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={styles.iconCircle}
-                onPress={() => router.push('/notifications' as any)}
-              >
-                <Feather name="bell" size={18} color="#FFFFFF" />
-                {unreadCount > 0 && <View style={styles.unreadBadge} />}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={styles.avatarCircle}
-                onPress={() => router.push('/(tabs)/profile')}
-              >
-                <Image
-                  source={{
-                    uri:
-                      user?.avatarUrl ||
-                      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
-                  }}
-                  style={styles.avatarImg}
-                />
-              </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           </View>
+        </View>
 
-          {/* Student Welcome & Academic Details Row */}
-          <View style={styles.headerGreetingRow}>
-            <View style={styles.greetingWrapper}>
-              <Text style={styles.greetingSub}>{getTimeAwareGreeting()}</Text>
-              <Text style={styles.userName}>{user?.name || 'Student'}</Text>
-            </View>
-            <View style={styles.branchPill}>
-              <Text style={styles.branchPillText}>
-                {user?.branch || 'CSE'} • Sem {user?.semester || 5} • {user?.scheme || '2022'} Scheme
-              </Text>
-            </View>
+        {/* Student Welcome & Academic Details Row */}
+        <View style={styles.headerGreetingRow}>
+          <View style={styles.greetingWrapper}>
+            <Text style={styles.greetingSub}>{getTimeAwareGreeting()}</Text>
+            <Text style={styles.userName}>{user?.name || 'Student'}</Text>
           </View>
-        </SafeAreaView>
+          <View style={styles.branchPill}>
+            <Text style={styles.branchPillText}>
+              {user?.branch || 'CSE'} • Sem {user?.semester || 5} • {user?.scheme || '2022'} Scheme
+            </Text>
+          </View>
+        </View>
       </View>
 
       <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -341,6 +341,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  scrollView: {
+    flex: 1,
+  },
   scrollContent: {
     backgroundColor: '#FFFFFF',
     paddingTop: 12,
@@ -349,8 +352,7 @@ const styles = StyleSheet.create({
   headerBackground: {
     backgroundColor: '#0745E8',
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 22,
+    paddingBottom: 18,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
     shadowColor: '#0745E8',
@@ -358,6 +360,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 10,
     elevation: 8,
+    flexGrow: 0,
+    flexShrink: 0,
   },
   brandRow: {
     flexDirection: 'row',
