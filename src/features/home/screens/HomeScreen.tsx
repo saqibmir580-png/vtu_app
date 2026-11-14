@@ -42,7 +42,7 @@ export const HomeScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
 
-  const { currentCgpa, totalCreditsEarned, loadAcademicRecords } = useAcademicRecordStore();
+  const { currentCgpa, totalCreditsEarned, semesters, loadAcademicRecords } = useAcademicRecordStore();
   const { getOverallStats, loadAttendance } = useAttendanceStore();
   const { recentActivity, loadHistory } = useStudyActivityStore();
   const { notifications: storeNotifs, getUnreadCount, fetchNotifications } = useNotificationsStore();
@@ -158,7 +158,17 @@ export const HomeScreen: React.FC = () => {
   };
 
   const attendanceStats = getOverallStats();
-  const effectiveCgpa = (user?.currentCgpa && user.currentCgpa > 0) ? user.currentCgpa : (currentCgpa > 0 ? currentCgpa : 0);
+  const hasUserExplicitCgpa =
+    user?.currentCgpa !== undefined &&
+    user?.currentCgpa !== null &&
+    user.currentCgpa > 0;
+  const hasCompletedSemesters = semesters.some((s) => s.isCompleted && s.sgpa > 0);
+  const effectiveCgpa = hasUserExplicitCgpa
+    ? user!.currentCgpa!
+    : hasCompletedSemesters && currentCgpa > 0
+    ? currentCgpa
+    : 0;
+
   const effectiveAttendancePct = attendanceStats.overallPercentage;
   const hasAttendanceData = attendanceStats.totalConducted > 0;
   const effectiveAttendanceStatus: 'Eligible' | 'Warning' | 'Critical' =
@@ -170,7 +180,7 @@ export const HomeScreen: React.FC = () => {
     cgpaTrend: effectiveCgpa > 0 ? '+0.25' : '—',
     attendancePercentage: effectiveAttendancePct,
     attendanceStatus: hasAttendanceData ? effectiveAttendanceStatus : ('Pending' as any),
-    currentSemester: user?.semester || 5,
+    currentSemester: user?.semester || 1,
     totalCreditsEarned: totalCreditsEarned || 0,
   };
 

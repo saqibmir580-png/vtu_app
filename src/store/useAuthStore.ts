@@ -285,6 +285,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   updateProfile: (updatedFields) =>
     set((state) => {
       const newUser = state.user ? { ...state.user, ...updatedFields } : ({ ...updatedFields } as UserProfile);
+      if (updatedFields.currentCgpa === undefined || updatedFields.currentCgpa === null) {
+        delete newUser.currentCgpa;
+      }
       AsyncStorage.setItem('vtu_mobile_user', JSON.stringify(newUser)).catch(() => {});
       return { user: newUser, isOnboarded: true };
     }),
