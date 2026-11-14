@@ -9,17 +9,23 @@ import {
 
 export const loginApiFunction = async (payload: LoginPayload): Promise<AuthResponseData> => {
   const response: any = await apiClient.post('/auth/login', payload);
-  return response.data || response;
+  if (response?.data?.user) return response.data;
+  if (response?.user) return response;
+  return response?.data || response;
 };
 
 export const registerApiFunction = async (payload: RegisterPayload): Promise<AuthResponseData> => {
   const response: any = await apiClient.post('/auth/register', payload);
-  return response.data || response;
+  if (response?.data?.user) return response.data;
+  if (response?.user) return response;
+  return response?.data || response;
 };
 
 export const googleLoginApiFunction = async (payload: GoogleLoginPayload): Promise<AuthResponseData> => {
   const response: any = await apiClient.post('/auth/google', payload);
-  return response.data || response;
+  if (response?.data?.user) return response.data;
+  if (response?.user) return response;
+  return response?.data || response;
 };
 
 export const logoutApiFunction = async (refreshToken: string): Promise<void> => {

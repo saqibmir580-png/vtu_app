@@ -165,6 +165,16 @@ export const RegisterScreen: React.FC = () => {
                 <Feather name="chevron-left" size={22} color="#FFFFFF" />
               </TouchableOpacity>
 
+              {/* VTU Ultima Logo Badge on Blue Container */}
+              <View style={styles.logoWrapper}>
+                <Image
+                  source={require('../../../../assets/vtu_ultima_logo.png')}
+                  style={styles.logoImage}
+                  contentFit="contain"
+                  priority="high"
+                />
+              </View>
+
               <View style={styles.headerTextContainer}>
                 <Text style={styles.headerTitle}>Create Account 🚀</Text>
                 <Text style={styles.headerSubtitle}>
@@ -176,16 +186,6 @@ export const RegisterScreen: React.FC = () => {
 
           {/* Bottom Sheet Card */}
           <View style={styles.whiteSheet}>
-            {/* VTU Ultima Logo */}
-            <View style={styles.logoWrapper}>
-              <Image
-                source={require('../../../../assets/vtu_ultima_logo.png')}
-                style={styles.logoImage}
-                contentFit="contain"
-                priority="high"
-              />
-            </View>
-
             {/* Global API Error Banner */}
             {error ? (
               <View style={styles.apiErrorBanner}>
@@ -349,13 +349,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   topHeader: {
-    paddingBottom: 36,
+    paddingBottom: 38,
     paddingHorizontal: 20,
+    alignItems: 'center',
   },
   headerSafeArea: {
     width: '100%',
+    alignItems: 'center',
   },
   backButton: {
+    alignSelf: 'flex-start',
     width: 38,
     height: 38,
     borderRadius: 19,
@@ -363,21 +366,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
-    marginBottom: 12,
+    marginBottom: 8,
+  },
+  logoWrapper: {
+    width: 170,
+    height: 52,
+    marginBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
   },
   headerTextContainer: {
-    marginTop: 4,
+    alignItems: 'center',
+    marginTop: 2,
   },
   headerTitle: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     color: '#FFFFFF',
-    marginBottom: 6,
+    marginBottom: 4,
+    textAlign: 'center',
   },
   headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.85)',
-    lineHeight: 20,
+    fontSize: 13,
+    color: '#93C5FD',
+    lineHeight: 18,
+    textAlign: 'center',
+    paddingHorizontal: 16,
   },
   whiteSheet: {
     flexGrow: 1,
@@ -389,14 +407,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 40,
-  },
-  logoWrapper: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  logoImage: {
-    width: 140,
-    height: 44,
   },
   apiErrorBanner: {
     flexDirection: 'row',
