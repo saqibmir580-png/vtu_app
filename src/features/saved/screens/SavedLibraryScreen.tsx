@@ -53,10 +53,9 @@ export const SavedLibraryScreen: React.FC = () => {
     }
   };
 
-  // Resolve mock question paper structure for preview modal
+  // Resolve question paper structure for preview modal
   const activePaperData = selectedItemForPreview
-    ? MOCK_PAPERS.find((p) => p.id === selectedItemForPreview.id.replace('paper-', '')) ||
-      MOCK_PAPERS[0]
+    ? MOCK_PAPERS.find((p) => p.id === selectedItemForPreview.id.replace('paper-', '')) || null
     : null;
 
   return (
