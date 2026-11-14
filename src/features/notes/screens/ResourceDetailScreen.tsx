@@ -16,13 +16,33 @@ import { fetchNoteByIdFromApi } from '../api/notesApi';
 import { NoteResource } from '../types/notes.types';
 import { useAuthStore } from '@/store';
 
+const FALLBACK_RESOURCE: NoteResource = {
+  id: 'empty-res',
+  title: 'Resource Details',
+  subjectId: '',
+  subjectName: '',
+  subjectCode: '',
+  unitNumber: 1,
+  unitTitle: '',
+  type: 'Handwritten Notes',
+  fileFormat: 'PDF',
+  fileSize: '0 MB',
+  author: '',
+  downloadsCount: 0,
+  isBookmarked: false,
+  isDownloaded: false,
+  description: '',
+  totalPages: 1,
+  fileUrl: '',
+};
+
 export const ResourceDetailScreen: React.FC = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
 
   const [resource, setResource] = useState<NoteResource>(
-    () => MOCK_RESOURCES.find((r) => r.id === id) || MOCK_RESOURCES[0]
+    () => MOCK_RESOURCES.find((r) => r.id === id) || FALLBACK_RESOURCE
   );
   const [isLoading, setIsLoading] = useState(true);
 

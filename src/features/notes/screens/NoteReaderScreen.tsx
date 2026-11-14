@@ -179,6 +179,26 @@ const generateSinglePagePdfHtml = (pdfUrl: string, pageNum: number): string => {
   `;
 };
 
+const FALLBACK_NOTE_RESOURCE: NoteResource = {
+  id: 'empty-note',
+  title: 'No Document Available',
+  subjectId: '',
+  subjectName: '',
+  subjectCode: '',
+  unitNumber: 1,
+  unitTitle: '',
+  type: 'Handwritten Notes',
+  fileFormat: 'PDF',
+  fileSize: '0 MB',
+  author: '',
+  downloadsCount: 0,
+  isBookmarked: false,
+  isDownloaded: false,
+  description: '',
+  totalPages: 1,
+  fileUrl: '',
+};
+
 export const NoteReaderScreen: React.FC = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
@@ -186,7 +206,7 @@ export const NoteReaderScreen: React.FC = () => {
 
   const user = useAuthStore((state) => state.user);
   const [resource, setResource] = useState<NoteResource>(
-    () => MOCK_RESOURCES.find((r) => r.id === id) || MOCK_RESOURCES[0]
+    () => MOCK_RESOURCES.find((r) => r.id === id) || FALLBACK_NOTE_RESOURCE
   );
   const [isLoadingDoc, setIsLoadingDoc] = useState(true);
   const [detectedPages, setDetectedPages] = useState<number | null>(null);
@@ -332,7 +352,7 @@ export const NoteReaderScreen: React.FC = () => {
       setIsPageLocked(true);
     }
   };
-
+4
   // Open payment checkout sheet
   const handleUnlockPurchase = () => {
     setPaymentModalVisible(true);
