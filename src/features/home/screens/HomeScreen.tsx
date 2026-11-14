@@ -52,74 +52,9 @@ export const HomeScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
 
-  const [events, setEvents] = useState<AcademicEvent[]>([
-    {
-      id: 'e1',
-      type: 'Internal Test',
-      subject: 'Computer Networks (21CS52)',
-      date: '20th Oct 2026',
-      time: '10:30 AM',
-      venue: 'LH-302',
-      targetRoute: '/calculators/calendar',
-    },
-    {
-      id: 'e2',
-      type: 'Lab Exam',
-      subject: 'DBMS Laboratory (21CSL54)',
-      date: '24th Oct 2026',
-      time: '02:00 PM',
-      venue: 'Lab-4',
-      targetRoute: '/calculators/calendar',
-    },
-  ]);
-
-  const [notifications] = useState<NotificationItem[]>([
-    {
-      id: 'n1',
-      category: 'VTU Circular',
-      title: 'Revised 5th Sem Exam Timetable',
-      description: 'VTU has released the final timetable for 2021 & 2022 Scheme B.E exams.',
-      timestamp: '10m ago',
-      isRead: false,
-      targetRoute: '/(tabs)/community',
-    },
-    {
-      id: 'n2',
-      category: 'Assignment',
-      title: 'Automata Theory Assignment 2',
-      description: 'Submission deadline extended to Friday 5:00 PM.',
-      timestamp: '2h ago',
-      isRead: true,
-      targetRoute: '/(tabs)/library',
-    },
-  ]);
-
-  const [recentResources, setRecentResources] = useState<ResourceItem[]>([
-    {
-      id: 'r1',
-      title: 'Module 3: Paging & Memory Management',
-      subject: 'Operating Systems',
-      type: 'PDF Notes',
-      fileSize: '2.4 MB',
-      uploadDate: 'Yesterday',
-      downloadsCount: 142,
-      branch: 'CSE',
-      semester: 5,
-      scheme: '2022',
-    },
-    {
-      id: 'r2',
-      title: 'Dec 2024 VTU Question Paper + Solutions',
-      subject: 'Database Management Systems',
-      type: 'Question Paper',
-      fileSize: '4.1 MB',
-      uploadDate: '3 days ago',
-      downloadsCount: 389,
-      branch: 'CSE',
-      semester: 5,
-      scheme: '2022',
-    },
-  ]);
+  const [events, setEvents] = useState<AcademicEvent[]>([]);
+  const [notifications] = useState<NotificationItem[]>([]);
+  const [recentResources, setRecentResources] = useState<ResourceItem[]>([]);
 
   const loadHomeData = async () => {
     try {
@@ -132,7 +67,7 @@ export const HomeScreen: React.FC = () => {
         .then((res: any) => {
           const d = res.data?.data || res.data || [];
           const rawList = Array.isArray(d) ? d : d.items || d.data || [];
-          if (rawList && rawList.length > 0) {
+          if (Array.isArray(rawList)) {
             const mapped: AcademicEvent[] = rawList.slice(0, 3).map((evt: any) => ({
               id: evt.id,
               type:
@@ -151,7 +86,7 @@ export const HomeScreen: React.FC = () => {
                 : 'Upcoming',
               time: evt.time || '10:00 AM',
               venue: evt.venue || 'Exam Hall',
-              targetRoute: '/calculators/calendar',
+              targetRoute: evt.id ? `/calendar/detail?id=${evt.id}` : '/calendar',
             }));
             setEvents(mapped);
           }
@@ -199,9 +134,7 @@ export const HomeScreen: React.FC = () => {
           });
         }
 
-        if (combined.length > 0) {
-          setRecentResources(combined);
-        }
+        setRecentResources(combined);
       });
     } catch {
       // Graceful offline fallback
@@ -376,7 +309,7 @@ export const HomeScreen: React.FC = () => {
                       isRead: n.isRead,
                       targetRoute: '/notifications',
                     }))
-                  : notifications
+                  : []
               }
             />
 
