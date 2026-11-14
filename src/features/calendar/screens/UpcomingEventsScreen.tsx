@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -34,15 +36,22 @@ export const UpcomingEventsScreen: React.FC = () => {
     activeCategory,
     setActiveCategory,
     getFilteredEvents,
+    fetchAcademicEvents,
+    isLoading,
   } = useCalendarStore();
 
   const [search, setSearch] = useState('');
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
 
-  const filteredEvents = getFilteredEvents().filter(
+  useEffect(() => {
+    fetchAcademicEvents();
+  }, [fetchAcademicEvents]);
+
+  const rawFiltered = getFilteredEvents() || [];
+  const filteredEvents = rawFiltered.filter(
     (e) =>
-      e.title.toLowerCase().includes(search.toLowerCase()) ||
-      e.category.toLowerCase().includes(search.toLowerCase()) ||
+      (e.title || '').toLowerCase().includes(search.toLowerCase()) ||
+      (e.category || '').toLowerCase().includes(search.toLowerCase()) ||
       (e.vtuCircularRef && e.vtuCircularRef.toLowerCase().includes(search.toLowerCase()))
   );
 
@@ -70,7 +79,17 @@ export const UpcomingEventsScreen: React.FC = () => {
         }
       />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={fetchAcademicEvents}
+            colors={['#0745E8']}
+          />
+        }
+      >
         {/* Search Bar */}
         <View style={styles.searchBox}>
           <Feather name="search" size={16} color="#64748B" style={{ marginRight: 8 }} />
@@ -100,12 +119,26 @@ export const UpcomingEventsScreen: React.FC = () => {
           ))}
         </ScrollView>
 
-        {/* Events Feed or Empty State */}
-        {filteredEvents.length === 0 ? (
-          <EmptyState
-            title="No Matching Events"
-            subTitle="No events match your current search criteria or category filter."
-          />
+        {/* Loading Spinner or Events Feed or Empty State */}
+        {isLoading && filteredEvents.length === 0 ? (
+          <View style={styles.loadingBox}>
+            <ActivityIndicator size="large" color="#0745E8" />
+            <Text style={styles.loadingText}>Loading upcoming events...</Text>
+          </View>
+        ) : filteredEvents.length === 0 ? (
+          <View>
+            <EmptyState
+              title="No Upcoming Events"
+              subTitle="There are no academic events scheduled for the selected category."
+            />
+            <TouchableOpacity
+              style={styles.calendarLinkBtn}
+              onPress={() => router.push('/calendar' as any)}
+            >
+              <Feather name="calendar" size={16} color="#0745E8" style={{ marginRight: 8 }} />
+              <Text style={styles.calendarLinkText}>Open Full Month Calendar</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           filteredEvents.map((evt) => (
             <UpcomingEventCard key={evt.id} event={evt} onPress={handleEventPress} />
@@ -194,5 +227,31 @@ const styles = StyleSheet.create({
   chipsRow: {
     gap: 8,
     marginBottom: 16,
+  },
+  loadingBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#64748B',
+  },
+  calendarLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignSelf: 'center',
+    marginTop: 8,
+  },
+  calendarLinkText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0745E8',
   },
 });
