@@ -54,6 +54,37 @@ export const resolveSafeUrl = (url?: string): string => {
   if (!url) return '';
   const trimmed = url.trim();
 
+  // 1. If already a valid absolute HTTP/HTTPS URL, use it directly (0 proxy overhead, 0 big URL)
+  if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) {
+    if (trimmed.startsWith('http://res.cloudinary.com')) {
+      return trimmed.replace('http://', 'https://');
+    }
+
+    // Only rewrite localhost/127.0.0.1 to phone-accessible LAN IP
+    if (trimmed.includes('localhost') || trimmed.includes('127.0.0.1')) {
+      let baseUrl = '';
+      try {
+        baseUrl = getBaseUrl();
+      } catch {
+        baseUrl = 'http://localhost:5000/api/v1';
+      }
+      const hostRoot = baseUrl.replace(/\/api\/v1\/?$/, '');
+      const lanHostMatch = hostRoot.match(/https?:\/\/([^:/]+)/);
+      if (
+        lanHostMatch &&
+        lanHostMatch[1] &&
+        lanHostMatch[1] !== 'localhost' &&
+        lanHostMatch[1] !== '127.0.0.1'
+      ) {
+        return trimmed
+          .replace('localhost', lanHostMatch[1])
+          .replace('127.0.0.1', lanHostMatch[1]);
+      }
+    }
+
+    return trimmed;
+  }
+
   let baseUrl = '';
   try {
     baseUrl = getBaseUrl();
@@ -62,46 +93,17 @@ export const resolveSafeUrl = (url?: string): string => {
   }
   const hostRoot = baseUrl.replace(/\/api\/v1\/?$/, '');
 
-  // 1. S3 URLs or relative keys
-  if (
-    trimmed.startsWith('s3://') ||
-    (!trimmed.startsWith('http://') &&
-      !trimmed.startsWith('https://') &&
-      !trimmed.startsWith('data:') &&
-      trimmed.length > 0)
-  ) {
-    return `${baseUrl}/storage/stream?url=${encodeURIComponent(trimmed)}`;
-  }
-
-  // 2. Local backend relative paths
+  // 2. Local backend relative paths (e.g. /uploads/vtu_notes/... or /api/v1/storage/files/...)
   if (trimmed.startsWith('/api/v1') || trimmed.startsWith('/uploads')) {
     return `${hostRoot}${trimmed}`;
   }
 
-  // 3. Remote external URLs: route through backend storage stream to bypass CORS & restrictive headers
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    if (!trimmed.includes('/storage/stream') && !trimmed.includes('/api/v1/storage/files/')) {
-      return `${baseUrl}/storage/stream?url=${encodeURIComponent(trimmed)}`;
-    }
-  }
-
-  // 4. If URL has localhost or 127.0.0.1, rewrite to mobile-accessible LAN IP
-  if (trimmed.includes('localhost') || trimmed.includes('127.0.0.1')) {
-    const lanHostMatch = hostRoot.match(/https?:\/\/([^:/]+)/);
-    if (
-      lanHostMatch &&
-      lanHostMatch[1] &&
-      lanHostMatch[1] !== 'localhost' &&
-      lanHostMatch[1] !== '127.0.0.1'
-    ) {
-      return trimmed
-        .replace('localhost', lanHostMatch[1])
-        .replace('127.0.0.1', lanHostMatch[1]);
-    }
-  }
-
-  if (trimmed.startsWith('http://res.cloudinary.com')) {
-    return trimmed.replace('http://', 'https://');
+  // 3. Raw S3 protocol or storage keys (e.g. s3://bucket/key or relative storage keys)
+  if (
+    trimmed.startsWith('s3://') ||
+    (!trimmed.startsWith('data:') && trimmed.length > 0)
+  ) {
+    return `${baseUrl}/storage/stream?url=${encodeURIComponent(trimmed)}`;
   }
 
   return trimmed;
