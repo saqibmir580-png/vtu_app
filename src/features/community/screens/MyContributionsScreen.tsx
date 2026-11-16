@@ -26,14 +26,15 @@ export const MyContributionsScreen: React.FC = () => {
 
   const validUploads = (myUploads || []).filter(Boolean);
   const totalUpvotes = validUploads.reduce((acc, curr) => acc + (curr?.usefulCount || 0), 0);
+  const totalDownloads = validUploads.reduce((acc, curr) => acc + (curr?.downloadsCount || 0), 0);
 
-  const coins = rewardProfile?.coinsBalance ?? 350;
-  const xp = rewardProfile?.totalXp ?? 750;
-  const level = rewardProfile?.level ?? 3;
-  const levelTitle = rewardProfile?.levelTitle ?? 'Community Scholar';
-  const nextXp = rewardProfile?.nextLevelXp ?? 900;
-  const badges = rewardProfile?.badges ?? ['Verified Contributor', 'Top Note Creator', 'Community Pillar'];
-  const progressRatio = Math.min(1, Math.max(0, xp / nextXp));
+  const coins = rewardProfile?.coinsBalance ?? 0;
+  const xp = rewardProfile?.totalXp ?? 0;
+  const level = rewardProfile?.level ?? 1;
+  const levelTitle = rewardProfile?.levelTitle ?? 'Student Contributor';
+  const nextXp = rewardProfile?.nextLevelXp ?? 100;
+  const badges = rewardProfile?.badges ?? [];
+  const progressRatio = Math.min(1, Math.max(0, nextXp > 0 ? xp / nextXp : 0));
 
   return (
     <View style={styles.root}>
@@ -106,7 +107,7 @@ export const MyContributionsScreen: React.FC = () => {
           </View>
           <View style={styles.divider} />
           <View style={styles.statTile}>
-            <Text style={styles.statNum}>{rewardProfile?.downloadsCount ?? 380}</Text>
+            <Text style={styles.statNum}>{rewardProfile?.downloadsCount ?? totalDownloads}</Text>
             <Text style={styles.statLabel}>Downloads</Text>
           </View>
         </View>
