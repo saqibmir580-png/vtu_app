@@ -1,6 +1,5 @@
 import { apiClient } from '../../../infrastructure/api/client';
 import { PassingPackage, PassingQuestion } from '../types/passingPackages.types';
-import { MOCK_PASSING_PACKAGES } from './mockPassingPackages';
 
 export interface QueryPackagesParams {
   branchCode?: string;
@@ -52,10 +51,13 @@ export const mapBackendToPassingPackage = (item: any): PassingPackage => {
   const important = mappedQuestions.filter((q) => q.priority === 'Very High Priority' || q.priority === 'High Priority');
   const repeated = mappedQuestions.filter((q) => q.frequency);
 
-  // If questions from backend are sparse, use mock questions as enriched fallback
-  const mockMatch = MOCK_PASSING_PACKAGES.find(
-    (m) => m.subjectCode === item.subjectCode || m.semester === item.semester
-  ) || MOCK_PASSING_PACKAGES[0];
+  const defaultWeightage = [
+    { unitNumber: 1, marksWeightage: 20, predictedQuestionsCount: 2, status: 'High Yield' },
+    { unitNumber: 2, marksWeightage: 20, predictedQuestionsCount: 2, status: 'High Yield' },
+    { unitNumber: 3, marksWeightage: 20, predictedQuestionsCount: 2, status: 'High Yield' },
+    { unitNumber: 4, marksWeightage: 20, predictedQuestionsCount: 2, status: 'High Yield' },
+    { unitNumber: 5, marksWeightage: 20, predictedQuestionsCount: 2, status: 'High Yield' },
+  ];
 
   return {
     id: item.id,
@@ -65,17 +67,17 @@ export const mapBackendToPassingPackage = (item: any): PassingPackage => {
     branch: item.branchCode || 'CSE',
     scheme: item.schemeYear || '2022',
     unitCount: item.unitsCount || 5,
-    totalQuestionsCount: item.questionsCount || (mappedQuestions.length > 0 ? mappedQuestions.length : mockMatch.totalQuestionsCount),
-    importantQuestionsCount: important.length > 0 ? important.length : mockMatch.importantQuestionsCount,
-    repeatedQuestionsCount: repeated.length > 0 ? repeated.length : mockMatch.repeatedQuestionsCount,
-    expectedQuestionsCount: mockMatch.expectedQuestionsCount,
-    revisionResourceCount: mockMatch.revisionResourceCount,
-    unitsWeightage: mockMatch.unitsWeightage,
-    importantQuestions: mappedQuestions.length > 0 ? mappedQuestions : mockMatch.importantQuestions,
-    repeatedQuestions: repeated.length > 0 ? repeated : mockMatch.repeatedQuestions,
-    expectedQuestions: mockMatch.expectedQuestions,
-    revisionResources: mockMatch.revisionResources,
-    nightBeforeSequence: mappedQuestions.length > 0 ? mappedQuestions.slice(0, 5) : mockMatch.nightBeforeSequence,
+    totalQuestionsCount: item.questionsCount || mappedQuestions.length,
+    importantQuestionsCount: important.length,
+    repeatedQuestionsCount: repeated.length,
+    expectedQuestionsCount: item.expectedQuestionsCount || 0,
+    revisionResourceCount: item.revisionResourceCount || 0,
+    unitsWeightage: item.unitsWeightage || defaultWeightage,
+    importantQuestions: mappedQuestions,
+    repeatedQuestions: repeated,
+    expectedQuestions: [],
+    revisionResources: item.revisionResources || [],
+    nightBeforeSequence: mappedQuestions.slice(0, 5),
     isPaid: Boolean(item.isPremium ?? true),
     price: item.priceINR !== undefined ? item.priceINR : 49,
     originalPrice: item.originalPriceINR || 129,

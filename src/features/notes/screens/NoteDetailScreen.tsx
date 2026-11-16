@@ -15,7 +15,6 @@ import { Header } from '@/shared/components';
 import { StatusBar } from 'react-native';
 import { fetchNotesFromApi } from '../api/notesApi';
 import { NoteResource } from '../types/notes.types';
-import { MOCK_RESOURCES } from '../api/notesData';
 import { useAuthStore } from '@/store';
 
 const UNITS = ['All', 'Unit 1', 'Unit 2', 'Unit 3', 'Unit 4', 'Unit 5'];
@@ -31,13 +30,9 @@ export const NoteDetailScreen: React.FC = () => {
   const loadNotes = useCallback(async () => {
     try {
       const fetched = await fetchNotesFromApi({ userId: user?.id });
-      if (fetched && fetched.length > 0) {
-        setNotes(fetched);
-      } else {
-        setNotes(MOCK_RESOURCES);
-      }
+      setNotes(fetched || []);
     } catch {
-      setNotes(MOCK_RESOURCES);
+      setNotes([]);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

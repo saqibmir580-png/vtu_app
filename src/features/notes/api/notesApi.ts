@@ -1,6 +1,5 @@
 import { apiClient } from '../../../infrastructure/api/client';
 import { Subject, NoteResource, ResourceType } from '../types/notes.types';
-import { MOCK_SUBJECTS, MOCK_RESOURCES } from './notesData';
 
 export interface QueryNotesParams {
   semester?: number;

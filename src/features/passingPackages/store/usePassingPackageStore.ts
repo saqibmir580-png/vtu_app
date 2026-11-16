@@ -5,7 +5,6 @@ import {
   RevisionResource,
   PackageFilterOptions,
 } from '../types/passingPackages.types';
-import { MOCK_PASSING_PACKAGES } from '../api/mockPassingPackages';
 import { fetchPassingPackagesFromApi } from '../api/packagesApi';
 
 interface PassingPackageStoreState {
