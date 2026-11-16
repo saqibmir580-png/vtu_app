@@ -26,7 +26,7 @@ import { useStudyActivityStore } from '@/features/home';
 import { useAuthStore } from '@/store';
 import { PaymentCheckoutModal } from '../components/PaymentCheckoutModal';
 import { AdBannerCard } from '@/shared/components/AdBannerCard';
-import { apiClient } from '@/infrastructure/api/client';
+import { apiClient, getBaseUrl } from '@/infrastructure/api/client';
 
 const { width } = Dimensions.get('window');
 
@@ -48,22 +48,55 @@ export const canAccessPage = (
 };
 
 /**
- * Resolve reachable URL without breaking local/LAN IPs
+ * Resolve reachable URL without breaking local/LAN IPs, S3 schemes, or relative paths
  */
 export const resolveSafeUrl = (url?: string): string => {
   if (!url) return '';
   const trimmed = url.trim();
-  if (
-    trimmed.startsWith('http://192.168.') ||
-    trimmed.startsWith('http://localhost') ||
-    trimmed.startsWith('http://10.') ||
-    trimmed.startsWith('http://127.0.0.1')
-  ) {
-    return trimmed;
+
+  let baseUrl = '';
+  try {
+    baseUrl = getBaseUrl();
+  } catch {
+    baseUrl = 'http://localhost:5000/api/v1';
   }
+  const hostRoot = baseUrl.replace(/\/api\/v1\/?$/, '');
+
+  // 1. S3 URLs or relative keys
+  if (
+    trimmed.startsWith('s3://') ||
+    (!trimmed.startsWith('http://') &&
+      !trimmed.startsWith('https://') &&
+      !trimmed.startsWith('data:') &&
+      trimmed.length > 0)
+  ) {
+    return `${baseUrl}/storage/stream?url=${encodeURIComponent(trimmed)}`;
+  }
+
+  // 2. Local backend relative paths
+  if (trimmed.startsWith('/api/v1') || trimmed.startsWith('/uploads')) {
+    return `${hostRoot}${trimmed}`;
+  }
+
+  // 3. If URL has localhost or 127.0.0.1, rewrite to mobile-accessible LAN IP
+  if (trimmed.includes('localhost') || trimmed.includes('127.0.0.1')) {
+    const lanHostMatch = hostRoot.match(/https?:\/\/([^:/]+)/);
+    if (
+      lanHostMatch &&
+      lanHostMatch[1] &&
+      lanHostMatch[1] !== 'localhost' &&
+      lanHostMatch[1] !== '127.0.0.1'
+    ) {
+      return trimmed
+        .replace('localhost', lanHostMatch[1])
+        .replace('127.0.0.1', lanHostMatch[1]);
+    }
+  }
+
   if (trimmed.startsWith('http://res.cloudinary.com')) {
     return trimmed.replace('http://', 'https://');
   }
+
   return trimmed;
 };
 

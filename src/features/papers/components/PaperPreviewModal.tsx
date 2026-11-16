@@ -16,6 +16,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { QuestionPaper } from '../types/paper.types';
 import { usePaperStore } from '../store/usePaperStore';
 import * as ScreenCapture from 'expo-screen-capture';
+import { getBaseUrl } from '@/infrastructure/api/client';
 
 interface PaperPreviewModalProps {
   paper: QuestionPaper | null;
@@ -358,70 +359,107 @@ export const PaperPreviewModal: React.FC<PaperPreviewModalProps> = ({
               </TouchableOpacity>
             </View>
           </>
-        ) : (
-          <View style={styles.documentViewerContainer}>
-            {paper.pdfUrl ? (
-              <>
-                <View style={styles.docHeaderBar}>
-                  <View style={styles.docInfoCol}>
-                    <Text style={styles.docNameText} numberOfLines={1}>
-                      {paper.pdfUrl.split('/').pop() || 'Question_Paper_Document'}
-                    </Text>
-                    <Text style={styles.docMetaText}>
-                      Size: {paper.fileSize || 'Standard'} • Format: {paper.pdfUrl.split('.').pop()?.toUpperCase() || 'DOCUMENT'}
-                    </Text>
+        ) : (() => {
+          let rawPdfUrl = (paper.pdfUrl || (paper as any).fileUrl || '').trim();
+          let resolvedPdfUrl = rawPdfUrl;
+
+          let baseUrl = '';
+          try {
+            baseUrl = getBaseUrl();
+          } catch {
+            baseUrl = 'http://localhost:5000/api/v1';
+          }
+          const hostRoot = baseUrl.replace(/\/api\/v1\/?$/, '');
+
+          if (
+            rawPdfUrl.startsWith('s3://') ||
+            (!rawPdfUrl.startsWith('http://') &&
+              !rawPdfUrl.startsWith('https://') &&
+              !rawPdfUrl.startsWith('data:') &&
+              rawPdfUrl.length > 0)
+          ) {
+            resolvedPdfUrl = `${baseUrl}/storage/stream?url=${encodeURIComponent(rawPdfUrl)}`;
+          } else if (rawPdfUrl.startsWith('/api/v1') || rawPdfUrl.startsWith('/uploads')) {
+            resolvedPdfUrl = `${hostRoot}${rawPdfUrl}`;
+          } else if (rawPdfUrl.includes('localhost') || rawPdfUrl.includes('127.0.0.1')) {
+            const lanHostMatch = hostRoot.match(/https?:\/\/([^:/]+)/);
+            if (
+              lanHostMatch &&
+              lanHostMatch[1] &&
+              lanHostMatch[1] !== 'localhost' &&
+              lanHostMatch[1] !== '127.0.0.1'
+            ) {
+              resolvedPdfUrl = rawPdfUrl
+                .replace('localhost', lanHostMatch[1])
+                .replace('127.0.0.1', lanHostMatch[1]);
+            }
+          }
+
+          return (
+            <View style={styles.documentViewerContainer}>
+              {resolvedPdfUrl ? (
+                <>
+                  <View style={styles.docHeaderBar}>
+                    <View style={styles.docInfoCol}>
+                      <Text style={styles.docNameText} numberOfLines={1}>
+                        {resolvedPdfUrl.split('/').pop() || 'Question_Paper_Document'}
+                      </Text>
+                      <Text style={styles.docMetaText}>
+                        Size: {paper.fileSize || 'Standard'} • Format: {resolvedPdfUrl.split('.').pop()?.toUpperCase() || 'DOCUMENT'}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.openExternalBtn}
+                      onPress={() => WebBrowser.openBrowserAsync(resolvedPdfUrl)}
+                    >
+                      <Feather name="external-link" size={14} color="#0745E8" />
+                      <Text style={styles.openExternalText}>Open External</Text>
+                    </TouchableOpacity>
                   </View>
+                  {resolvedPdfUrl.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif)($|\?)/i) ? (
+                    <View style={styles.imageViewerContainer}>
+                      <Image
+                        source={{ uri: resolvedPdfUrl }}
+                        style={styles.imageViewer}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  ) : (
+                    <WebView
+                      source={{
+                        uri: resolvedPdfUrl.toLowerCase().endsWith('.pdf') && !resolvedPdfUrl.includes('storage/stream')
+                          ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(resolvedPdfUrl)}`
+                          : resolvedPdfUrl,
+                      }}
+                      style={{ flex: 1 }}
+                      startInLoadingState
+                      renderLoading={() => (
+                        <View style={styles.loadingContainer}>
+                          <ActivityIndicator size="large" color="#0745E8" />
+                          <Text style={styles.loadingText}>Rendering document preview...</Text>
+                        </View>
+                      )}
+                    />
+                  )}
+                </>
+              ) : (
+                <View style={styles.noDocContainer}>
+                  <Feather name="info" size={40} color="#94A3B8" />
+                  <Text style={styles.noDocTitle}>Template-Created Paper</Text>
+                  <Text style={styles.noDocText}>
+                    This paper was composed directly using the interactive VTU Question Paper Template in the Admin Panel. Switch to the "VTU Question Template" tab to view all modules, choices, marks, and verified solutions.
+                  </Text>
                   <TouchableOpacity
-                    style={styles.openExternalBtn}
-                    onPress={() => WebBrowser.openBrowserAsync(paper.pdfUrl!)}
+                    style={styles.switchTemplateBtn}
+                    onPress={() => setViewMode('TEMPLATE')}
                   >
-                    <Feather name="external-link" size={14} color="#0745E8" />
-                    <Text style={styles.openExternalText}>Open External</Text>
+                    <Text style={styles.switchTemplateBtnText}>Switch to Template View</Text>
                   </TouchableOpacity>
                 </View>
-                {paper.pdfUrl.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif)($|\?)/i) ? (
-                  <View style={styles.imageViewerContainer}>
-                    <Image
-                      source={{ uri: paper.pdfUrl }}
-                      style={styles.imageViewer}
-                      resizeMode="contain"
-                    />
-                  </View>
-                ) : (
-                  <WebView
-                    source={{
-                      uri: paper.pdfUrl.toLowerCase().endsWith('.pdf')
-                        ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(paper.pdfUrl)}`
-                        : paper.pdfUrl,
-                    }}
-                    style={{ flex: 1 }}
-                    startInLoadingState
-                    renderLoading={() => (
-                      <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="large" color="#0745E8" />
-                        <Text style={styles.loadingText}>Rendering document preview...</Text>
-                      </View>
-                    )}
-                  />
-                )}
-              </>
-            ) : (
-              <View style={styles.noDocContainer}>
-                <Feather name="info" size={40} color="#94A3B8" />
-                <Text style={styles.noDocTitle}>Template-Created Paper</Text>
-                <Text style={styles.noDocText}>
-                  This paper was composed directly using the interactive VTU Question Paper Template in the Admin Panel. Switch to the "VTU Question Template" tab to view all modules, choices, marks, and verified solutions.
-                </Text>
-                <TouchableOpacity
-                  style={styles.switchTemplateBtn}
-                  onPress={() => setViewMode('TEMPLATE')}
-                >
-                  <Text style={styles.switchTemplateBtnText}>Switch to Template View</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        )}
+              )}
+            </View>
+          );
+        })()}
       </SafeAreaView>
     </Modal>
   );
