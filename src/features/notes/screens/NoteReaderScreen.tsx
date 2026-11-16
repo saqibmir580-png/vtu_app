@@ -78,7 +78,14 @@ export const resolveSafeUrl = (url?: string): string => {
     return `${hostRoot}${trimmed}`;
   }
 
-  // 3. If URL has localhost or 127.0.0.1, rewrite to mobile-accessible LAN IP
+  // 3. Remote external URLs: route through backend storage stream to bypass CORS & restrictive headers
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    if (!trimmed.includes('/storage/stream') && !trimmed.includes('/api/v1/storage/files/')) {
+      return `${baseUrl}/storage/stream?url=${encodeURIComponent(trimmed)}`;
+    }
+  }
+
+  // 4. If URL has localhost or 127.0.0.1, rewrite to mobile-accessible LAN IP
   if (trimmed.includes('localhost') || trimmed.includes('127.0.0.1')) {
     const lanHostMatch = hostRoot.match(/https?:\/\/([^:/]+)/);
     if (

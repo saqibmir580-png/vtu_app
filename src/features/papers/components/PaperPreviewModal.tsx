@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,281 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import * as WebBrowser from 'expo-web-browser';
+import { Buffer } from 'buffer';
 import { QuestionPaper } from '../types/paper.types';
 import { usePaperStore } from '../store/usePaperStore';
 import * as ScreenCapture from 'expo-screen-capture';
 import { getBaseUrl } from '@/infrastructure/api/client';
+
+/**
+ * Resolve reachable URL without breaking local/LAN IPs, S3 schemes, or relative paths
+ */
+const resolvePaperUrl = (url?: string): string => {
+  if (!url) return '';
+  const trimmed = url.trim();
+
+  let baseUrl = '';
+  try {
+    baseUrl = getBaseUrl();
+  } catch {
+    baseUrl = 'http://localhost:5000/api/v1';
+  }
+  const hostRoot = baseUrl.replace(/\/api\/v1\/?$/, '');
+
+  if (
+    trimmed.startsWith('s3://') ||
+    (!trimmed.startsWith('http://') &&
+      !trimmed.startsWith('https://') &&
+      !trimmed.startsWith('data:') &&
+      trimmed.length > 0)
+  ) {
+    return `${baseUrl}/storage/stream?url=${encodeURIComponent(trimmed)}`;
+  }
+
+  if (trimmed.startsWith('/api/v1') || trimmed.startsWith('/uploads')) {
+    return `${hostRoot}${trimmed}`;
+  }
+
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    if (!trimmed.includes('/storage/stream')) {
+      return `${baseUrl}/storage/stream?url=${encodeURIComponent(trimmed)}`;
+    }
+  }
+
+  if (trimmed.includes('localhost') || trimmed.includes('127.0.0.1')) {
+    const lanHostMatch = hostRoot.match(/https?:\/\/([^:/]+)/);
+    if (
+      lanHostMatch &&
+      lanHostMatch[1] &&
+      lanHostMatch[1] !== 'localhost' &&
+      lanHostMatch[1] !== '127.0.0.1'
+    ) {
+      return trimmed
+        .replace('localhost', lanHostMatch[1])
+        .replace('127.0.0.1', lanHostMatch[1]);
+    }
+  }
+
+  return trimmed;
+};
+
+/**
+ * Single-Page In-Memory HTML Canvas PDF Generator for Question Papers
+ * Renders directly from in-memory Base64 bytes (0 CORS issues, 0 network blocks, 0 Google Docs dependency)
+ */
+const generatePaperPdfHtml = (
+  pdfBase64: string,
+  initialPage: number,
+  zoomLevel: number
+): string => {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden !important;
+      background-color: #F8FAFC;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #viewport-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+    canvas {
+      display: none;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+      border-radius: 6px;
+      background: #FFFFFF;
+    }
+    #status-overlay {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      color: #64748B;
+      font-weight: 600;
+      text-align: center;
+      padding: 20px;
+    }
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid #E2E8F0;
+      border-top-color: #0745E8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+</head>
+<body>
+  <div id="viewport-container">
+    <div id="status-overlay">
+      <div class="spinner"></div>
+      <div id="status-text">Rendering Page ${initialPage}...</div>
+    </div>
+    <canvas id="pdf-canvas"></canvas>
+  </div>
+  <script>
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    }
+
+    var base64Data = ${JSON.stringify(pdfBase64)};
+    var currentPageNum = ${initialPage};
+    var currentZoom = ${zoomLevel};
+    var canvas = document.getElementById('pdf-canvas');
+    var ctx = canvas.getContext('2d');
+    var statusOverlay = document.getElementById('status-overlay');
+    var statusText = document.getElementById('status-text');
+    var pdfDoc = null;
+    var currentRenderTask = null;
+
+    function postToReactNative(obj) {
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        window.ReactNativeWebView.postMessage(JSON.stringify(obj));
+      }
+    }
+
+    function renderPage(pageNum) {
+      if (!pdfDoc) return;
+      var targetPage = Math.min(Math.max(1, pageNum), pdfDoc.numPages);
+      currentPageNum = targetPage;
+
+      statusOverlay.style.display = 'flex';
+      statusText.innerText = 'Rendering Page ' + targetPage + ' of ' + pdfDoc.numPages + '...';
+      canvas.style.display = 'none';
+
+      pdfDoc.getPage(targetPage).then(function(page) {
+        var containerWidth = window.innerWidth || 360;
+        var containerHeight = window.innerHeight || 600;
+        var unscaledViewport = page.getViewport({ scale: 1.0 });
+
+        var padding = 16;
+        var availW = Math.max(100, containerWidth - padding);
+        var availH = Math.max(100, containerHeight - padding);
+
+        var scaleX = availW / unscaledViewport.width;
+        var scaleY = availH / unscaledViewport.height;
+        var fitScale = Math.min(scaleX, scaleY);
+
+        var zoomFactor = (currentZoom || 100) / 100;
+        var finalScale = fitScale * zoomFactor;
+        var dpr = window.devicePixelRatio || 2;
+
+        var viewport = page.getViewport({ scale: finalScale * dpr });
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.style.width = (viewport.width / dpr) + 'px';
+        canvas.style.height = (viewport.height / dpr) + 'px';
+
+        var renderContext = {
+          canvasContext: ctx,
+          viewport: viewport
+        };
+
+        if (currentRenderTask) {
+          try { currentRenderTask.cancel(); } catch(e) {}
+        }
+
+        currentRenderTask = page.render(renderContext);
+        currentRenderTask.promise.then(function() {
+          statusOverlay.style.display = 'none';
+          canvas.style.display = 'block';
+        }).catch(function(err) {
+          if (err && err.name === 'RenderingCancelledException') return;
+          statusText.innerText = 'Render issue: ' + (err && err.message ? err.message : 'Unknown');
+        });
+      }).catch(function(err) {
+        statusText.innerText = 'Error loading page ' + targetPage;
+      });
+    }
+
+    function initPdf() {
+      if (typeof pdfjsLib === 'undefined') {
+        postToReactNative({ type: 'DOC_ERROR', error: 'PDF engine could not be loaded' });
+        return;
+      }
+
+      try {
+        var raw = atob(base64Data);
+        var uint8 = new Uint8Array(raw.length);
+        for (var i = 0; i < raw.length; i++) {
+          uint8[i] = raw.charCodeAt(i);
+        }
+
+        pdfjsLib.getDocument({ data: uint8 }).promise.then(function(pdf) {
+          pdfDoc = pdf;
+          postToReactNative({
+            type: 'DOC_LOADED',
+            totalPages: pdf.numPages
+          });
+          renderPage(currentPageNum);
+        }).catch(function(err) {
+          postToReactNative({
+            type: 'DOC_ERROR',
+            error: err && err.message ? err.message : 'Invalid document format'
+          });
+        });
+      } catch (err) {
+        postToReactNative({
+          type: 'DOC_ERROR',
+          error: err && err.message ? err.message : 'Base64 decode failed'
+        });
+      }
+    }
+
+    function handleRNMessage(event) {
+      try {
+        var rawData = event.data;
+        var msg = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+        if (msg.type === 'GOTO_PAGE') {
+          renderPage(msg.pageNumber);
+        } else if (msg.type === 'SET_ZOOM') {
+          currentZoom = msg.zoomLevel;
+          renderPage(msg.pageNumber || currentPageNum);
+        }
+      } catch (e) {}
+    }
+
+    window.addEventListener('message', handleRNMessage);
+    document.addEventListener('message', handleRNMessage);
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      initPdf();
+    } else {
+      window.onload = initPdf;
+    }
+  </script>
+</body>
+</html>
+  `;
+};
 
 interface PaperPreviewModalProps {
   paper: QuestionPaper | null;
@@ -36,6 +307,109 @@ export const PaperPreviewModal: React.FC<PaperPreviewModalProps> = ({
   const [showSolutionKey, setShowSolutionKey] = useState(false);
   const [viewMode, setViewMode] = useState<'TEMPLATE' | 'DOCUMENT'>('TEMPLATE');
   const { bookmarkedIds, downloadedIds, toggleBookmark } = usePaperStore();
+
+  // Document PDF in-memory viewer state
+  const [docPdfBase64, setDocPdfBase64] = useState<string | null>(null);
+  const [isDocLoading, setIsDocLoading] = useState<boolean>(false);
+  const [docError, setDocError] = useState<string | null>(null);
+  const [docCurrentPage, setDocCurrentPage] = useState<number>(1);
+  const [docTotalPages, setDocTotalPages] = useState<number>(paper?.pageCount || 1);
+  const [docZoom, setDocZoom] = useState<number>(100);
+  const docWebViewRef = useRef<any>(null);
+
+  const rawDocUrl = (paper?.pdfUrl || (paper as any)?.fileUrl || (paper as any)?.secureUrl || '').trim();
+  const resolvedDocUrl = resolvePaperUrl(rawDocUrl);
+  const isImageDoc = Boolean(resolvedDocUrl.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif)($|\?)/i));
+  const isPdfDoc = Boolean(
+    !isImageDoc &&
+      (resolvedDocUrl.toLowerCase().match(/\.pdf($|\?)/i) ||
+        resolvedDocUrl.includes('/storage/stream') ||
+        resolvedDocUrl.length > 0)
+  );
+
+  const fetchPdfBytes = useCallback(async (url: string) => {
+    if (!url) return;
+    setIsDocLoading(true);
+    setDocError(null);
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch(url, {
+        signal: controller.signal,
+        headers: { Accept: 'application/pdf,*/*' },
+      });
+      clearTimeout(timeoutId);
+      if (!res.ok) throw new Error(`Server returned HTTP ${res.status}`);
+      const arrayBuffer = await res.arrayBuffer();
+      if (!arrayBuffer || arrayBuffer.byteLength < 50) {
+        throw new Error('Received invalid or empty document');
+      }
+      const b64 = Buffer.from(arrayBuffer).toString('base64');
+      setDocPdfBase64(b64);
+    } catch (err: any) {
+      console.warn('[PaperPreviewModal] Binary fetch error:', err?.message || err);
+      setDocError(err?.message || 'Unable to download paper document');
+    } finally {
+      setIsDocLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (visible && viewMode === 'DOCUMENT' && isPdfDoc && resolvedDocUrl && !docPdfBase64) {
+      fetchPdfBytes(resolvedDocUrl);
+    }
+  }, [visible, viewMode, isPdfDoc, resolvedDocUrl, docPdfBase64, fetchPdfBytes]);
+
+  const handleDocPrevPage = () => {
+    if (docCurrentPage > 1) {
+      const prev = docCurrentPage - 1;
+      setDocCurrentPage(prev);
+      docWebViewRef.current?.postMessage(
+        JSON.stringify({ type: 'GOTO_PAGE', pageNumber: prev })
+      );
+    }
+  };
+
+  const handleDocNextPage = () => {
+    if (docCurrentPage < docTotalPages) {
+      const next = docCurrentPage + 1;
+      setDocCurrentPage(next);
+      docWebViewRef.current?.postMessage(
+        JSON.stringify({ type: 'GOTO_PAGE', pageNumber: next })
+      );
+    }
+  };
+
+  const handleDocZoomIn = () => {
+    const nextZoom = Math.min(docZoom + 25, 200);
+    setDocZoom(nextZoom);
+    docWebViewRef.current?.postMessage(
+      JSON.stringify({ type: 'SET_ZOOM', zoomLevel: nextZoom, pageNumber: docCurrentPage })
+    );
+  };
+
+  const handleDocZoomOut = () => {
+    const nextZoom = Math.max(docZoom - 25, 75);
+    setDocZoom(nextZoom);
+    docWebViewRef.current?.postMessage(
+      JSON.stringify({ type: 'SET_ZOOM', zoomLevel: nextZoom, pageNumber: docCurrentPage })
+    );
+  };
+
+  const handleDocWebViewMessage = (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'DOC_LOADED' && data.totalPages) {
+        const total = parseInt(data.totalPages, 10);
+        if (total >= 1) {
+          setDocTotalPages(total);
+        }
+      } else if (data.type === 'DOC_ERROR') {
+        console.warn('[PaperPreviewModal] PDF.js engine error:', data.error);
+        setDocError(data.error || 'Failed to render document canvas');
+      }
+    } catch {}
+  };
 
   useEffect(() => {
     if (visible) {
@@ -359,107 +733,144 @@ export const PaperPreviewModal: React.FC<PaperPreviewModalProps> = ({
               </TouchableOpacity>
             </View>
           </>
-        ) : (() => {
-          let rawPdfUrl = (paper.pdfUrl || (paper as any).fileUrl || '').trim();
-          let resolvedPdfUrl = rawPdfUrl;
-
-          let baseUrl = '';
-          try {
-            baseUrl = getBaseUrl();
-          } catch {
-            baseUrl = 'http://localhost:5000/api/v1';
-          }
-          const hostRoot = baseUrl.replace(/\/api\/v1\/?$/, '');
-
-          if (
-            rawPdfUrl.startsWith('s3://') ||
-            (!rawPdfUrl.startsWith('http://') &&
-              !rawPdfUrl.startsWith('https://') &&
-              !rawPdfUrl.startsWith('data:') &&
-              rawPdfUrl.length > 0)
-          ) {
-            resolvedPdfUrl = `${baseUrl}/storage/stream?url=${encodeURIComponent(rawPdfUrl)}`;
-          } else if (rawPdfUrl.startsWith('/api/v1') || rawPdfUrl.startsWith('/uploads')) {
-            resolvedPdfUrl = `${hostRoot}${rawPdfUrl}`;
-          } else if (rawPdfUrl.includes('localhost') || rawPdfUrl.includes('127.0.0.1')) {
-            const lanHostMatch = hostRoot.match(/https?:\/\/([^:/]+)/);
-            if (
-              lanHostMatch &&
-              lanHostMatch[1] &&
-              lanHostMatch[1] !== 'localhost' &&
-              lanHostMatch[1] !== '127.0.0.1'
-            ) {
-              resolvedPdfUrl = rawPdfUrl
-                .replace('localhost', lanHostMatch[1])
-                .replace('127.0.0.1', lanHostMatch[1]);
-            }
-          }
-
-          return (
-            <View style={styles.documentViewerContainer}>
-              {resolvedPdfUrl ? (
-                <>
-                  <View style={styles.docHeaderBar}>
-                    <View style={styles.docInfoCol}>
-                      <Text style={styles.docNameText} numberOfLines={1}>
-                        {resolvedPdfUrl.split('/').pop() || 'Question_Paper_Document'}
-                      </Text>
-                      <Text style={styles.docMetaText}>
-                        Size: {paper.fileSize || 'Standard'} • Format: {resolvedPdfUrl.split('.').pop()?.toUpperCase() || 'DOCUMENT'}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.openExternalBtn}
-                      onPress={() => WebBrowser.openBrowserAsync(resolvedPdfUrl)}
-                    >
-                      <Feather name="external-link" size={14} color="#0745E8" />
-                      <Text style={styles.openExternalText}>Open External</Text>
-                    </TouchableOpacity>
+        ) : (
+          <View style={styles.documentViewerContainer}>
+            {resolvedDocUrl ? (
+              <>
+                <View style={styles.docHeaderBar}>
+                  <View style={styles.docInfoCol}>
+                    <Text style={styles.docNameText} numberOfLines={1}>
+                      {resolvedDocUrl.split('/').pop() || 'Question_Paper_Document'}
+                    </Text>
+                    <Text style={styles.docMetaText}>
+                      Size: {paper.fileSize || 'Standard'} • Format: {isImageDoc ? 'IMAGE' : 'PDF'}
+                    </Text>
                   </View>
-                  {resolvedPdfUrl.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif)($|\?)/i) ? (
-                    <View style={styles.imageViewerContainer}>
-                      <Image
-                        source={{ uri: resolvedPdfUrl }}
-                        style={styles.imageViewer}
-                        resizeMode="contain"
-                      />
-                    </View>
-                  ) : (
-                    <WebView
-                      source={{
-                        uri: resolvedPdfUrl.toLowerCase().endsWith('.pdf') && !resolvedPdfUrl.includes('storage/stream')
-                          ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(resolvedPdfUrl)}`
-                          : resolvedPdfUrl,
-                      }}
-                      style={{ flex: 1 }}
-                      startInLoadingState
-                      renderLoading={() => (
-                        <View style={styles.loadingContainer}>
-                          <ActivityIndicator size="large" color="#0745E8" />
-                          <Text style={styles.loadingText}>Rendering document preview...</Text>
-                        </View>
-                      )}
-                    />
-                  )}
-                </>
-              ) : (
-                <View style={styles.noDocContainer}>
-                  <Feather name="info" size={40} color="#94A3B8" />
-                  <Text style={styles.noDocTitle}>Template-Created Paper</Text>
-                  <Text style={styles.noDocText}>
-                    This paper was composed directly using the interactive VTU Question Paper Template in the Admin Panel. Switch to the "VTU Question Template" tab to view all modules, choices, marks, and verified solutions.
-                  </Text>
                   <TouchableOpacity
-                    style={styles.switchTemplateBtn}
-                    onPress={() => setViewMode('TEMPLATE')}
+                    style={styles.openExternalBtn}
+                    onPress={() => WebBrowser.openBrowserAsync(resolvedDocUrl)}
                   >
-                    <Text style={styles.switchTemplateBtnText}>Switch to Template View</Text>
+                    <Feather name="external-link" size={14} color="#0745E8" />
+                    <Text style={styles.openExternalText}>Open External</Text>
                   </TouchableOpacity>
                 </View>
-              )}
-            </View>
-          );
-        })()}
+
+                {isImageDoc ? (
+                  <View style={styles.imageViewerContainer}>
+                    <Image
+                      source={{ uri: resolvedDocUrl }}
+                      style={styles.imageViewer}
+                      resizeMode="contain"
+                    />
+                  </View>
+                ) : isDocLoading ? (
+                  <View style={styles.docCenterState}>
+                    <ActivityIndicator size="large" color="#0745E8" />
+                    <Text style={styles.docStateTitle}>Loading Document Bytes...</Text>
+                    <Text style={styles.docStateSub}>Preparing PDF.js high-fidelity canvas</Text>
+                  </View>
+                ) : docError ? (
+                  <View style={styles.docCenterState}>
+                    <Feather name="alert-triangle" size={38} color="#EF4444" />
+                    <Text style={[styles.docStateTitle, { color: '#EF4444' }]}>Unable to Display PDF</Text>
+                    <Text style={styles.docStateSub}>{docError}</Text>
+                    <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
+                      <TouchableOpacity
+                        style={styles.switchTemplateBtn}
+                        onPress={() => fetchPdfBytes(resolvedDocUrl)}
+                      >
+                        <Text style={styles.switchTemplateBtnText}>Retry</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.switchTemplateBtn, { backgroundColor: '#64748B' }]}
+                        onPress={() => WebBrowser.openBrowserAsync(resolvedDocUrl)}
+                      >
+                        <Text style={styles.switchTemplateBtnText}>Open External</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : docPdfBase64 ? (
+                  <View style={{ flex: 1 }}>
+                    {/* Document Toolbar: Zoom & Page Stepper */}
+                    <View style={styles.docToolbarRow}>
+                      <View style={styles.docToolbarGroup}>
+                        <TouchableOpacity
+                          onPress={handleDocZoomOut}
+                          disabled={docZoom <= 75}
+                          style={[styles.docToolbarBtn, docZoom <= 75 && styles.docToolbarBtnDisabled]}
+                        >
+                          <Feather name="minus" size={14} color="#0F172A" />
+                        </TouchableOpacity>
+                        <Text style={styles.docToolbarText}>{docZoom}%</Text>
+                        <TouchableOpacity
+                          onPress={handleDocZoomIn}
+                          disabled={docZoom >= 200}
+                          style={[styles.docToolbarBtn, docZoom >= 200 && styles.docToolbarBtnDisabled]}
+                        >
+                          <Feather name="plus" size={14} color="#0F172A" />
+                        </TouchableOpacity>
+                      </View>
+
+                      <View style={styles.docToolbarGroup}>
+                        <TouchableOpacity
+                          onPress={handleDocPrevPage}
+                          disabled={docCurrentPage <= 1}
+                          style={[styles.docToolbarBtn, docCurrentPage <= 1 && styles.docToolbarBtnDisabled]}
+                        >
+                          <Feather name="chevron-left" size={16} color={docCurrentPage <= 1 ? '#94A3B8' : '#0F172A'} />
+                        </TouchableOpacity>
+                        <Text style={styles.docToolbarText}>
+                          Page {docCurrentPage} of {docTotalPages}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={handleDocNextPage}
+                          disabled={docCurrentPage >= docTotalPages}
+                          style={[styles.docToolbarBtn, docCurrentPage >= docTotalPages && styles.docToolbarBtnDisabled]}
+                        >
+                          <Feather name="chevron-right" size={16} color={docCurrentPage >= docTotalPages ? '#94A3B8' : '#0F172A'} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* PDF.js HTML Canvas (100% In-Memory Base64, 0 Network Calls) */}
+                    <WebView
+                      ref={docWebViewRef}
+                      source={{
+                        html: generatePaperPdfHtml(docPdfBase64, docCurrentPage, docZoom),
+                      }}
+                      style={{ flex: 1 }}
+                      scrollEnabled={false}
+                      overScrollMode="never"
+                      bounces={false}
+                      onMessage={handleDocWebViewMessage}
+                      originWhitelist={['*']}
+                      javaScriptEnabled={true}
+                    />
+                  </View>
+                ) : (
+                  <View style={styles.docCenterState}>
+                    <ActivityIndicator size="large" color="#0745E8" />
+                    <Text style={styles.docStateSub}>Initializing PDF viewer...</Text>
+                  </View>
+                )}
+              </>
+            ) : (
+              <View style={styles.noDocContainer}>
+                <Feather name="info" size={40} color="#94A3B8" />
+                <Text style={styles.noDocTitle}>Template-Created Paper</Text>
+                <Text style={styles.noDocText}>
+                  This paper was composed directly using the interactive VTU Question Paper Template in the Admin Panel. Switch to the "VTU Question Template" tab to view all modules, choices, marks, and verified solutions.
+                </Text>
+                <TouchableOpacity
+                  style={styles.switchTemplateBtn}
+                  onPress={() => setViewMode('TEMPLATE')}
+                >
+                  <Text style={styles.switchTemplateBtnText}>Switch to Template View</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
       </SafeAreaView>
     </Modal>
   );
@@ -947,5 +1358,54 @@ const styles = StyleSheet.create({
   imageViewer: {
     width: '100%',
     height: '100%',
+  },
+  docCenterState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: '#FFFFFF',
+  },
+  docStateTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  docStateSub: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+  docToolbarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  docToolbarGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  docToolbarBtn: {
+    padding: 6,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  docToolbarBtnDisabled: {
+    opacity: 0.35,
+  },
+  docToolbarText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
   },
 });
