@@ -5,6 +5,7 @@
   },
   "build": {
     "development": {
+      "developmentClient": false,
       "distribution": "internal",
       "channel": "development",
       "android": {
